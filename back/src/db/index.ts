@@ -29,14 +29,26 @@ export async function executeQuery<T = Record<string, unknown>>(
 
 export function isReadOnlyQuery(sql: string): boolean {
   const normalized = sql.trim().toUpperCase();
-  const dangerous = ["INSERT", "UPDATE", "DELETE", "DROP", "ALTER", "TRUNCATE", "CREATE"];
 
+  // Must start with SELECT
   if (!normalized.startsWith("SELECT")) {
     return false;
   }
 
-  for (const keyword of dangerous) {
-    if (normalized.includes(keyword)) {
+  // Check for dangerous keywords using word boundaries
+  // This prevents false positives like "UPDATE" matching "updated_at"
+  const dangerousPatterns = [
+    /\bINSERT\b/,
+    /\bUPDATE\b/,
+    /\bDELETE\b/,
+    /\bDROP\b/,
+    /\bALTER\b/,
+    /\bTRUNCATE\b/,
+    /\bCREATE\b/,
+  ];
+
+  for (const pattern of dangerousPatterns) {
+    if (pattern.test(normalized)) {
       return false;
     }
   }
