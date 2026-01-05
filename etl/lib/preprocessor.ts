@@ -13,6 +13,7 @@ import {
   getNormalizedBaseName,
 } from './normalizers.js';
 import { levenshtein } from './levenshtein.js';
+import { matchProductToGroup } from './product-groups.js';
 import type {
   DbLocation,
   DbCategory,
@@ -213,7 +214,7 @@ interface RawProductItem {
   originalName: string;
   baseName: string;
   extractedVariation?: string;
-  extractedVariationType?: 'quantity' | 'size' | 'serving' | 'strength';
+  extractedVariationType?: 'quantity' | 'size' | 'serving' | 'strength' | 'semantic';
   categoryId?: string;
   categoryName?: string;
   description?: string;
@@ -352,23 +353,79 @@ function buildUnifiedCatalog(sources: SourceData): {
   }
 
   // ========================================
-  // 5. Group products using Levenshtein
+  // 5. Group products using configured groups + Levenshtein fallback
   // ========================================
-  interface ProductGroup {
+  interface ProductGroupResult {
     canonicalName: string;
     categoryId?: string;
     description?: string;
     items: RawProductItem[];
   }
 
-  const productGroups: ProductGroup[] = [];
+  const productGroups: ProductGroupResult[] = [];
+  const configuredGroups = new Map<string, ProductGroupResult>(); // baseName -> group
   const SIMILARITY_THRESHOLD = 3;
 
   for (const item of rawItems) {
+    // First: check if item matches a configured product group
+    const groupMatch = matchProductToGroup(item.originalName);
+
+    if (groupMatch) {
+      // Item matches a configured group - use the group's base name
+      const groupKey = groupMatch.baseName.toLowerCase();
+
+      if (configuredGroups.has(groupKey)) {
+        // Add to existing configured group
+        const group = configuredGroups.get(groupKey)!;
+        group.items.push(item);
+
+        // Override item's extracted variation with the group match
+        if (groupMatch.variationName) {
+          item.extractedVariation = groupMatch.variationName;
+          item.extractedVariationType = 'semantic'; // Mark as semantic variation
+        }
+
+        // Keep description if we have one
+        if (!group.description && item.description) {
+          group.description = item.description;
+        }
+        // Keep category if we have one
+        if (!group.categoryId) {
+          if (item.categoryId) {
+            group.categoryId = item.categoryId;
+          } else if (item.categoryName) {
+            group.categoryId = item.categoryName;
+          }
+        }
+      } else {
+        // Create new configured group
+        if (groupMatch.variationName) {
+          item.extractedVariation = groupMatch.variationName;
+          item.extractedVariationType = 'semantic';
+        }
+
+        const newGroup: ProductGroupResult = {
+          canonicalName: groupMatch.baseName,
+          categoryId: item.categoryId || item.categoryName,
+          description: item.description,
+          items: [item],
+        };
+        configuredGroups.set(groupKey, newGroup);
+        productGroups.push(newGroup);
+      }
+      continue;
+    }
+
+    // Fallback: use Levenshtein grouping for items that don't match any configured group
     const normalizedBaseName = getNormalizedBaseName(item.originalName);
 
     let foundGroup = false;
     for (const group of productGroups) {
+      // Skip configured groups for Levenshtein matching
+      if (configuredGroups.has(group.canonicalName.toLowerCase())) {
+        continue;
+      }
+
       const groupNormalizedBase = getNormalizedBaseName(group.canonicalName);
       const distance = levenshtein(normalizedBaseName, groupNormalizedBase, { maxDistance: SIMILARITY_THRESHOLD });
 
@@ -386,7 +443,7 @@ function buildUnifiedCatalog(sources: SourceData): {
           if (item.categoryId) {
             group.categoryId = item.categoryId;
           } else if (item.categoryName) {
-            group.categoryId = item.categoryName; // Will be resolved later
+            group.categoryId = item.categoryName;
           }
         }
         foundGroup = true;

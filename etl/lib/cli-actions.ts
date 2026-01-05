@@ -9,9 +9,11 @@ import {
   SquarePaymentsDataSchema,
   LocationsConfigSchema,
   VariationPatternsConfigSchema,
+  ProductGroupsConfigSchema,
 } from './schemas.js';
 import { preprocessData, NormalizedData, SourceData } from './preprocessor.js';
 import { initializePatterns } from './variation-patterns.js';
+import { initializeProductGroups } from './product-groups.js';
 import type {
   ToastData,
   DoorDashData,
@@ -29,6 +31,7 @@ import type {
 export interface EnvConfig {
   LOCATIONS_PATH: string;
   VARIATION_PATTERNS_PATH: string;
+  PRODUCT_GROUPS_PATH: string;
   DOORDASH_ORDERS_PATH: string;
   TOAST_POS_PATH: string;
   SQUARE_CATALOG_PATH: string;
@@ -111,6 +114,7 @@ export async function runValidation(config: EnvConfig): Promise<ValidationResult
   // Validate config files
   results.push(validateFile(config.LOCATIONS_PATH, LocationsConfigSchema, 'Locations Config'));
   results.push(validateFile(config.VARIATION_PATTERNS_PATH, VariationPatternsConfigSchema, 'Variation Patterns'));
+  results.push(validateFile(config.PRODUCT_GROUPS_PATH, ProductGroupsConfigSchema, 'Product Groups'));
 
   // Validate source data files
   results.push(validateFile(config.TOAST_POS_PATH, ToastDataSchema, 'Toast POS'));
@@ -136,6 +140,16 @@ export async function runValidation(config: EnvConfig): Promise<ValidationResult
     return {
       success: false,
       errors: [`Variation Patterns: ${err instanceof Error ? err.message : 'Failed to initialize'}`],
+    };
+  }
+
+  // Initialize product groups after validation passes
+  try {
+    initializeProductGroups(config.PRODUCT_GROUPS_PATH);
+  } catch (err) {
+    return {
+      success: false,
+      errors: [`Product Groups: ${err instanceof Error ? err.message : 'Failed to initialize'}`],
     };
   }
 

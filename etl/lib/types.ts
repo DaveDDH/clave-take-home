@@ -37,7 +37,7 @@ export interface DbProductVariation {
   id?: string;
   product_id: string;
   name: string;
-  variation_type?: 'quantity' | 'size' | 'serving' | 'strength';
+  variation_type?: 'quantity' | 'size' | 'serving' | 'strength' | 'semantic';
   source_raw_name?: string;
 }
 

@@ -381,9 +381,29 @@ export const VariationPatternsConfigSchema = z.object({
 });
 
 // ============================================================================
+// PRODUCT GROUPS CONFIG SCHEMA
+// ============================================================================
+
+const ProductGroupSchema = z.object({
+  base_name: z.string().min(1, 'base_name is required'),
+  suffix: z.string().optional(),
+  keywords: z.array(z.string()).optional(),
+}).refine(
+  (data) => data.suffix || (data.keywords && data.keywords.length > 0),
+  { message: 'At least one of suffix or keywords must be provided' }
+);
+
+export const ProductGroupsConfigSchema = z.object({
+  description: z.string().optional(),
+  groups: z.array(ProductGroupSchema).min(1, 'At least one group is required'),
+});
+
+// ============================================================================
 // TYPE EXPORTS (inferred from schemas)
 // ============================================================================
 
+export type ProductGroup = z.infer<typeof ProductGroupSchema>;
+export type ProductGroupsConfig = z.infer<typeof ProductGroupsConfigSchema>;
 export type LocationConfig = z.infer<typeof LocationConfigSchema>;
 export type LocationsConfig = z.infer<typeof LocationsConfigSchema>;
 export type VariationPattern = z.infer<typeof VariationPatternSchema>;

@@ -1,0 +1,27 @@
+{
+  "groups": [
+    { "base_name": "Wings", "suffix": "Wings" },
+    { "base_name": "Fries", "suffix": "Fries" },
+    { "base_name": "Pizza", "suffix": "Pizza" },
+    { "base_name": "Salad", "suffix": "Salad" },
+    { "base_name": "Wrap", "suffix": "Wrap" },
+    { "base_name": "Milkshake", "suffix": "Milkshake" },
+    { "base_name": "Nachos", "suffix": "Nachos" },
+    { "base_name": "Wine", "suffix": "Wine" },
+    { "base_name": "Fruit", "suffix": "Fruit" },
+    { "base_name": "Burger", "suffix": "Burger" },
+    {
+      "base_name": "Coffee",
+      "suffix": "Coffee",
+      "keywords": ["espresso", "expresso", "coffe", "cold brew"]
+    },
+    {
+      "base_name": "Soft Drink",
+      "keywords": ["coca-cola", "coke", "fountain soda", "soft drink", "soda"]
+    },
+    {
+      "base_name": "Steak",
+      "keywords": ["ribeye steak", "filet mignon", "prime rib", "steak"]
+    }
+  ]
+}
