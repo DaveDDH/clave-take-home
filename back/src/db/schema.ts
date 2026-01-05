@@ -19,7 +19,7 @@ Foreign keys:
 `;
 
 export const TABLE_DESCRIPTIONS: Record<string, string> = {
-  locations: "Restaurant locations (Downtown, Airport, Mall, University)",
+  locations: "Restaurant locations. Exact names: 'Downtown', 'Airport', 'Mall Location', 'University'",
   categories: "Product categories (Burgers, Drinks, Desserts, Salads, etc.)",
   products: "Menu items/products with canonical names",
   product_variations: "Size/quantity variations of products (Small, Large, 10 pcs, etc.)",

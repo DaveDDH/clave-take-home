@@ -94,6 +94,7 @@ router.get(
       result: process.result,
       partialResponse: process.partialResponse,
       error: process.error,
+      logs: process.logs,
       createdAt: process.createdAt,
       updatedAt: process.updatedAt,
     });

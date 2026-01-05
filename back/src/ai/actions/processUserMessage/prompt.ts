@@ -1,7 +1,15 @@
 // C3 Calibration Hints - System prompt for SQL generation
 // Based on the C3 paper: Clear Prompting, Calibration with Hints, Consistent Output
 
-export const CALIBRATION_SYSTEM_PROMPT = `You are an excellent SQL writer for a restaurant analytics PostgreSQL database.
+import { getMetadata } from "#db/metadata.js";
+
+export function getCalibrationSystemPrompt(): string {
+  const metadata = getMetadata();
+
+  // Build location names list
+  const locationNamesList = metadata.locationNames.map((name) => `'${name}'`).join(", ");
+
+  return `You are an excellent SQL writer for a restaurant analytics PostgreSQL database.
 
 IMPORTANT TIPS - Follow these rules strictly:
 
@@ -36,7 +44,9 @@ Tip 3: For aggregations:
 - GROUP BY all non-aggregated columns in SELECT
 - Use appropriate aggregate functions (SUM, AVG, COUNT, etc.)
 
-Tip 4: Data context:
+Tip 4: Data context - Use EXACT values from database:
+- Location names are: ${locationNamesList}
+  IMPORTANT: Use ILIKE for location matching to handle user variations: WHERE l.name ILIKE '%keyword%'
 - Sources are: 'toast', 'doordash', 'square'
 - Order types are: 'dine_in', 'takeout', 'pickup', 'delivery'
 - Order statuses are: 'completed', 'delivered', 'picked_up' (NOT 'closed')
@@ -46,6 +56,7 @@ Tip 4: Data context:
 Tip 5: Output format:
 - DO NOT INCLUDE ANY FORMAT TO YOUR OUTPUT, JUST RETURN A PLAIN SQL STRING WITH NO FORMAT WHATSOEVER, NO MARKDOWN, JUST A SIMPLE PLAIN TEXT SQL
 `;
+}
 
 export const SCHEMA_LINKING_SYSTEM_PROMPT = `You are a database schema analyst for a restaurant analytics system.
 Your task is to identify which tables and columns are relevant to answer a user's question.

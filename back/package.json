@@ -13,12 +13,14 @@
     "typecheck": "npm run check",
     "lint": "npm run check",
     "lint:fix": "eslint . --fix",
-    "build": "tsc"
+    "build": "tsc",
+    "test:queries": "node test-queries.js"
   },
   "dependencies": {
     "@ai-sdk/xai": "^3.0.3",
     "ai": "^6.0.7",
     "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
     "express": "^5.1.0",
     "pg": "^8.16.3",
     "zod": "^4.3.5"

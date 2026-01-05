@@ -8,6 +8,7 @@ import {
   ChartType,
 } from "./chart-inference.js";
 import { RESPONSE_GENERATION_SYSTEM_PROMPT } from "./prompt.js";
+import { log, logError } from "#utils/logger.js";
 
 export interface ProcessedMessage {
   content: string;
@@ -45,19 +46,19 @@ export async function processUserMessage(
 
   const requestStartTime = Date.now();
 
-  console.log("\n========================================");
-  console.log("🚀 C3 Text-to-SQL Processing Started");
-  console.log("========================================");
-  console.log("📝 User Question:", userQuestion);
-  console.log("💬 Conversation History Length:", conversationHistory.length);
-  console.log("⚙️  Options:", { useConsistency, debug });
+  log("\n========================================", undefined, processId);
+  log("🚀 C3 Text-to-SQL Processing Started", undefined, processId);
+  log("========================================", undefined, processId);
+  log("📝 User Question:", userQuestion, processId);
+  log("💬 Conversation History Length:", conversationHistory.length, processId);
+  log("⚙️  Options:", { useConsistency, debug }, processId);
   if (processId) {
-    console.log("🆔 Process ID:", processId);
+    log("🆔 Process ID:", processId, processId);
   }
 
   try {
     // Step 0: Run classification and schema linking IN PARALLEL
-    console.log("\n🔍 Step 0: Parallel Classification & Schema Linking");
+    log("\n🔍 Step 0: Parallel Classification & Schema Linking", undefined, processId);
     const parallelStart = Date.now();
 
     const { getDataContext } = await import("./data-context.js");
@@ -72,7 +73,7 @@ export async function processUserMessage(
       const latest = new Date(dataContext.orderDateRange.latest)
         .toISOString()
         .split("T")[0];
-      console.log(`   📅 Data available from ${earliest} to ${latest}`);
+      log(`   📅 Data available from ${earliest} to ${latest}`, undefined, processId);
     }
 
     // Run classification and schema linking in parallel
@@ -82,15 +83,19 @@ export async function processUserMessage(
     ]);
 
     const parallelTime = Date.now() - parallelStart;
-    console.log(`✅ Parallel tasks complete (${parallelTime}ms)`);
-    console.log(`   Is Data Query: ${classification.isDataQuery}`);
-    console.log(`   Chart Type: ${classification.chartType}`);
-    console.log(`   Reasoning: ${classification.reasoning}`);
-    console.log(
-      `   Conversational Response: ${classification.conversationalResponse}`
+    log(`✅ Parallel tasks complete (${parallelTime}ms)`, undefined, processId);
+    log(`   Is Data Query: ${classification.isDataQuery}`, undefined, processId);
+    log(`   Chart Type: ${classification.chartType}`, undefined, processId);
+    log(`   Reasoning: ${classification.reasoning}`, undefined, processId);
+    log(
+      `   Conversational Response: ${classification.conversationalResponse}`,
+      undefined,
+      processId
     );
-    console.log(
-      `   Linked Schema: ${linkedSchema.tables.map((t) => t.name).join(", ")}`
+    log(
+      `   Linked Schema: ${linkedSchema.tables.map((t) => t.name).join(", ")}`,
+      undefined,
+      processId
     );
 
     // Set partial response immediately for user feedback
@@ -106,22 +111,24 @@ export async function processUserMessage(
     if (!classification.isDataQuery) {
       const totalTime = Date.now() - requestStartTime;
 
-      console.log("\n✨ Conversational Response Complete (skipped C3 pipeline)!");
-      console.log(
-        `⏱️  Total Request Time: ${totalTime}ms (${(totalTime / 1000).toFixed(2)}s)`
+      log("\n✨ Conversational Response Complete (skipped C3 pipeline)!", undefined, processId);
+      log(
+        `⏱️  Total Request Time: ${totalTime}ms (${(totalTime / 1000).toFixed(2)}s)`,
+        undefined,
+        processId
       );
-      console.log("========================================\n");
+      log("========================================\n", undefined, processId);
 
       return {
         content: classification.conversationalResponse,
       };
     }
 
-    console.log("\n🔄 Proceeding with C3 pipeline for data query");
-    console.log("   (Schema linking already completed in parallel above)");
+    log("\n🔄 Proceeding with C3 pipeline for data query", undefined, processId);
+    log("   (Schema linking already completed in parallel above)", undefined, processId);
 
     // Step 2 & 3: SQL Generation + Consistency (CP + CH + CO)
-    console.log("\n🔧 Step 2-3: SQL Generation + Self-Consistency");
+    log("\n🔧 Step 2-3: SQL Generation + Self-Consistency", undefined, processId);
     let sql: string;
     let data: Record<string, unknown>[];
     let confidence: number | undefined;
@@ -130,8 +137,8 @@ export async function processUserMessage(
 
     const startSQLGeneration = Date.now();
     if (useConsistency) {
-      console.log("🔄 Using self-consistency voting (3 candidates)");
-      const result = await selfConsistencyVote(userQuestion, linkedSchema, 3, conversationHistory, dataContext);
+      log("🔄 Using self-consistency voting (3 candidates)", undefined, processId);
+      const result = await selfConsistencyVote(userQuestion, linkedSchema, 3, conversationHistory, dataContext, processId);
       sql = result.sql;
       data = result.data;
       confidence = result.confidence;
@@ -139,36 +146,36 @@ export async function processUserMessage(
       successfulExecutions = result.successfulExecutions;
 
       const sqlGenerationTime = Date.now() - startSQLGeneration;
-      console.log(`✅ Self-Consistency Vote Complete (${sqlGenerationTime}ms)`);
-      console.log(`   Confidence: ${(confidence * 100).toFixed(1)}%`);
-      console.log(`   Candidates: ${candidateCount}, Successful: ${successfulExecutions}`);
+      log(`✅ Self-Consistency Vote Complete (${sqlGenerationTime}ms)`, undefined, processId);
+      log(`   Confidence: ${(confidence * 100).toFixed(1)}%`, undefined, processId);
+      log(`   Candidates: ${candidateCount}, Successful: ${successfulExecutions}`, undefined, processId);
     } else {
-      console.log("⚡ Using single query (fast mode)");
-      const result = await singleQuery(userQuestion, linkedSchema, conversationHistory, dataContext);
+      log("⚡ Using single query (fast mode)", undefined, processId);
+      const result = await singleQuery(userQuestion, linkedSchema, conversationHistory, dataContext, processId);
       sql = result.sql;
       data = result.data;
 
       const sqlGenerationTime = Date.now() - startSQLGeneration;
-      console.log(`✅ Single Query Complete (${sqlGenerationTime}ms)`);
+      log(`✅ Single Query Complete (${sqlGenerationTime}ms)`, undefined, processId);
     }
 
-    console.log("📜 Generated SQL:");
-    console.log("   " + sql.split("\n").join("\n   "));
-    console.log("📦 Query Results:", `${data.length} rows`);
+    log("📜 Generated SQL:", undefined, processId);
+    log("   " + sql.split("\n").join("\n   "), undefined, processId);
+    log("📦 Query Results:", `${data.length} rows`, processId);
     if (data.length > 0 && data.length <= 3) {
-      console.log("   Sample data:", JSON.stringify(data, null, 2));
+      log("   Sample data:", JSON.stringify(data, null, 2), processId);
     }
 
     // Step 4: Determine chart axes from data
-    console.log("\n📈 Step 4: Determining Chart Configuration");
+    log("\n📈 Step 4: Determining Chart Configuration", undefined, processId);
     const chartConfig = determineChartAxes(data, classification.chartType);
-    console.log("✅ Chart Type (from classifier):", chartConfig.type);
+    log("✅ Chart Type (from classifier):", chartConfig.type, processId);
     if (chartConfig.xKey && chartConfig.yKey) {
-      console.log(`   X-axis: ${chartConfig.xKey}, Y-axis: ${chartConfig.yKey}`);
+      log(`   X-axis: ${chartConfig.xKey}, Y-axis: ${chartConfig.yKey}`, undefined, processId);
     }
 
     // Step 5: Generate Natural Language Response
-    console.log("\n💬 Step 5: Generating Natural Language Response");
+    log("\n💬 Step 5: Generating Natural Language Response", undefined, processId);
     const startResponse = Date.now();
     const content = await generateNaturalResponse(
       userQuestion,
@@ -177,25 +184,27 @@ export async function processUserMessage(
       conversationHistory
     );
     const responseTime = Date.now() - startResponse;
-    console.log(`✅ Response Generated (${responseTime}ms)`);
-    console.log("   Response:", content);
+    log(`✅ Response Generated (${responseTime}ms)`, undefined, processId);
+    log("   Response:", content, processId);
 
     // Step 6: Format data for chart
-    console.log("\n🎨 Step 6: Formatting Data for Chart");
+    log("\n🎨 Step 6: Formatting Data for Chart", undefined, processId);
     const formattedData = formatDataForChart(data, chartConfig);
-    console.log(`✅ Data Formatted: ${formattedData.length} rows`);
+    log(`✅ Data Formatted: ${formattedData.length} rows`, undefined, processId);
     if (formattedData.length > 0 && formattedData.length <= 3) {
-      console.log("   Formatted sample:", JSON.stringify(formattedData, null, 2));
+      log("   Formatted sample:", JSON.stringify(formattedData, null, 2), processId);
     }
 
     // Build response
-    console.log("\n📦 Building Response");
-    console.log(
-      `   Chart config: xKey="${chartConfig.xKey}", yKey="${chartConfig.yKey}"`
+    log("\n📦 Building Response", undefined, processId);
+    log(
+      `   Chart config: xKey="${chartConfig.xKey}", yKey="${chartConfig.yKey}"`,
+      undefined,
+      processId
     );
     const cleanXKey = chartConfig.xKey?.replace("_cents", "");
     const cleanYKey = chartConfig.yKey?.replace("_cents", "");
-    console.log(`   Clean config: xKey="${cleanXKey}", yKey="${cleanYKey}"`);
+    log(`   Clean config: xKey="${cleanXKey}", yKey="${cleanYKey}"`, undefined, processId);
 
     const response: ProcessedMessage = {
       content,
@@ -229,18 +238,17 @@ export async function processUserMessage(
 
     const totalTime = Date.now() - requestStartTime;
 
-    console.log("\n✨ C3 Processing Complete!");
-    console.log(`⏱️  Total Request Time: ${totalTime}ms (${(totalTime / 1000).toFixed(2)}s)`);
-    console.log("========================================\n");
+    log("\n✨ C3 Processing Complete!", undefined, processId);
+    log(`⏱️  Total Request Time: ${totalTime}ms (${(totalTime / 1000).toFixed(2)}s)`, undefined, processId);
+    log("========================================\n", undefined, processId);
 
     return response;
   } catch (error) {
     const totalTime = Date.now() - requestStartTime;
 
-    console.error("\n❌ Error processing user message:");
-    console.error(error);
-    console.log(`⏱️  Request failed after ${totalTime}ms (${(totalTime / 1000).toFixed(2)}s)`);
-    console.log("========================================\n");
+    logError("\n❌ Error processing user message:", error, processId);
+    log(`⏱️  Request failed after ${totalTime}ms (${(totalTime / 1000).toFixed(2)}s)`, undefined, processId);
+    log("========================================\n", undefined, processId);
     return {
       content: generateErrorMessage(error),
     };

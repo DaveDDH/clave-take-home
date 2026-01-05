@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import chatRouter from "#routes/chat.js";
 import processStore from "#stores/processStore.js";
+import { initializeMetadata } from "#db/metadata.js";
 
 const app = express();
 const PORT = process.env.PORT || 5006;
@@ -19,7 +20,17 @@ setInterval(
   30 * 60 * 1000
 );
 
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-  console.log(`Process store initialized - tracking async jobs`);
+// Initialize database metadata before starting server
+async function startServer() {
+  await initializeMetadata();
+
+  app.listen(PORT, () => {
+    console.log(`\n✅ Server running on http://localhost:${PORT}`);
+    console.log(`✅ Process store initialized - tracking async jobs`);
+  });
+}
+
+startServer().catch((error) => {
+  console.error("Failed to start server:", error);
+  process.exit(1);
 });

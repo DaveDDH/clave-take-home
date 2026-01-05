@@ -1,6 +1,6 @@
 import { generateTextResponse } from "#ai/models/xai/index.js";
 import { LinkedSchema, formatLinkedSchema } from "./schema-linking.js";
-import { CALIBRATION_SYSTEM_PROMPT } from "./prompt.js";
+import { getCalibrationSystemPrompt } from "./prompt.js";
 import type { DataContext } from "./data-context.js";
 
 export async function generateSQL(
@@ -46,9 +46,15 @@ When the user refers to dates like "the 3rd", "yesterday", "last week", interpre
 
   const userPrompt = `${schemaSection}
 #
-${conversationContext}### Complete PostgreSQL query only and with no explanation,
-### and do not select extra columns that are not explicitly requested in the query.
+${conversationContext}### Complete PostgreSQL query only and with no explanation.
 ### Current user question: ${userQuestion}
+
+IMPORTANT - For ranking/comparison queries (top, highest, best, etc.):
+- ALWAYS include BOTH the identifier (name, category) AND the metric (sales, count, etc.) in SELECT
+- Example: "highest sales by location" → SELECT l.name, SUM(o.total_cents) / 100.0 AS sales
+- Do NOT just SELECT the identifier and ORDER BY the metric - include both!
+- For visualization: return ALL relevant rows (not just LIMIT 1), ordered by the metric
+- Example: Instead of "LIMIT 1", return all locations ordered by sales DESC for comparison
 
 You MUST reply with ONLY a PLAIN TEXT SQL string
 Consider the conversation history to understand what the user is asking for.
@@ -57,7 +63,7 @@ Current date and time: ${dateAndTime}
 `;
 
   const response = await generateTextResponse(
-    CALIBRATION_SYSTEM_PROMPT,
+    getCalibrationSystemPrompt(),
     userPrompt,
     { temperature }
   );

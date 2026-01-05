@@ -1,5 +1,6 @@
 import { ProcessedMessage } from "#ai/actions/processUserMessage/index.js";
 import { randomUUID } from "crypto";
+import { getProcessLogs, log, logError } from "#utils/logger.js";
 
 export type ProcessStatus = "pending" | "processing" | "completed" | "failed";
 
@@ -9,6 +10,7 @@ export interface Process {
   result?: ProcessedMessage;
   partialResponse?: string;
   error?: string;
+  logs?: string[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -37,7 +39,7 @@ class ProcessStore {
       updatedAt: new Date(),
     };
     this.processes.set(id, process);
-    console.log(`📝 Created process: ${id}`);
+    log(`📝 Created process: ${id}`, undefined, id);
     return id;
   }
 
@@ -47,7 +49,7 @@ class ProcessStore {
       process.status = status;
       process.updatedAt = new Date();
       this.processes.set(id, process);
-      console.log(`🔄 Updated process ${id} status: ${status}`);
+      log(`🔄 Updated process ${id} status: ${status}`, undefined, id);
     }
   }
 
@@ -57,7 +59,7 @@ class ProcessStore {
       process.partialResponse = partialResponse;
       process.updatedAt = new Date();
       this.processes.set(id, process);
-      console.log(`💬 Set partial response for process: ${id}`);
+      log(`💬 Set partial response for process: ${id}`, undefined, id);
     }
   }
 
@@ -67,8 +69,15 @@ class ProcessStore {
       process.status = "completed";
       process.result = result;
       process.updatedAt = new Date();
+
+      // Attach logs from this process
+      const processLogs = getProcessLogs(id);
+      process.logs = processLogs.map(
+        (entry) => `[${entry.level.toUpperCase()}] ${entry.message}`
+      );
+
       this.processes.set(id, process);
-      console.log(`✅ Completed process: ${id}`);
+      log(`✅ Completed process: ${id}`, undefined, id);
     }
   }
 
@@ -78,8 +87,15 @@ class ProcessStore {
       process.status = "failed";
       process.error = error;
       process.updatedAt = new Date();
+
+      // Attach logs from this process
+      const processLogs = getProcessLogs(id);
+      process.logs = processLogs.map(
+        (entry) => `[${entry.level.toUpperCase()}] ${entry.message}`
+      );
+
       this.processes.set(id, process);
-      console.log(`❌ Failed process: ${id}`);
+      logError(`❌ Failed process: ${id}`, { error }, id);
     }
   }
 
@@ -89,7 +105,7 @@ class ProcessStore {
 
   public deleteProcess(id: string): void {
     this.processes.delete(id);
-    console.log(`🗑️  Deleted process: ${id}`);
+    log(`🗑️  Deleted process: ${id}`, undefined, id);
   }
 
   // Clean up old processes (older than 1 hour)
@@ -105,7 +121,7 @@ class ProcessStore {
     }
 
     if (deletedCount > 0) {
-      console.log(`🧹 Cleaned up ${deletedCount} old process(es)`);
+      log(`🧹 Cleaned up ${deletedCount} old process(es)`, { deletedCount });
     }
   }
 
