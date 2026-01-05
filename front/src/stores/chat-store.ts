@@ -45,8 +45,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
         debug: false,
       });
 
-      // Create assistant message ID for updates
-      const assistantMessageId = crypto.randomUUID();
       let hasPartialResponse = false;
 
       // Poll for results with partial response support
@@ -65,7 +63,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
         ) {
           hasPartialResponse = true;
           const partialMessage: Message = {
-            id: assistantMessageId,
+            id: crypto.randomUUID(),
             role: 'assistant',
             content: status.partialResponse,
           };
@@ -78,20 +76,16 @@ export const useChatStore = create<ChatState>((set, get) => ({
         // Final result ready
         if (status.status === 'completed' && status.result) {
           const finalMessage: Message = {
-            id: assistantMessageId,
+            id: crypto.randomUUID(),
             role: 'assistant',
             content: status.result.content,
             charts: status.result.charts,
             sql: status.result.sql,
           };
 
-          // Update or add the message
+          // Add final message (don't replace partial)
           set((state) => ({
-            messages: hasPartialResponse
-              ? state.messages.map((msg) =>
-                  msg.id === assistantMessageId ? finalMessage : msg
-                )
-              : [...state.messages, finalMessage],
+            messages: [...state.messages, finalMessage],
             isLoading: false,
           }));
           return;
