@@ -30,8 +30,8 @@ export async function executeQuery<T = Record<string, unknown>>(
 export function isReadOnlyQuery(sql: string): boolean {
   const normalized = sql.trim().toUpperCase();
 
-  // Must start with SELECT
-  if (!normalized.startsWith("SELECT")) {
+  // Must start with SELECT or WITH (for CTEs)
+  if (!normalized.startsWith("SELECT") && !normalized.startsWith("WITH")) {
     return false;
   }
 

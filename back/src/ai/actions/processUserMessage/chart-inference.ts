@@ -34,22 +34,37 @@ export function determineChartAxes(
   let yKey: string | undefined;
 
   if (chartType === "line" || chartType === "area") {
-    // For time-series charts, prefer time/date columns
-    xKey =
-      categoryColumns.find(
-        (c) =>
-          c.includes("date") ||
-          c.includes("time") ||
-          c.includes("day") ||
-          c.includes("hour") ||
-          c.includes("month") ||
-          c.includes("week")
-      ) || categoryColumns[0];
-    yKey = numericColumns[0];
+    // For time-series charts, prefer time/date columns (check both numeric and category)
+    // Check numeric columns first (hour, year, etc.)
+    const numericTimeCol = numericColumns.find(
+      (c) =>
+        c === "hour" ||
+        c === "day" ||
+        c === "month" ||
+        c === "year" ||
+        c === "week"
+    );
+
+    // Check category columns for date/time strings
+    const categoryTimeCol = categoryColumns.find(
+      (c) =>
+        c.includes("date") ||
+        c.includes("time") ||
+        c.includes("day") ||
+        c.includes("hour") ||
+        c.includes("month") ||
+        c.includes("week")
+    );
+
+    xKey = numericTimeCol || categoryTimeCol || categoryColumns[0];
+
+    // For Y-axis, pick the first numeric column that's NOT the X-axis
+    yKey = numericColumns.find((c) => c !== xKey) || numericColumns[0];
   } else if (chartType === "bar" || chartType === "pie") {
     // For categorical charts
     xKey = categoryColumns[0] || columns[0];
-    yKey = numericColumns[0] || columns[1];
+    // For Y-axis, pick a numeric column that's NOT the X-axis
+    yKey = numericColumns.find((c) => c !== xKey) || numericColumns[0] || columns[1];
   } else if (chartType === "radar") {
     // Radar charts use label and value
     xKey = categoryColumns[0];

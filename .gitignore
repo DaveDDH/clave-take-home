@@ -36,3 +36,6 @@ __pycache__/
 *.py[cod]
 venv/
 .venv/
+
+# Temporary scripts
+back/check-data.js

@@ -59,8 +59,11 @@ function cleanSQL(raw: string): string {
   // Remove markdown code blocks if present
   sql = sql.replace(/```sql\n?/gi, "").replace(/```\n?/g, "");
 
-  // If response doesn't start with SELECT, prepend it
-  if (!sql.toUpperCase().startsWith("SELECT")) sql = "SELECT " + sql;
+  // If response doesn't start with SELECT or WITH (CTE), prepend SELECT
+  const normalized = sql.toUpperCase();
+  if (!normalized.startsWith("SELECT") && !normalized.startsWith("WITH")) {
+    sql = "SELECT " + sql;
+  }
 
   // Find the end of the SQL query (semicolon or end of SELECT statement)
   // Remove any explanation text after the query
