@@ -72,9 +72,10 @@ class ProcessStore {
 
       // Attach logs from this process
       const processLogs = getProcessLogs(id);
-      process.logs = processLogs.map(
-        (entry) => `[${entry.level.toUpperCase()}] ${entry.message}`
-      );
+      process.logs = processLogs.map((entry) => {
+        const dataStr = entry.data !== undefined ? ` ${JSON.stringify(entry.data)}` : "";
+        return `[${entry.level.toUpperCase()}] ${entry.message}${dataStr}`;
+      });
 
       this.processes.set(id, process);
       log(`✅ Completed process: ${id}`, undefined, id);
@@ -90,9 +91,10 @@ class ProcessStore {
 
       // Attach logs from this process
       const processLogs = getProcessLogs(id);
-      process.logs = processLogs.map(
-        (entry) => `[${entry.level.toUpperCase()}] ${entry.message}`
-      );
+      process.logs = processLogs.map((entry) => {
+        const dataStr = entry.data !== undefined ? ` ${JSON.stringify(entry.data)}` : "";
+        return `[${entry.level.toUpperCase()}] ${entry.message}${dataStr}`;
+      });
 
       this.processes.set(id, process);
       logError(`❌ Failed process: ${id}`, { error }, id);
