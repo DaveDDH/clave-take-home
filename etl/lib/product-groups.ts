@@ -5,6 +5,9 @@
 
 import { readFileSync } from 'fs';
 import { ProductGroupsConfigSchema, type ProductGroupsConfig, type ProductGroup } from './schemas.js';
+import { levenshtein } from './levenshtein.js';
+
+const SIMILARITY_THRESHOLD = 2; // Max Levenshtein distance for fuzzy matching
 
 export interface CompiledProductGroup {
   suffix?: string;
@@ -90,14 +93,30 @@ export function matchProductToGroup(productName: string): {
           variationName: variation,
         };
       }
+
+      // Fuzzy suffix match for single-word suffixes
+      // This catches typos like "Wngs" → "Wings", "Piza" → "Pizza"
+      if (!group.suffix.includes(' ')) {
+        const nameWords = nameLower.split(/\s+/);
+        for (const word of nameWords) {
+          if (levenshtein(word, group.suffix) <= SIMILARITY_THRESHOLD) {
+            // Extract variation by removing the fuzzy-matched word
+            const variation = extractVariationFromFuzzyMatch(productName, word);
+            return {
+              group,
+              baseName: group.baseName,
+              variationName: variation,
+            };
+          }
+        }
+      }
     }
 
     // Check keyword match
     if (group.keywords) {
       for (const keyword of group.keywords) {
+        // Exact or substring match
         if (nameLower === keyword || nameLower.includes(keyword)) {
-          // For keyword matches, the whole name becomes the variation
-          // unless it exactly matches the base name
           const variation = nameLower === group.baseName.toLowerCase()
             ? null
             : productName.trim();
@@ -106,6 +125,24 @@ export function matchProductToGroup(productName: string): {
             baseName: group.baseName,
             variationName: variation,
           };
+        }
+
+        // Fuzzy match using Levenshtein for single-word keywords
+        // This catches typos like "expresso" → "espresso", "coffe" → "coffee"
+        if (!keyword.includes(' ')) {
+          const nameWords = nameLower.split(/\s+/);
+          for (const word of nameWords) {
+            if (levenshtein(word, keyword) <= SIMILARITY_THRESHOLD) {
+              const variation = nameLower === group.baseName.toLowerCase()
+                ? null
+                : productName.trim();
+              return {
+                group,
+                baseName: group.baseName,
+                variationName: variation,
+              };
+            }
+          }
         }
       }
     }
@@ -125,6 +162,23 @@ function extractVariationFromSuffix(productName: string, suffix: string): string
 
   // If nothing left after removing suffix, it's the base product
   if (!variation || variation.toLowerCase() === suffix.toLowerCase()) {
+    return null;
+  }
+
+  return variation;
+}
+
+/**
+ * Extract variation name by removing a fuzzy-matched word from the product name.
+ * E.g., "Buffalo Wngs" with matched word "wngs" → "Buffalo"
+ */
+function extractVariationFromFuzzyMatch(productName: string, matchedWord: string): string | null {
+  // Remove the matched word (case-insensitive)
+  const wordPattern = new RegExp(`\\s*\\b${escapeRegex(matchedWord)}\\b\\s*`, 'i');
+  const variation = productName.replace(wordPattern, ' ').trim();
+
+  // If nothing left, it's the base product
+  if (!variation) {
     return null;
   }
 

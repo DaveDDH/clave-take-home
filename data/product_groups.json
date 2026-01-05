@@ -13,7 +13,7 @@
     {
       "base_name": "Coffee",
       "suffix": "Coffee",
-      "keywords": ["espresso", "expresso", "coffe", "cold brew"]
+      "keywords": ["espresso", "cold brew"]
     },
     {
       "base_name": "Soft Drink",
@@ -22,6 +22,16 @@
     {
       "base_name": "Steak",
       "keywords": ["ribeye steak", "filet mignon", "prime rib", "steak"]
+    },
+    {
+      "base_name": "Sandwich",
+      "suffix": "Sandwich",
+      "keywords": ["turkey club"]
+    },
+    {
+      "base_name": "Pasta",
+      "suffix": "Pasta",
+      "keywords": ["alfredo", "mac & cheese", "mac and cheese", "scampi"]
     }
   ]
 }
