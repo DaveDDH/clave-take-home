@@ -17,11 +17,15 @@ function buildClassificationPrompt(dataContext?: DataContext): string {
   if (dataContext?.orderDateRange) {
     const earliest = new Date(dataContext.orderDateRange.earliest);
     const latest = new Date(dataContext.orderDateRange.latest);
+    const monthName = earliest.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
     dataAvailability = `
 
 IMPORTANT - Available Data Range:
 - Order data is available from ${earliest.toISOString().split("T")[0]} to ${latest.toISOString().split("T")[0]}
-- If the user asks for data OUTSIDE this range (e.g., "yesterday", "last week", "today" when current date is much later), classify as conversational and explain the available date range
+- When users say "first week ever", "first month ever", they mean the EARLIEST week/month in the available data (starting ${earliest.toISOString().split("T")[0]})
+- "First month" = ${monthName} (the available data month)
+- If the user asks for data OUTSIDE this range (e.g., "yesterday" when today is much later than ${latest.toISOString().split("T")[0]}), classify as conversational and explain the available date range
 - Only classify as a data query if the question can be answered with data within this range OR if it's a timeless question (e.g., "top products" without time constraint)`;
   }
 

@@ -39,8 +39,15 @@ export async function generateSQL(
   if (dataContext?.orderDateRange) {
     const earliest = new Date(dataContext.orderDateRange.earliest).toISOString().split("T")[0];
     const latest = new Date(dataContext.orderDateRange.latest).toISOString().split("T")[0];
+    const earliestDate = new Date(dataContext.orderDateRange.earliest);
+    const monthName = earliestDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
     dataAvailability = `\nIMPORTANT - Available data range: ${earliest} to ${latest}
-When the user refers to dates like "the 3rd", "yesterday", "last week", interpret them within this data range, NOT the current date.
+When interpreting time references:
+- "the 3rd", "yesterday", "last week" → interpret within this data range (${earliest} to ${latest}), NOT the current date
+- "first week ever", "first month ever" → means the earliest week/month in the data (starting ${earliest})
+- "first month" → means ${monthName}
+- The data spans from ${earliest} to ${latest}, so use dates within this range
 `;
   }
 
