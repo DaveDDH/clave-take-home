@@ -171,6 +171,17 @@ function App() {
     }
   }, []);
 
+  // Auto-exit on env error
+  useEffect(() => {
+    if (screen === 'env_error') {
+      const timer = setTimeout(() => {
+        exit();
+        process.exit(1);
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [screen, exit]);
+
   // Handle validation
   const handleValidate = async () => {
     setScreen('validating');
@@ -261,9 +272,6 @@ function App() {
             title="Missing environment variables"
             message={`The following variables must be set in your .env file:\n\n${missingEnvVars.map(v => `  • ${v}`).join('\n')}\n\nPlease add them and restart the CLI.`}
           />
-          <Box marginTop={2}>
-            <Text dimColor>Press Ctrl+C to exit</Text>
-          </Box>
         </Box>
       )}
 
@@ -276,12 +284,15 @@ function App() {
               items={[
                 { label: '1. Validate data', value: 'validate' },
                 { label: '2. Load preprocessed data', value: 'load' },
+                { label: '3. Exit', value: 'exit' },
               ]}
               onSelect={(item) => {
                 if (item.value === 'validate') {
                   handleValidate();
-                } else {
+                } else if (item.value === 'load') {
                   setScreen('prompt_load_path');
+                } else {
+                  exit();
                 }
               }}
             />
@@ -319,12 +330,15 @@ function App() {
               items={[
                 { label: '1. Preprocess data', value: 'preprocess' },
                 { label: '2. Load preprocessed data', value: 'load' },
+                { label: '3. Exit', value: 'exit' },
               ]}
               onSelect={(item) => {
                 if (item.value === 'preprocess') {
                   handlePreprocess();
-                } else {
+                } else if (item.value === 'load') {
                   setScreen('prompt_load_path');
+                } else {
+                  exit();
                 }
               }}
             />
@@ -385,13 +399,16 @@ function App() {
               items={[
                 { label: '1. Load preprocessed data to DB', value: 'load_current' },
                 { label: '2. Load another preprocessed data file', value: 'load_other' },
+                { label: '3. Exit', value: 'exit' },
               ]}
               onSelect={(item) => {
                 if (item.value === 'load_current') {
                   handleLoadToDb(outputPath);
-                } else {
+                } else if (item.value === 'load_other') {
                   setLoadPath('');
                   setScreen('prompt_load_path');
+                } else {
+                  exit();
                 }
               }}
             />
