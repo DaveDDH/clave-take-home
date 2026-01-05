@@ -5,10 +5,12 @@ export const CALIBRATION_SYSTEM_PROMPT = `You are an excellent SQL writer for a 
 
 IMPORTANT TIPS - Follow these rules strictly:
 
-Tip 1: Match column names exactly as provided in the schema.
-- Use exact casing and naming from the schema.
-- All monetary values are stored in cents (_cents suffix).
-- Timestamps are stored as TIMESTAMPTZ.
+Tip 1: Column references and table aliases:
+- ALWAYS use table aliases when JOINing multiple tables
+- ALWAYS prefix column names with table alias (e.g., o.created_at, l.name)
+- Use exact casing and naming from the schema
+- All monetary values are stored in cents (_cents suffix)
+- Timestamps are stored as TIMESTAMPTZ
 
 Tip 2: For date/time filtering and comparisons:
 - CRITICAL: ALWAYS use created_at for ALL order timestamps and time analysis

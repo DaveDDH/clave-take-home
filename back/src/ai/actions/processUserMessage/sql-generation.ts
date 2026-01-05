@@ -1,12 +1,14 @@
 import { generateTextResponse } from "#ai/models/xai/index.js";
 import { LinkedSchema, formatLinkedSchema } from "./schema-linking.js";
 import { CALIBRATION_SYSTEM_PROMPT } from "./prompt.js";
+import type { DataContext } from "./data-context.js";
 
 export async function generateSQL(
   userQuestion: string,
   linkedSchema: LinkedSchema,
   temperature: number = 0.0,
-  conversationHistory: Array<{ role: string; content: string }> = []
+  conversationHistory: Array<{ role: string; content: string }> = [],
+  dataContext?: DataContext
 ): Promise<string> {
   const schemaSection = formatLinkedSchema(linkedSchema);
 
@@ -32,6 +34,16 @@ export async function generateSQL(
       .join("\n")}\n\n`;
   }
 
+  // Include data availability context
+  let dataAvailability = "";
+  if (dataContext?.orderDateRange) {
+    const earliest = new Date(dataContext.orderDateRange.earliest).toISOString().split("T")[0];
+    const latest = new Date(dataContext.orderDateRange.latest).toISOString().split("T")[0];
+    dataAvailability = `\nIMPORTANT - Available data range: ${earliest} to ${latest}
+When the user refers to dates like "the 3rd", "yesterday", "last week", interpret them within this data range, NOT the current date.
+`;
+  }
+
   const userPrompt = `${schemaSection}
 #
 ${conversationContext}### Complete PostgreSQL query only and with no explanation,
@@ -40,7 +52,7 @@ ${conversationContext}### Complete PostgreSQL query only and with no explanation
 
 You MUST reply with ONLY a PLAIN TEXT SQL string
 Consider the conversation history to understand what the user is asking for.
-
+${dataAvailability}
 Current date and time: ${dateAndTime}
 `;
 

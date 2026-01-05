@@ -131,7 +131,7 @@ export async function processUserMessage(
     const startSQLGeneration = Date.now();
     if (useConsistency) {
       console.log("🔄 Using self-consistency voting (3 candidates)");
-      const result = await selfConsistencyVote(userQuestion, linkedSchema, 3, conversationHistory);
+      const result = await selfConsistencyVote(userQuestion, linkedSchema, 3, conversationHistory, dataContext);
       sql = result.sql;
       data = result.data;
       confidence = result.confidence;
@@ -144,7 +144,7 @@ export async function processUserMessage(
       console.log(`   Candidates: ${candidateCount}, Successful: ${successfulExecutions}`);
     } else {
       console.log("⚡ Using single query (fast mode)");
-      const result = await singleQuery(userQuestion, linkedSchema, conversationHistory);
+      const result = await singleQuery(userQuestion, linkedSchema, conversationHistory, dataContext);
       sql = result.sql;
       data = result.data;
 
@@ -200,7 +200,7 @@ export async function processUserMessage(
     const response: ProcessedMessage = {
       content,
       charts:
-        data.length > 0
+        data.length > 0 && chartConfig.type !== "none"
           ? [
               {
                 type: chartConfig.type,
