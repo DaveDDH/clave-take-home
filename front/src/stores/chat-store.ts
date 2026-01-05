@@ -1,22 +1,6 @@
 import { create } from 'zustand';
-import type { Message, ChartType } from '@/types/chat';
-
-const ALL_CHARTS: ChartType[] = ['area', 'bar', 'line', 'pie', 'radar', 'radial'];
-
-const CHART_KEYWORDS: Record<string, ChartType[]> = {
-  chartarea: ['area'],
-  chartbar: ['bar'],
-  chartline: ['line'],
-  chartpie: ['pie'],
-  chartradar: ['radar'],
-  chartradial: ['radial'],
-  chartall: ALL_CHARTS,
-};
-
-function getCharts(input: string): ChartType[] | undefined {
-  const normalized = input.trim().toLowerCase();
-  return CHART_KEYWORDS[normalized];
-}
+import type { Message } from '@/types/chat';
+import { startChatProcess, pollProcessStatus, type ApiMessage } from '@/lib/api';
 
 interface ChatState {
   messages: Message[];
@@ -42,21 +26,54 @@ export const useChatStore = create<ChatState>((set, get) => ({
       isLoading: true,
     }));
 
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    try {
+      // Convert messages to API format
+      const apiMessages: ApiMessage[] = [...get().messages, userMessage].map(
+        (msg) => ({
+          role: msg.role,
+          content: msg.content,
+        })
+      );
 
-    const charts = getCharts(content);
+      // Start the async process
+      const processId = await startChatProcess(apiMessages, {
+        useConsistency: true,
+        debug: false,
+      });
 
-    const assistantMessage: Message = {
-      id: crypto.randomUUID(),
-      role: 'assistant',
-      content: charts ? '' : 'Hello',
-      charts,
-    };
+      // Poll for results
+      const result = await pollProcessStatus(processId);
 
-    set((state) => ({
-      messages: [...state.messages, assistantMessage],
-      isLoading: false,
-    }));
+      const assistantMessage: Message = {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: result.content,
+        charts: result.charts,
+        sql: result.sql,
+      };
+
+      set((state) => ({
+        messages: [...state.messages, assistantMessage],
+        isLoading: false,
+      }));
+    } catch (error) {
+      console.error('Failed to send message:', error);
+
+      const errorMessage: Message = {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: 'Sorry, something went wrong. Please try again.',
+        error:
+          error instanceof Error
+            ? error.message
+            : 'An unknown error occurred',
+      };
+
+      set((state) => ({
+        messages: [...state.messages, errorMessage],
+        isLoading: false,
+      }));
+    }
   },
   clearMessages: () => set({ messages: [] }),
 }));

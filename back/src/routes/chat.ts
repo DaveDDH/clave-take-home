@@ -1,9 +1,15 @@
 import { Router } from "express";
-import { GenerateMessageReq, GenerateMessageRes } from "./chatIO.js";
+import {
+  GenerateMessageReq,
+  GenerateMessageRes,
+  ProcessStatusReq,
+  ProcessStatusRes,
+} from "./chatIO.js";
 import {
   ProcessOptions,
   processUserMessage,
 } from "#ai/actions/processUserMessage/index.js";
+import processStore from "#stores/processStore.js";
 
 const router = Router();
 
@@ -15,7 +21,7 @@ router.post(
 
       if (!messages || !Array.isArray(messages) || messages.length === 0) {
         return res.status(400).json({
-          content: "Please provide a messages array.",
+          error: "Please provide a messages array.",
         });
       }
 
@@ -27,28 +33,64 @@ router.post(
 
       if (!lastUserMessage) {
         return res.status(400).json({
-          content: "No user message found in the conversation.",
+          error: "No user message found in the conversation.",
         });
       }
 
+      // Create process and return ID immediately
+      const processId = processStore.createProcess();
+
+      // Start async processing in background
       const processOptions: ProcessOptions = {
         useConsistency: options?.useConsistency ?? true,
         debug: options?.debug ?? false,
       };
 
-      const result = await processUserMessage(
-        lastUserMessage.content,
-        messages,
-        processOptions
-      );
+      // Don't await - let it run in background
+      processStore.updateProcessStatus(processId, "processing");
+      processUserMessage(lastUserMessage.content, messages, processOptions)
+        .then((result) => {
+          processStore.completeProcess(processId, result);
+        })
+        .catch((error) => {
+          const errorMessage =
+            error instanceof Error
+              ? error.message
+              : "An error occurred while processing your request.";
+          processStore.failProcess(processId, errorMessage);
+        });
 
-      return res.json(result);
+      return res.json({ processId });
     } catch (error) {
       console.error("Chat endpoint error:", error);
       return res.status(500).json({
-        content: "An error occurred while processing your request.",
+        error: "An error occurred while creating the process.",
       });
     }
+  }
+);
+
+router.get(
+  "/chat/status/:processId",
+  (req: ProcessStatusReq, res: ProcessStatusRes) => {
+    const { processId } = req.params;
+
+    const process = processStore.getProcess(processId);
+
+    if (!process) {
+      return res.status(404).json({
+        error: "Process not found",
+      });
+    }
+
+    return res.json({
+      id: process.id,
+      status: process.status,
+      result: process.result,
+      error: process.error,
+      createdAt: process.createdAt,
+      updatedAt: process.updatedAt,
+    });
   }
 );
 

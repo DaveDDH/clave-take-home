@@ -4,35 +4,24 @@ import { useState, useMemo } from "react";
 import { Save } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {
-  AreaChart,
-  BarChart,
-  LineChart,
-  PieChart,
-  RadarChart,
-  RadialChart,
-} from "@/components/charts";
-import {
-  areaChartData,
-  barChartData,
-  lineChartData,
-  pieChartData,
-  radarChartData,
-  radialChartData,
-} from "@/data";
+import { BarChart, LineChart, PieChart } from "@/components/charts";
 import { SaveWidgetModal } from "./SaveWidgetModal";
-import type { ChartType } from "@/types/chat";
+import type { ChartData } from "@/types/chat";
 import type { WidgetChart } from "@/types/widget";
 
 interface ChartMessageProps {
-  charts: ChartType[];
+  charts: ChartData[];
 }
 
 export function ChartMessage({ charts }: ChartMessageProps) {
   const [saveModalOpen, setSaveModalOpen] = useState(false);
 
   const widgetCharts = useMemo<WidgetChart[]>(() => {
-    return charts.map((chartType) => getWidgetChart(chartType));
+    return charts.map((chart) => ({
+      type: chart.type,
+      data: chart.data as never,
+      config: chart.config,
+    }));
   }, [charts]);
 
   return (
@@ -49,14 +38,14 @@ export function ChartMessage({ charts }: ChartMessageProps) {
           </Button>
         </div>
 
-        <CardContent>
+        <CardContent className="pt-6">
           <div className="flex flex-wrap gap-4">
-            {charts.map((chartType) => (
-              <div key={chartType} className="w-[220px]">
+            {charts.map((chart, index) => (
+              <div key={index} className="w-[400px]">
                 <h3 className="mb-2 text-sm font-medium">
-                  {getChartTitle(chartType)}
+                  {getChartTitle(chart.type)}
                 </h3>
-                {renderChart(chartType)}
+                {renderChart(chart)}
               </div>
             ))}
           </div>
@@ -71,70 +60,34 @@ export function ChartMessage({ charts }: ChartMessageProps) {
   );
 }
 
-function getChartTitle(chartType: ChartType): string {
-  const titles: Record<ChartType, string> = {
-    area: "Area Chart",
+function getChartTitle(chartType: string): string {
+  const titles: Record<string, string> = {
     bar: "Bar Chart",
     line: "Line Chart",
     pie: "Pie Chart",
-    radar: "Radar Chart",
-    radial: "Radial Chart",
   };
-  return titles[chartType];
+  return titles[chartType] || "Chart";
 }
 
-function renderChart(chartType: ChartType): React.ReactNode {
-  switch (chartType) {
-    case "area":
-      return <AreaChart data={areaChartData} xKey="month" yKey="revenue" />;
+function renderChart(chart: ChartData): React.ReactNode {
+  switch (chart.type) {
     case "bar":
-      return <BarChart data={barChartData} xKey="location" yKey="sales" />;
-    case "line":
-      return <LineChart data={lineChartData} xKey="day" yKey="orders" />;
-    case "pie":
-      return <PieChart data={pieChartData} />;
-    case "radar":
       return (
-        <RadarChart
-          data={radarChartData}
-          labelKey="category"
-          valueKey="score"
+        <BarChart
+          data={chart.data as never}
+          xKey={chart.config?.xKey || "x"}
+          yKey={chart.config?.yKey || "y"}
         />
       );
-    case "radial":
-      return <RadialChart data={radialChartData} />;
-  }
-}
-
-function getWidgetChart(chartType: ChartType): WidgetChart {
-  switch (chartType) {
-    case "area":
-      return {
-        type: "area",
-        data: areaChartData,
-        config: { xKey: "month", yKey: "revenue" },
-      };
-    case "bar":
-      return {
-        type: "bar",
-        data: barChartData,
-        config: { xKey: "location", yKey: "sales" },
-      };
     case "line":
-      return {
-        type: "line",
-        data: lineChartData,
-        config: { xKey: "day", yKey: "orders" },
-      };
+      return (
+        <LineChart
+          data={chart.data as never}
+          xKey={chart.config?.xKey || "x"}
+          yKey={chart.config?.yKey || "y"}
+        />
+      );
     case "pie":
-      return { type: "pie", data: pieChartData };
-    case "radar":
-      return {
-        type: "radar",
-        data: radarChartData,
-        config: { labelKey: "category", valueKey: "score" },
-      };
-    case "radial":
-      return { type: "radial", data: radialChartData };
+      return <PieChart data={chart.data as never} />;
   }
 }

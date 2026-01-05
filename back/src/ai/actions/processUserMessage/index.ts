@@ -52,6 +52,40 @@ export async function processUserMessage(
   console.log("⚙️  Options:", { useConsistency, debug });
 
   try {
+    // Step 0: Classify message type and generate response
+    console.log("\n🔍 Step 0: Message Classification & Response Generation");
+    const classificationStart = Date.now();
+    const { classifyMessage } = await import("./message-classifier.js");
+    const classification = await classifyMessage(
+      userQuestion,
+      conversationHistory
+    );
+    const classificationTime = Date.now() - classificationStart;
+
+    console.log(`✅ Classification Complete (${classificationTime}ms)`);
+    console.log(`   Is Data Query: ${classification.isDataQuery}`);
+    console.log(`   Reasoning: ${classification.reasoning}`);
+    console.log(
+      `   Conversational Response: ${classification.conversationalResponse}`
+    );
+
+    // If it's not a data query, return the conversational response immediately
+    if (!classification.isDataQuery) {
+      const totalTime = Date.now() - requestStartTime;
+
+      console.log("\n✨ Conversational Response Complete (skipped C3 pipeline)!");
+      console.log(
+        `⏱️  Total Request Time: ${totalTime}ms (${(totalTime / 1000).toFixed(2)}s)`
+      );
+      console.log("========================================\n");
+
+      return {
+        content: classification.conversationalResponse,
+      };
+    }
+
+    console.log("\n🔄 Proceeding with C3 pipeline for data query");
+
     // Step 1: Schema Linking (CP - Clear Context)
     console.log("\n📊 Step 1: Schema Linking (Clear Context)");
     const startSchemaLinking = Date.now();

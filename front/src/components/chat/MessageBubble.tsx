@@ -10,7 +10,14 @@ export function MessageBubble({ message }: MessageBubbleProps) {
 
   if (message.charts?.length) {
     return (
-      <div className="flex justify-start animate-in fade-in slide-in-from-bottom-2 duration-300">
+      <div className="flex flex-col gap-2 justify-start animate-in fade-in slide-in-from-bottom-2 duration-300">
+        {message.content && (
+          <div className="max-w-[80%] rounded-2xl px-4 py-3 shadow-sm bg-muted">
+            <p className="whitespace-pre-wrap text-sm leading-relaxed">
+              {message.content}
+            </p>
+          </div>
+        )}
         <ChartMessage charts={message.charts} />
       </div>
     );
