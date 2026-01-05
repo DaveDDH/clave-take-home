@@ -3,9 +3,12 @@
   "version": "1.0.0",
   "description": "Express TypeScript backend server",
   "type": "module",
+  "imports": {
+    "#*": "./src/*"
+  },
   "scripts": {
-    "start": "tsx src/index.ts",
-    "dev": "tsx watch src/index.ts",
+    "start": "node --env-file=.env dist/index.js",
+    "dev": "tsx watch --env-file=.env src/index.ts",
     "check": "tsc --noEmit && eslint .",
     "typecheck": "npm run check",
     "lint": "npm run check",
@@ -13,12 +16,19 @@
     "build": "tsc"
   },
   "dependencies": {
-    "express": "^5.1.0"
+    "@ai-sdk/xai": "^3.0.3",
+    "ai": "^6.0.7",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "pg": "^8.16.3",
+    "zod": "^4.3.5"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
+    "@types/cors": "^2.8.19",
     "@types/express": "^5.0.2",
     "@types/node": "^20.10.0",
+    "@types/pg": "^8.16.0",
     "@typescript-eslint/eslint-plugin": "^8.51.0",
     "@typescript-eslint/parser": "^8.51.0",
     "eslint": "^9.39.2",

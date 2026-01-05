@@ -19,10 +19,22 @@ type Screen =
   | 'prompt_output_path'
   | 'saving_preprocessed'
   | 'post_preprocess_menu'
+  | 'prompt_load_path'
+  | 'prompt_clean_db'
   | 'loading_to_db'
   | 'load_error'
-  | 'load_success'
-  | 'prompt_load_path';
+  | 'load_success';
+
+interface LoadStats {
+  locations: number;
+  categories: number;
+  products: number;
+  product_variations: number;
+  product_aliases: number;
+  orders: number;
+  order_items: number;
+  payments: number;
+}
 
 interface EnvConfig {
   LOCATIONS_PATH: string;
@@ -167,6 +179,8 @@ function App() {
   const [outputPath, setOutputPath] = useState<string>('./preprocessed_data.json');
   const [loadPath, setLoadPath] = useState<string>('');
   const [loadError, setLoadError] = useState<string>('');
+  const [loadStats, setLoadStats] = useState<LoadStats | null>(null);
+  const [loadProgress, setLoadProgress] = useState<string[]>([]);
 
   // Check env vars on mount
   useEffect(() => {
@@ -241,12 +255,16 @@ function App() {
   };
 
   // Handle load to DB
-  const handleLoadToDb = async (path: string) => {
+  const handleLoadToDb = async (path: string, cleanDb: boolean) => {
+    setLoadProgress([]);
     setScreen('loading_to_db');
     try {
       const { loadToDatabase } = await import('./lib/cli-actions.js');
-      const result = await loadToDatabase(path);
+      const result = await loadToDatabase(path, cleanDb, (message) => {
+        setLoadProgress((prev) => [...prev, message]);
+      });
       if (result.success) {
+        setLoadStats(result.stats || null);
         setScreen('load_success');
       } else {
         setLoadError(result.error || 'Unknown error');
@@ -412,7 +430,8 @@ function App() {
               ]}
               onSelect={(item) => {
                 if (item.value === 'load_current') {
-                  handleLoadToDb(outputPath);
+                  setLoadPath(outputPath);
+                  setScreen('prompt_clean_db');
                 } else if (item.value === 'load_other') {
                   setLoadPath('');
                   setScreen('prompt_load_path');
@@ -433,7 +452,7 @@ function App() {
             <TextInput
               value={loadPath}
               onChange={setLoadPath}
-              onSubmit={() => handleLoadToDb(loadPath)}
+              onSubmit={() => setScreen('prompt_clean_db')}
               placeholder="./preprocessed_data.json"
             />
           </Box>
@@ -443,9 +462,43 @@ function App() {
         </Box>
       )}
 
+      {/* Prompt for clean DB or insert */}
+      {screen === 'prompt_clean_db' && (
+        <Box flexDirection="column">
+          <Text>How do you want to load the data?</Text>
+          <Box marginTop={1}>
+            <SelectInput
+              items={[
+                { label: '1. Replace existing data (clean database first)', value: 'clean' },
+                { label: '2. Insert/update data (keep existing records)', value: 'insert' },
+                { label: '3. Cancel', value: 'cancel' },
+              ]}
+              onSelect={(item) => {
+                if (item.value === 'clean') {
+                  handleLoadToDb(loadPath, true);
+                } else if (item.value === 'insert') {
+                  handleLoadToDb(loadPath, false);
+                } else {
+                  setScreen('initial_menu');
+                }
+              }}
+            />
+          </Box>
+        </Box>
+      )}
+
       {/* Loading to DB */}
       {screen === 'loading_to_db' && (
-        <Spinner message="Loading data to database..." />
+        <Box flexDirection="column">
+          <Spinner message="Loading data to database..." />
+          {loadProgress.length > 0 && (
+            <Box flexDirection="column" marginTop={1} marginLeft={2}>
+              {loadProgress.map((msg, i) => (
+                <Text key={i} dimColor>• {msg}</Text>
+              ))}
+            </Box>
+          )}
+        </Box>
       )}
 
       {/* Load error */}
@@ -462,6 +515,19 @@ function App() {
       {screen === 'load_success' && (
         <Box flexDirection="column">
           <SuccessBox message="Data loaded to database successfully!" />
+          {loadStats && (
+            <Box flexDirection="column" marginTop={1} marginLeft={2}>
+              <Text dimColor>Records loaded:</Text>
+              <Text>  Locations:          {loadStats.locations}</Text>
+              <Text>  Categories:         {loadStats.categories}</Text>
+              <Text>  Products:           {loadStats.products}</Text>
+              <Text>  Product Variations: {loadStats.product_variations}</Text>
+              <Text>  Product Aliases:    {loadStats.product_aliases}</Text>
+              <Text>  Orders:             {loadStats.orders}</Text>
+              <Text>  Order Items:        {loadStats.order_items}</Text>
+              <Text>  Payments:           {loadStats.payments}</Text>
+            </Box>
+          )}
           <Box marginTop={2}>
             <Text dimColor>Press Ctrl+C to exit</Text>
           </Box>
