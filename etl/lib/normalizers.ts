@@ -1,0 +1,177 @@
+import { levenshtein } from './levenshtein.js';
+import type { DbProduct } from './types.js';
+
+/**
+ * Strip emojis and normalize category names
+ * "🍔 Burgers" → "Burgers"
+ * "🍟 Sides & Appetizers" → "Sides & Appetizers"
+ */
+export function normalizeCategory(raw: string): string {
+  return raw
+    // Remove emojis (covers most emoji ranges)
+    .replace(/[\u{1F300}-\u{1F9FF}]/gu, '')
+    .replace(/[\u{2600}-\u{26FF}]/gu, '')
+    .replace(/[\u{2700}-\u{27BF}]/gu, '')
+    .trim()
+    .replace(/\s+/g, ' ')
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+}
+
+/**
+ * Normalize product name for comparison
+ * Strips extra whitespace, lowercases
+ */
+export function normalizeProductName(raw: string): string {
+  return raw
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, ' ');
+}
+
+/**
+ * Find the best matching canonical product for a raw name
+ * Returns null if no match within threshold
+ */
+export function findCanonicalProduct(
+  rawName: string,
+  products: Array<DbProduct & { id: string }>,
+  threshold: number = 3
+): (DbProduct & { id: string }) | null {
+  const normalized = normalizeProductName(rawName);
+
+  // Exact match first
+  const exact = products.find(p =>
+    normalizeProductName(p.name) === normalized
+  );
+  if (exact) return exact;
+
+  // Fuzzy match with Levenshtein
+  let bestMatch: (DbProduct & { id: string }) | null = null;
+  let bestDistance = Infinity;
+
+  for (const product of products) {
+    const productNormalized = normalizeProductName(product.name);
+    const dist = levenshtein(normalized, productNormalized, {
+      maxDistance: threshold
+    });
+
+    if (dist < bestDistance) {
+      bestDistance = dist;
+      bestMatch = product;
+    }
+  }
+
+  // Also try ratio-based threshold for longer names
+  // For names > 10 chars, allow distance up to 20% of length
+  if (bestMatch && bestDistance <= threshold) {
+    return bestMatch;
+  }
+
+  const maxRatioDist = Math.floor(normalized.length * 0.25);
+  if (bestMatch && bestDistance <= maxRatioDist && bestDistance <= 5) {
+    return bestMatch;
+  }
+
+  return null;
+}
+
+/**
+ * Map Toast dining option behavior to normalized order type
+ */
+export function mapToastOrderType(behavior: string): string {
+  switch (behavior) {
+    case 'DINE_IN':
+      return 'dine_in';
+    case 'TAKE_OUT':
+      return 'takeout';
+    case 'DELIVERY':
+      return 'delivery';
+    default:
+      return behavior.toLowerCase();
+  }
+}
+
+/**
+ * Map Toast source to channel
+ */
+export function mapToastChannel(source: string): string {
+  switch (source) {
+    case 'POS':
+      return 'pos';
+    case 'ONLINE':
+      return 'online';
+    case 'THIRD_PARTY':
+      return 'third_party';
+    default:
+      return source.toLowerCase();
+  }
+}
+
+/**
+ * Map DoorDash fulfillment method to order type
+ */
+export function mapDoorDashOrderType(method: string): string {
+  switch (method) {
+    case 'MERCHANT_DELIVERY':
+      return 'delivery';
+    case 'PICKUP':
+      return 'pickup';
+    default:
+      return method.toLowerCase();
+  }
+}
+
+/**
+ * Map Square fulfillment type to order type
+ */
+export function mapSquareOrderType(type: string): string {
+  switch (type) {
+    case 'DINE_IN':
+      return 'dine_in';
+    case 'PICKUP':
+      return 'pickup';
+    case 'DELIVERY':
+      return 'delivery';
+    default:
+      return type.toLowerCase();
+  }
+}
+
+/**
+ * Map Square source to channel
+ */
+export function mapSquareChannel(sourceName: string): string {
+  if (sourceName.toLowerCase().includes('online')) {
+    return 'online';
+  }
+  return 'pos';
+}
+
+/**
+ * Normalize payment type
+ */
+export function normalizePaymentType(type: string): string {
+  const upper = type.toUpperCase();
+  if (upper === 'CREDIT' || upper === 'CARD') return 'credit';
+  if (upper === 'CASH') return 'cash';
+  if (upper === 'WALLET') return 'wallet';
+  if (upper === 'OTHER') return 'other';
+  return type.toLowerCase();
+}
+
+/**
+ * Normalize card brand
+ */
+export function normalizeCardBrand(brand?: string | null): string | undefined {
+  if (!brand) return undefined;
+  const upper = brand.toUpperCase();
+  if (upper === 'VISA') return 'visa';
+  if (upper === 'MASTERCARD') return 'mastercard';
+  if (upper === 'AMEX' || upper === 'AMERICAN_EXPRESS') return 'amex';
+  if (upper === 'DISCOVER') return 'discover';
+  if (upper === 'APPLE_PAY') return 'apple_pay';
+  if (upper === 'GOOGLE_PAY') return 'google_pay';
+  return brand.toLowerCase();
+}
