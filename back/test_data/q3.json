@@ -1,0 +1,111 @@
+{
+  "query": "Graph hourly sales for Friday vs Saturday at all stores",
+  "result": {
+    "charts": [
+      {
+        "type": "line",
+        "data": [
+          {
+            "hour": 1,
+            "friday_sales": 32.05,
+            "saturday_sales": 0
+          },
+          {
+            "hour": 2,
+            "friday_sales": 0,
+            "saturday_sales": 0
+          },
+          {
+            "hour": 3,
+            "friday_sales": 0,
+            "saturday_sales": 33.12
+          },
+          {
+            "hour": 4,
+            "friday_sales": 0,
+            "saturday_sales": 50.02
+          },
+          {
+            "hour": 5,
+            "friday_sales": 60.94,
+            "saturday_sales": 30.12
+          },
+          {
+            "hour": 6,
+            "friday_sales": 34.54,
+            "saturday_sales": 0
+          },
+          {
+            "hour": 7,
+            "friday_sales": 32.04,
+            "saturday_sales": 21.79
+          },
+          {
+            "hour": 8,
+            "friday_sales": 56.83,
+            "saturday_sales": 36.35
+          },
+          {
+            "hour": 9,
+            "friday_sales": 111.86,
+            "saturday_sales": 0
+          },
+          {
+            "hour": 10,
+            "friday_sales": 0,
+            "saturday_sales": 0
+          },
+          {
+            "hour": 11,
+            "friday_sales": 37.36,
+            "saturday_sales": 0
+          },
+          {
+            "hour": 12,
+            "friday_sales": 34.2,
+            "saturday_sales": 0
+          },
+          {
+            "hour": 13,
+            "friday_sales": 45.94,
+            "saturday_sales": 159.19
+          },
+          {
+            "hour": 14,
+            "friday_sales": 89.05,
+            "saturday_sales": 72.01
+          },
+          {
+            "hour": 15,
+            "friday_sales": 16.12,
+            "saturday_sales": 0
+          },
+          {
+            "hour": 16,
+            "friday_sales": 0,
+            "saturday_sales": 0
+          },
+          {
+            "hour": 17,
+            "friday_sales": 0,
+            "saturday_sales": 0
+          },
+          {
+            "hour": 18,
+            "friday_sales": 0,
+            "saturday_sales": 0
+          },
+          {
+            "hour": 19,
+            "friday_sales": 0,
+            "saturday_sales": 0
+          }
+        ],
+        "config": {
+          "xKey": "hour",
+          "yKey": "friday_sales"
+        }
+      }
+    ]
+  }
+}

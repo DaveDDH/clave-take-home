@@ -1,0 +1,20 @@
+{
+  "query": "Compare delivery vs dine-in revenue the first month ever",
+  "result": {
+    "charts": [
+      {
+        "type": "bar",
+        "data": [
+          {
+            "delivery_revenue": 1220.23,
+            "dine_in_revenue": 1479.84
+          }
+        ],
+        "config": {
+          "xKey": "delivery_revenue",
+          "yKey": "dine_in_revenue"
+        }
+      }
+    ]
+  }
+}
