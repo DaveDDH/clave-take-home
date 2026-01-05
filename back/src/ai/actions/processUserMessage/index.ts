@@ -2,8 +2,8 @@ import { generateTextResponse } from "#ai/models/xai/index.js";
 import { linkSchema } from "./schema-linking.js";
 import { selfConsistencyVote, singleQuery } from "./self-consistency.js";
 import {
-  inferChartType,
   formatDataForChart,
+  determineChartAxes,
   ChartConfig,
   ChartType,
 } from "./chart-inference.js";
@@ -38,7 +38,8 @@ export interface ConversationMessage {
 export async function processUserMessage(
   userQuestion: string,
   conversationHistory: ConversationMessage[] = [],
-  options: ProcessOptions = {}
+  options: ProcessOptions = {},
+  processId?: string
 ): Promise<ProcessedMessage> {
   const { useConsistency = true, debug = false } = options;
 
@@ -50,24 +51,56 @@ export async function processUserMessage(
   console.log("📝 User Question:", userQuestion);
   console.log("💬 Conversation History Length:", conversationHistory.length);
   console.log("⚙️  Options:", { useConsistency, debug });
+  if (processId) {
+    console.log("🆔 Process ID:", processId);
+  }
 
   try {
-    // Step 0: Classify message type and generate response
-    console.log("\n🔍 Step 0: Message Classification & Response Generation");
-    const classificationStart = Date.now();
-    const { classifyMessage } = await import("./message-classifier.js");
-    const classification = await classifyMessage(
-      userQuestion,
-      conversationHistory
-    );
-    const classificationTime = Date.now() - classificationStart;
+    // Step 0: Run classification and schema linking IN PARALLEL
+    console.log("\n🔍 Step 0: Parallel Classification & Schema Linking");
+    const parallelStart = Date.now();
 
-    console.log(`✅ Classification Complete (${classificationTime}ms)`);
+    const { getDataContext } = await import("./data-context.js");
+    const { classifyMessage } = await import("./message-classifier.js");
+
+    // Get data context first (needed for both classification and schema linking)
+    const dataContext = await getDataContext();
+    if (dataContext.orderDateRange) {
+      const earliest = new Date(dataContext.orderDateRange.earliest)
+        .toISOString()
+        .split("T")[0];
+      const latest = new Date(dataContext.orderDateRange.latest)
+        .toISOString()
+        .split("T")[0];
+      console.log(`   📅 Data available from ${earliest} to ${latest}`);
+    }
+
+    // Run classification and schema linking in parallel
+    const [classification, linkedSchema] = await Promise.all([
+      classifyMessage(userQuestion, conversationHistory, dataContext),
+      linkSchema(userQuestion),
+    ]);
+
+    const parallelTime = Date.now() - parallelStart;
+    console.log(`✅ Parallel tasks complete (${parallelTime}ms)`);
     console.log(`   Is Data Query: ${classification.isDataQuery}`);
+    console.log(`   Chart Type: ${classification.chartType}`);
     console.log(`   Reasoning: ${classification.reasoning}`);
     console.log(
       `   Conversational Response: ${classification.conversationalResponse}`
     );
+    console.log(
+      `   Linked Schema: ${linkedSchema.tables.map((t) => t.name).join(", ")}`
+    );
+
+    // Set partial response immediately for user feedback
+    if (processId) {
+      const processStore = (await import("#stores/processStore.js")).default;
+      processStore.setPartialResponse(
+        processId,
+        classification.conversationalResponse
+      );
+    }
 
     // If it's not a data query, return the conversational response immediately
     if (!classification.isDataQuery) {
@@ -85,20 +118,7 @@ export async function processUserMessage(
     }
 
     console.log("\n🔄 Proceeding with C3 pipeline for data query");
-
-    // Step 1: Schema Linking (CP - Clear Context)
-    console.log("\n📊 Step 1: Schema Linking (Clear Context)");
-    const startSchemaLinking = Date.now();
-    const linkedSchema = await linkSchema(userQuestion);
-    const schemaLinkingTime = Date.now() - startSchemaLinking;
-
-    console.log(`✅ Schema Linking Complete (${schemaLinkingTime}ms)`);
-    console.log("   Tables:", linkedSchema.tables.map(t => t.name).join(", "));
-    console.log("   Columns by table:");
-    linkedSchema.tables.forEach(t => {
-      console.log(`     - ${t.name}: ${t.columns.join(", ")}`);
-    });
-    console.log("   Foreign Keys:", linkedSchema.foreignKeys.join(", ") || "none");
+    console.log("   (Schema linking already completed in parallel above)");
 
     // Step 2 & 3: SQL Generation + Consistency (CP + CH + CO)
     console.log("\n🔧 Step 2-3: SQL Generation + Self-Consistency");
@@ -139,10 +159,10 @@ export async function processUserMessage(
       console.log("   Sample data:", JSON.stringify(data, null, 2));
     }
 
-    // Step 4: Chart Type Inference
-    console.log("\n📈 Step 4: Chart Type Inference");
-    const chartConfig = inferChartType(data, userQuestion);
-    console.log("✅ Chart Type Selected:", chartConfig.type);
+    // Step 4: Determine chart axes from data
+    console.log("\n📈 Step 4: Determining Chart Configuration");
+    const chartConfig = determineChartAxes(data, classification.chartType);
+    console.log("✅ Chart Type (from classifier):", chartConfig.type);
     if (chartConfig.xKey && chartConfig.yKey) {
       console.log(`   X-axis: ${chartConfig.xKey}, Y-axis: ${chartConfig.yKey}`);
     }
@@ -164,8 +184,19 @@ export async function processUserMessage(
     console.log("\n🎨 Step 6: Formatting Data for Chart");
     const formattedData = formatDataForChart(data, chartConfig);
     console.log(`✅ Data Formatted: ${formattedData.length} rows`);
+    if (formattedData.length > 0 && formattedData.length <= 3) {
+      console.log("   Formatted sample:", JSON.stringify(formattedData, null, 2));
+    }
 
     // Build response
+    console.log("\n📦 Building Response");
+    console.log(
+      `   Chart config: xKey="${chartConfig.xKey}", yKey="${chartConfig.yKey}"`
+    );
+    const cleanXKey = chartConfig.xKey?.replace("_cents", "");
+    const cleanYKey = chartConfig.yKey?.replace("_cents", "");
+    console.log(`   Clean config: xKey="${cleanXKey}", yKey="${cleanYKey}"`);
+
     const response: ProcessedMessage = {
       content,
       charts:
@@ -177,8 +208,8 @@ export async function processUserMessage(
                 config:
                   chartConfig.xKey && chartConfig.yKey
                     ? {
-                        xKey: chartConfig.xKey.replace("_cents", ""),
-                        yKey: chartConfig.yKey.replace("_cents", ""),
+                        xKey: cleanXKey!,
+                        yKey: cleanYKey!,
                       }
                     : undefined,
               },

@@ -4,7 +4,14 @@ import { useState, useMemo } from "react";
 import { Save } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BarChart, LineChart, PieChart } from "@/components/charts";
+import {
+  AreaChart,
+  BarChart,
+  LineChart,
+  PieChart,
+  RadarChart,
+  RadialChart,
+} from "@/components/charts";
 import { SaveWidgetModal } from "./SaveWidgetModal";
 import type { ChartData } from "@/types/chat";
 import type { WidgetChart } from "@/types/widget";
@@ -62,15 +69,26 @@ export function ChartMessage({ charts }: ChartMessageProps) {
 
 function getChartTitle(chartType: string): string {
   const titles: Record<string, string> = {
+    area: "Area Chart",
     bar: "Bar Chart",
     line: "Line Chart",
     pie: "Pie Chart",
+    radar: "Radar Chart",
+    radial: "Radial Chart",
   };
   return titles[chartType] || "Chart";
 }
 
 function renderChart(chart: ChartData): React.ReactNode {
   switch (chart.type) {
+    case "area":
+      return (
+        <AreaChart
+          data={chart.data as never}
+          xKey={chart.config?.xKey || "x"}
+          yKey={chart.config?.yKey || "y"}
+        />
+      );
     case "bar":
       return (
         <BarChart
@@ -89,5 +107,15 @@ function renderChart(chart: ChartData): React.ReactNode {
       );
     case "pie":
       return <PieChart data={chart.data as never} />;
+    case "radar":
+      return (
+        <RadarChart
+          data={chart.data as never}
+          labelKey={chart.config?.xKey || "label"}
+          valueKey={chart.config?.yKey || "value"}
+        />
+      );
+    case "radial":
+      return <RadialChart data={chart.data as never} />;
   }
 }

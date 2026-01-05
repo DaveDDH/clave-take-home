@@ -17,7 +17,7 @@ export interface ChatResponse {
 export type ProcessStatus = 'pending' | 'processing' | 'completed' | 'failed';
 
 export interface ChartData {
-  type: 'bar' | 'line' | 'pie';
+  type: 'bar' | 'line' | 'pie' | 'area' | 'radar' | 'radial';
   data: Record<string, unknown>[];
   config?: {
     xKey: string;
@@ -41,6 +41,7 @@ export interface ProcessStatusResponse {
   id: string;
   status: ProcessStatus;
   result?: ProcessedMessage;
+  partialResponse?: string;
   error?: string;
   createdAt: string;
   updatedAt: string;

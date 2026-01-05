@@ -27,6 +27,7 @@ export interface ProcessStatusResponse {
   id: string;
   status: ProcessStatus;
   result?: ProcessedMessage;
+  partialResponse?: string;
   error?: string;
   createdAt: Date;
   updatedAt: Date;

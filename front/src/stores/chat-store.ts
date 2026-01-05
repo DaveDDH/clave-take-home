@@ -1,6 +1,10 @@
 import { create } from 'zustand';
 import type { Message } from '@/types/chat';
-import { startChatProcess, pollProcessStatus, type ApiMessage } from '@/lib/api';
+import {
+  startChatProcess,
+  getProcessStatus,
+  type ApiMessage,
+} from '@/lib/api';
 
 interface ChatState {
   messages: Message[];
@@ -41,21 +45,68 @@ export const useChatStore = create<ChatState>((set, get) => ({
         debug: false,
       });
 
-      // Poll for results
-      const result = await pollProcessStatus(processId);
+      // Create assistant message ID for updates
+      const assistantMessageId = crypto.randomUUID();
+      let hasPartialResponse = false;
 
-      const assistantMessage: Message = {
-        id: crypto.randomUUID(),
-        role: 'assistant',
-        content: result.content,
-        charts: result.charts,
-        sql: result.sql,
-      };
+      // Poll for results with partial response support
+      let attempts = 0;
+      const maxAttempts = 120;
+      const intervalMs = 1000;
 
-      set((state) => ({
-        messages: [...state.messages, assistantMessage],
-        isLoading: false,
-      }));
+      while (attempts < maxAttempts) {
+        const status = await getProcessStatus(processId);
+
+        // Show partial response as soon as available
+        if (
+          status.partialResponse &&
+          !hasPartialResponse &&
+          status.status === 'processing'
+        ) {
+          hasPartialResponse = true;
+          const partialMessage: Message = {
+            id: assistantMessageId,
+            role: 'assistant',
+            content: status.partialResponse,
+          };
+
+          set((state) => ({
+            messages: [...state.messages, partialMessage],
+          }));
+        }
+
+        // Final result ready
+        if (status.status === 'completed' && status.result) {
+          const finalMessage: Message = {
+            id: assistantMessageId,
+            role: 'assistant',
+            content: status.result.content,
+            charts: status.result.charts,
+            sql: status.result.sql,
+          };
+
+          // Update or add the message
+          set((state) => ({
+            messages: hasPartialResponse
+              ? state.messages.map((msg) =>
+                  msg.id === assistantMessageId ? finalMessage : msg
+                )
+              : [...state.messages, finalMessage],
+            isLoading: false,
+          }));
+          return;
+        }
+
+        // Process failed
+        if (status.status === 'failed') {
+          throw new Error(status.error || 'Process failed');
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, intervalMs));
+        attempts++;
+      }
+
+      throw new Error('Process polling timeout');
     } catch (error) {
       console.error('Failed to send message:', error);
 

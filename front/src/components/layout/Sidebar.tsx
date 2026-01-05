@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { MessageSquare, LayoutDashboard } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -16,7 +17,14 @@ export function Sidebar() {
   return (
     <aside className="flex h-screen w-56 flex-col border-r border-border bg-card">
       <div className="flex h-14 items-center border-b border-border px-4">
-        <span className="text-lg font-semibold">Clave</span>
+        <Image
+          src="/clave-logo.webp"
+          alt="Clave"
+          width={120}
+          height={40}
+          priority
+          style={{ width: 'auto', height: 'auto' }}
+        />
       </div>
 
       <nav className="flex-1 p-2">

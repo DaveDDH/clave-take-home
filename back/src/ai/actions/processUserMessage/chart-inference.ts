@@ -1,4 +1,4 @@
-export type ChartType = "bar" | "line" | "area" | "pie" | "radar" | "radial";
+export type ChartType = "bar" | "line" | "area" | "pie" | "radar" | "radial" | "none";
 
 export interface ChartConfig {
   type: ChartType;
@@ -6,16 +6,16 @@ export interface ChartConfig {
   yKey?: string;
 }
 
-export function inferChartType(
+// Determine chart axes from data structure
+export function determineChartAxes(
   data: Record<string, unknown>[],
-  userQuestion: string
+  chartType: ChartType
 ): ChartConfig {
-  if (data.length === 0) {
-    return { type: "bar" };
+  if (data.length === 0 || chartType === "none") {
+    return { type: chartType };
   }
 
   const columns = Object.keys(data[0]);
-  const questionLower = userQuestion.toLowerCase();
 
   // Find numeric and non-numeric columns
   const numericColumns = columns.filter((col) => {
@@ -25,22 +25,17 @@ export function inferChartType(
       (typeof value === "string" && !isNaN(Number(value)))
     );
   });
-  const categoryColumns = columns.filter((col) => !numericColumns.includes(col));
+  const categoryColumns = columns.filter(
+    (col) => !numericColumns.includes(col)
+  );
 
-  // Time-based questions -> line chart
-  if (
-    questionLower.includes("over time") ||
-    questionLower.includes("trend") ||
-    questionLower.includes("daily") ||
-    questionLower.includes("weekly") ||
-    questionLower.includes("monthly") ||
-    questionLower.includes("hourly") ||
-    questionLower.includes("by day") ||
-    questionLower.includes("by week") ||
-    questionLower.includes("by month") ||
-    questionLower.includes("by hour")
-  ) {
-    const timeCol =
+  // Determine keys based on chart type
+  let xKey: string | undefined;
+  let yKey: string | undefined;
+
+  if (chartType === "line" || chartType === "area") {
+    // For time-series charts, prefer time/date columns
+    xKey =
       categoryColumns.find(
         (c) =>
           c.includes("date") ||
@@ -50,54 +45,25 @@ export function inferChartType(
           c.includes("month") ||
           c.includes("week")
       ) || categoryColumns[0];
-    return {
-      type: "line",
-      xKey: timeCol,
-      yKey: numericColumns[0],
-    };
+    yKey = numericColumns[0];
+  } else if (chartType === "bar" || chartType === "pie") {
+    // For categorical charts
+    xKey = categoryColumns[0] || columns[0];
+    yKey = numericColumns[0] || columns[1];
+  } else if (chartType === "radar") {
+    // Radar charts use label and value
+    xKey = categoryColumns[0];
+    yKey = numericColumns[0];
+  } else if (chartType === "radial") {
+    // Radial charts typically show single metrics
+    xKey = categoryColumns[0];
+    yKey = numericColumns[0];
   }
 
-  // Distribution/breakdown questions -> pie chart
-  if (
-    questionLower.includes("breakdown") ||
-    questionLower.includes("distribution") ||
-    questionLower.includes("proportion") ||
-    questionLower.includes("percentage") ||
-    questionLower.includes("share")
-  ) {
-    return {
-      type: "pie",
-      xKey: categoryColumns[0],
-      yKey: numericColumns[0],
-    };
-  }
-
-  // Comparison questions -> bar chart (default)
-  if (
-    questionLower.includes("compare") ||
-    questionLower.includes("comparison") ||
-    questionLower.includes("top") ||
-    questionLower.includes("best") ||
-    questionLower.includes("worst") ||
-    questionLower.includes("most") ||
-    questionLower.includes("least") ||
-    questionLower.includes("by location") ||
-    questionLower.includes("by category") ||
-    questionLower.includes("by product") ||
-    questionLower.includes("by source")
-  ) {
-    return {
-      type: "bar",
-      xKey: categoryColumns[0],
-      yKey: numericColumns[0],
-    };
-  }
-
-  // Default to bar chart
   return {
-    type: "bar",
-    xKey: categoryColumns[0] || columns[0],
-    yKey: numericColumns[0] || columns[1],
+    type: chartType,
+    xKey,
+    yKey,
   };
 }
 
@@ -110,9 +76,15 @@ export function formatDataForChart(
   return data.map((row) => {
     const formatted: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(row)) {
-      if (key.endsWith("_cents") && typeof value === "number") {
+      if (key.endsWith("_cents")) {
+        // Handle both string and number cents values
+        const numValue =
+          typeof value === "number" ? value : parseFloat(String(value));
         const dollarKey = key.replace("_cents", "");
-        formatted[dollarKey] = value / 100;
+        formatted[dollarKey] = isNaN(numValue) ? value : numValue / 100;
+      } else if (typeof value === "string" && !isNaN(Number(value))) {
+        // Convert numeric strings to numbers
+        formatted[key] = parseFloat(value);
       } else {
         formatted[key] = value;
       }

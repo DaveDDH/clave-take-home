@@ -7,6 +7,7 @@ export interface Process {
   id: string;
   status: ProcessStatus;
   result?: ProcessedMessage;
+  partialResponse?: string;
   error?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -47,6 +48,16 @@ class ProcessStore {
       process.updatedAt = new Date();
       this.processes.set(id, process);
       console.log(`🔄 Updated process ${id} status: ${status}`);
+    }
+  }
+
+  public setPartialResponse(id: string, partialResponse: string): void {
+    const process = this.processes.get(id);
+    if (process) {
+      process.partialResponse = partialResponse;
+      process.updatedAt = new Date();
+      this.processes.set(id, process);
+      console.log(`💬 Set partial response for process: ${id}`);
     }
   }
 

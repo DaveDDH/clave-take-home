@@ -48,7 +48,12 @@ router.post(
 
       // Don't await - let it run in background
       processStore.updateProcessStatus(processId, "processing");
-      processUserMessage(lastUserMessage.content, messages, processOptions)
+      processUserMessage(
+        lastUserMessage.content,
+        messages,
+        processOptions,
+        processId
+      )
         .then((result) => {
           processStore.completeProcess(processId, result);
         })
@@ -87,6 +92,7 @@ router.get(
       id: process.id,
       status: process.status,
       result: process.result,
+      partialResponse: process.partialResponse,
       error: process.error,
       createdAt: process.createdAt,
       updatedAt: process.updatedAt,

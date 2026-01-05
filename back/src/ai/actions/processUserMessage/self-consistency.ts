@@ -35,6 +35,7 @@ export async function selfConsistencyVote(
           return sql;
         } else {
           console.log(`      ✗ Candidate ${i + 1} rejected (not read-only)`);
+          console.log(`         SQL: ${sql}`);
           return null;
         }
       } catch (error) {
@@ -136,6 +137,8 @@ export async function singleQuery(
   const sql = await generateSQL(userQuestion, linkedSchema, 0.0);
 
   if (!isReadOnlyQuery(sql)) {
+    console.error("❌ Generated SQL is not a read-only query:");
+    console.error(`   SQL: ${sql}`);
     throw new Error("Generated SQL is not a read-only query");
   }
 
