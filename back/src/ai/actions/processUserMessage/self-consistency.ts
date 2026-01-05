@@ -27,23 +27,21 @@ export async function selfConsistencyVote(
         linkedSchema,
         TEMPERATURES[i]
       );
-      if (isReadOnlyQuery(sql)) {
-        candidates.push(sql);
-      }
+      if (isReadOnlyQuery(sql)) candidates.push(sql);
     } catch (error) {
       console.error(`Failed to generate SQL candidate ${i}:`, error);
     }
   }
 
-  if (candidates.length === 0) {
+  if (candidates.length === 0)
     throw new Error("Failed to generate any valid SQL candidates");
-  }
 
   // Execute each candidate and collect results
   const resultGroups = new Map<
     string,
     { sql: string; result: Record<string, unknown>[] }[]
   >();
+
   let successfulExecutions = 0;
 
   for (const sql of candidates) {
@@ -54,18 +52,15 @@ export async function selfConsistencyVote(
       // Use stringified result as the grouping key
       const resultKey = JSON.stringify(result);
 
-      if (!resultGroups.has(resultKey)) {
-        resultGroups.set(resultKey, []);
-      }
+      if (!resultGroups.has(resultKey)) resultGroups.set(resultKey, []);
       resultGroups.get(resultKey)!.push({ sql, result });
     } catch (error) {
       console.warn(`SQL execution failed: ${sql}`, error);
     }
   }
 
-  if (resultGroups.size === 0) {
+  if (resultGroups.size === 0)
     throw new Error("All SQL candidates failed execution");
-  }
 
   // Find the largest group (most common result)
   let bestGroup: { sql: string; result: Record<string, unknown>[] }[] = [];

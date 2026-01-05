@@ -1,26 +1,15 @@
-import { Router, Request, Response } from "express";
+import { Router } from "express";
+import { GenerateMessageReq, GenerateMessageRes } from "./chatIO.js";
 import {
-  processUserMessage,
   ProcessOptions,
-  ProcessedMessage,
+  processUserMessage,
 } from "#ai/actions/processUserMessage/index.js";
 
 const router = Router();
 
-interface ChatRequest {
-  message: string;
-  options?: {
-    useConsistency?: boolean;
-    debug?: boolean;
-  };
-}
-
 router.post(
   "/chat",
-  async (
-    req: Request<object, ProcessedMessage, ChatRequest>,
-    res: Response<ProcessedMessage>
-  ) => {
+  async (req: GenerateMessageReq, res: GenerateMessageRes) => {
     try {
       const { message, options } = req.body;
 
