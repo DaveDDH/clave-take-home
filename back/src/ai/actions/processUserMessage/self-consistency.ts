@@ -15,7 +15,8 @@ const TEMPERATURES = [0.0, 0.3, 0.5]; // 3 candidates: deterministic, medium, cr
 export async function selfConsistencyVote(
   userQuestion: string,
   linkedSchema: LinkedSchema,
-  candidateCount: number = 3
+  candidateCount: number = 3,
+  conversationHistory: Array<{ role: string; content: string }> = []
 ): Promise<ConsistencyResult> {
   const votingStartTime = Date.now();
   const candidates: string[] = [];
@@ -29,7 +30,7 @@ export async function selfConsistencyVote(
     async (temperature, i) => {
       try {
         console.log(`      Candidate ${i + 1}: temperature=${temperature}`);
-        const sql = await generateSQL(userQuestion, linkedSchema, temperature);
+        const sql = await generateSQL(userQuestion, linkedSchema, temperature, conversationHistory);
         if (isReadOnlyQuery(sql)) {
           console.log(`      ✓ Candidate ${i + 1} valid`);
           return sql;
@@ -132,9 +133,10 @@ export async function selfConsistencyVote(
 // Simplified version for faster response (single query)
 export async function singleQuery(
   userQuestion: string,
-  linkedSchema: LinkedSchema
+  linkedSchema: LinkedSchema,
+  conversationHistory: Array<{ role: string; content: string }> = []
 ): Promise<{ sql: string; data: Record<string, unknown>[] }> {
-  const sql = await generateSQL(userQuestion, linkedSchema, 0.0);
+  const sql = await generateSQL(userQuestion, linkedSchema, 0.0, conversationHistory);
 
   if (!isReadOnlyQuery(sql)) {
     console.error("❌ Generated SQL is not a read-only query:");

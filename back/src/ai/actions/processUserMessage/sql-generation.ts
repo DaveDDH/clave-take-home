@@ -5,7 +5,8 @@ import { CALIBRATION_SYSTEM_PROMPT } from "./prompt.js";
 export async function generateSQL(
   userQuestion: string,
   linkedSchema: LinkedSchema,
-  temperature: number = 0.0
+  temperature: number = 0.0,
+  conversationHistory: Array<{ role: string; content: string }> = []
 ): Promise<string> {
   const schemaSection = formatLinkedSchema(linkedSchema);
 
@@ -22,13 +23,23 @@ export async function generateSQL(
     })()
   );
 
+  // Include conversation context if there's history
+  let conversationContext = "";
+  if (conversationHistory.length > 1) {
+    const previousMessages = conversationHistory.slice(0, -1);
+    conversationContext = `Previous conversation:\n${previousMessages
+      .map((msg) => `${msg.role === "user" ? "User" : "Assistant"}: ${msg.content}`)
+      .join("\n")}\n\n`;
+  }
+
   const userPrompt = `${schemaSection}
 #
-### Complete PostgreSQL query only and with no explanation,
+${conversationContext}### Complete PostgreSQL query only and with no explanation,
 ### and do not select extra columns that are not explicitly requested in the query.
-### ${userQuestion}
+### Current user question: ${userQuestion}
 
 You MUST reply with ONLY a PLAIN TEXT SQL string
+Consider the conversation history to understand what the user is asking for.
 
 Current date and time: ${dateAndTime}
 `;

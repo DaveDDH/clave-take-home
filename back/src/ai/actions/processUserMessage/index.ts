@@ -78,7 +78,7 @@ export async function processUserMessage(
     // Run classification and schema linking in parallel
     const [classification, linkedSchema] = await Promise.all([
       classifyMessage(userQuestion, conversationHistory, dataContext),
-      linkSchema(userQuestion),
+      linkSchema(userQuestion, conversationHistory),
     ]);
 
     const parallelTime = Date.now() - parallelStart;
@@ -131,7 +131,7 @@ export async function processUserMessage(
     const startSQLGeneration = Date.now();
     if (useConsistency) {
       console.log("🔄 Using self-consistency voting (3 candidates)");
-      const result = await selfConsistencyVote(userQuestion, linkedSchema, 3);
+      const result = await selfConsistencyVote(userQuestion, linkedSchema, 3, conversationHistory);
       sql = result.sql;
       data = result.data;
       confidence = result.confidence;
@@ -144,7 +144,7 @@ export async function processUserMessage(
       console.log(`   Candidates: ${candidateCount}, Successful: ${successfulExecutions}`);
     } else {
       console.log("⚡ Using single query (fast mode)");
-      const result = await singleQuery(userQuestion, linkedSchema);
+      const result = await singleQuery(userQuestion, linkedSchema, conversationHistory);
       sql = result.sql;
       data = result.data;
 

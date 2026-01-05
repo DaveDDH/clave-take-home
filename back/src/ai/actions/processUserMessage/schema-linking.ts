@@ -16,15 +16,29 @@ const LinkedSchemaSchema = z.object({
 export type LinkedTable = z.infer<typeof LinkedTableSchema>;
 export type LinkedSchema = z.infer<typeof LinkedSchemaSchema>;
 
-export async function linkSchema(userQuestion: string): Promise<LinkedSchema> {
+export async function linkSchema(
+  userQuestion: string,
+  conversationHistory: Array<{ role: string; content: string }> = []
+): Promise<LinkedSchema> {
+  // Include conversation context if there's history
+  let conversationContext = "";
+  if (conversationHistory.length > 1) {
+    const previousMessages = conversationHistory.slice(0, -1);
+    conversationContext = `Previous conversation:\n${previousMessages
+      .map((msg) => `${msg.role === "user" ? "User" : "Assistant"}: ${msg.content}`)
+      .join("\n")}\n\n`;
+  }
+
   const prompt = `Given this database schema for a restaurant analytics system:
 
 ${FULL_SCHEMA}
 
-And this user question:
+${conversationContext}Current user question:
 "${userQuestion}"
 
-Identify the relevant tables and columns needed to write a SQL query.
+Identify the relevant tables and columns needed to write a SQL query for the CURRENT question.
+Consider the conversation history to understand what the user is referring to.
+
 Think about:
 - What data is being asked for?
 - What filters might be needed?
