@@ -30,48 +30,106 @@ export interface ProcessOptions {
   debug?: boolean;
 }
 
+export interface ConversationMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
 export async function processUserMessage(
   userQuestion: string,
+  conversationHistory: ConversationMessage[] = [],
   options: ProcessOptions = {}
 ): Promise<ProcessedMessage> {
   const { useConsistency = true, debug = false } = options;
 
+  const requestStartTime = Date.now();
+
+  console.log("\n========================================");
+  console.log("🚀 C3 Text-to-SQL Processing Started");
+  console.log("========================================");
+  console.log("📝 User Question:", userQuestion);
+  console.log("💬 Conversation History Length:", conversationHistory.length);
+  console.log("⚙️  Options:", { useConsistency, debug });
+
   try {
     // Step 1: Schema Linking (CP - Clear Context)
+    console.log("\n📊 Step 1: Schema Linking (Clear Context)");
+    const startSchemaLinking = Date.now();
     const linkedSchema = await linkSchema(userQuestion);
+    const schemaLinkingTime = Date.now() - startSchemaLinking;
+
+    console.log(`✅ Schema Linking Complete (${schemaLinkingTime}ms)`);
+    console.log("   Tables:", linkedSchema.tables.map(t => t.name).join(", "));
+    console.log("   Columns by table:");
+    linkedSchema.tables.forEach(t => {
+      console.log(`     - ${t.name}: ${t.columns.join(", ")}`);
+    });
+    console.log("   Foreign Keys:", linkedSchema.foreignKeys.join(", ") || "none");
 
     // Step 2 & 3: SQL Generation + Consistency (CP + CH + CO)
+    console.log("\n🔧 Step 2-3: SQL Generation + Self-Consistency");
     let sql: string;
     let data: Record<string, unknown>[];
     let confidence: number | undefined;
     let candidateCount: number | undefined;
     let successfulExecutions: number | undefined;
 
+    const startSQLGeneration = Date.now();
     if (useConsistency) {
-      const result = await selfConsistencyVote(userQuestion, linkedSchema, 5);
+      console.log("🔄 Using self-consistency voting (3 candidates)");
+      const result = await selfConsistencyVote(userQuestion, linkedSchema, 3);
       sql = result.sql;
       data = result.data;
       confidence = result.confidence;
       candidateCount = result.candidateCount;
       successfulExecutions = result.successfulExecutions;
+
+      const sqlGenerationTime = Date.now() - startSQLGeneration;
+      console.log(`✅ Self-Consistency Vote Complete (${sqlGenerationTime}ms)`);
+      console.log(`   Confidence: ${(confidence * 100).toFixed(1)}%`);
+      console.log(`   Candidates: ${candidateCount}, Successful: ${successfulExecutions}`);
     } else {
+      console.log("⚡ Using single query (fast mode)");
       const result = await singleQuery(userQuestion, linkedSchema);
       sql = result.sql;
       data = result.data;
+
+      const sqlGenerationTime = Date.now() - startSQLGeneration;
+      console.log(`✅ Single Query Complete (${sqlGenerationTime}ms)`);
+    }
+
+    console.log("📜 Generated SQL:");
+    console.log("   " + sql.split("\n").join("\n   "));
+    console.log("📦 Query Results:", `${data.length} rows`);
+    if (data.length > 0 && data.length <= 3) {
+      console.log("   Sample data:", JSON.stringify(data, null, 2));
     }
 
     // Step 4: Chart Type Inference
+    console.log("\n📈 Step 4: Chart Type Inference");
     const chartConfig = inferChartType(data, userQuestion);
+    console.log("✅ Chart Type Selected:", chartConfig.type);
+    if (chartConfig.xKey && chartConfig.yKey) {
+      console.log(`   X-axis: ${chartConfig.xKey}, Y-axis: ${chartConfig.yKey}`);
+    }
 
     // Step 5: Generate Natural Language Response
+    console.log("\n💬 Step 5: Generating Natural Language Response");
+    const startResponse = Date.now();
     const content = await generateNaturalResponse(
       userQuestion,
       data,
-      chartConfig
+      chartConfig,
+      conversationHistory
     );
+    const responseTime = Date.now() - startResponse;
+    console.log(`✅ Response Generated (${responseTime}ms)`);
+    console.log("   Response:", content);
 
     // Step 6: Format data for chart
+    console.log("\n🎨 Step 6: Formatting Data for Chart");
     const formattedData = formatDataForChart(data, chartConfig);
+    console.log(`✅ Data Formatted: ${formattedData.length} rows`);
 
     // Build response
     const response: ProcessedMessage = {
@@ -104,9 +162,20 @@ export async function processUserMessage(
       };
     }
 
+    const totalTime = Date.now() - requestStartTime;
+
+    console.log("\n✨ C3 Processing Complete!");
+    console.log(`⏱️  Total Request Time: ${totalTime}ms (${(totalTime / 1000).toFixed(2)}s)`);
+    console.log("========================================\n");
+
     return response;
   } catch (error) {
-    console.error("Error processing user message:", error);
+    const totalTime = Date.now() - requestStartTime;
+
+    console.error("\n❌ Error processing user message:");
+    console.error(error);
+    console.log(`⏱️  Request failed after ${totalTime}ms (${(totalTime / 1000).toFixed(2)}s)`);
+    console.log("========================================\n");
     return {
       content: generateErrorMessage(error),
     };
@@ -116,7 +185,8 @@ export async function processUserMessage(
 async function generateNaturalResponse(
   question: string,
   data: Record<string, unknown>[],
-  chartConfig: ChartConfig
+  chartConfig: ChartConfig,
+  conversationHistory: ConversationMessage[]
 ): Promise<string> {
   if (data.length === 0) {
     return "I couldn't find any data matching your query. Please try rephrasing your question or check if the data exists for the criteria you specified.";
@@ -124,14 +194,26 @@ async function generateNaturalResponse(
 
   const summary = summarizeData(data, chartConfig);
 
-  const prompt = `Given this user question about restaurant analytics:
+  // Include conversation context if there's history
+  let conversationContext = "";
+  if (conversationHistory.length > 1) {
+    // Exclude the current question (last message)
+    const previousMessages = conversationHistory.slice(0, -1);
+    conversationContext = `\nPrevious conversation:\n${previousMessages
+      .map((msg) => `${msg.role === "user" ? "User" : "Assistant"}: ${msg.content}`)
+      .join("\n")}\n`;
+  }
+
+  const prompt = `${conversationContext}
+Current user question about restaurant analytics:
 "${question}"
 
-And this data summary:
+Data summary for this question:
 ${summary}
 
-Write a brief, natural language response (1-2 sentences) that directly answers the question.
-Be specific with numbers and names. Convert any cents values to dollars (divide by 100).`;
+Write a brief, natural language response (1-2 sentences) that directly answers the current question.
+Be specific with numbers and names. Convert any cents values to dollars (divide by 100).
+If relevant, reference previous conversation context.`;
 
   return generateTextResponse(RESPONSE_GENERATION_SYSTEM_PROMPT, prompt, {
     temperature: 0.3,

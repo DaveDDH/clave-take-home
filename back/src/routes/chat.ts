@@ -11,11 +11,23 @@ router.post(
   "/chat",
   async (req: GenerateMessageReq, res: GenerateMessageRes) => {
     try {
-      const { message, options } = req.body;
+      const { messages, options } = req.body;
 
-      if (!message || typeof message !== "string") {
+      if (!messages || !Array.isArray(messages) || messages.length === 0) {
         return res.status(400).json({
-          content: "Please provide a message to process.",
+          content: "Please provide a messages array.",
+        });
+      }
+
+      // Get the last user message
+      const lastUserMessage = messages
+        .slice()
+        .reverse()
+        .find((msg) => msg.role === "user");
+
+      if (!lastUserMessage) {
+        return res.status(400).json({
+          content: "No user message found in the conversation.",
         });
       }
 
@@ -24,7 +36,11 @@ router.post(
         debug: options?.debug ?? false,
       };
 
-      const result = await processUserMessage(message, processOptions);
+      const result = await processUserMessage(
+        lastUserMessage.content,
+        messages,
+        processOptions
+      );
 
       return res.json(result);
     } catch (error) {
