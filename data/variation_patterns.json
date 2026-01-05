@@ -1,0 +1,57 @@
+{
+  "patterns": [
+    {
+      "name": "quantity_suffix",
+      "regex": "\\s*(\\d+)\\s*(pcs?|pieces?)\\s*$",
+      "flags": "i",
+      "type": "quantity",
+      "format": "{1} pcs"
+    },
+    {
+      "name": "size_suffix_with_separator",
+      "regex": "\\s*-\\s*(small|medium|large|xl|xxl)\\s*$",
+      "flags": "i",
+      "type": "size",
+      "format": "{1|capitalize}"
+    },
+    {
+      "name": "size_suffix",
+      "regex": "\\s+(small|medium|large|xl|xxl)\\s*$",
+      "flags": "i",
+      "type": "size",
+      "format": "{1|capitalize}"
+    },
+    {
+      "name": "size_prefix",
+      "regex": "^(lg|sm|med)\\s+",
+      "flags": "i",
+      "type": "size",
+      "format": "{1|size_expand}"
+    },
+    {
+      "name": "serving_suffix",
+      "regex": "\\s+(slice|whole pie|pint|glass|bottle)\\s*$",
+      "flags": "i",
+      "type": "serving",
+      "format": "{1|capitalize}"
+    },
+    {
+      "name": "strength_suffix",
+      "regex": "\\s+(single|double|dbl)\\s*(shot)?\\s*$",
+      "flags": "i",
+      "type": "strength",
+      "format": "{1|strength_expand}"
+    }
+  ],
+  "abbreviations": {
+    "coke": "coca-cola",
+    "oj": "orange juice",
+    "fries": "french fries",
+    "blt": "bacon lettuce tomato sandwich",
+    "pb&j": "peanut butter and jelly sandwich",
+    "chx": "chicken",
+    "chkn": "chicken",
+    "veg": "vegetable",
+    "veggies": "vegetables"
+  }
+}

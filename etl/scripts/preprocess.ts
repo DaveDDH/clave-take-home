@@ -6,9 +6,20 @@
  */
 
 import 'dotenv/config';
-import { runValidation, runPreprocess, savePreprocessedData, EnvConfig } from '../lib/cli-actions.js';
+import {
+  runValidation,
+  runPreprocess,
+  savePreprocessedData,
+  getCachedSourceData,
+  getCachedPreprocessedData,
+  checkDataIntegrity,
+  logDataIntegrityReport,
+  EnvConfig,
+} from '../lib/cli-actions.js';
 
 const REQUIRED_ENV_VARS = [
+  'LOCATIONS_PATH',
+  'VARIATION_PATTERNS_PATH',
   'DOORDASH_ORDERS_PATH',
   'TOAST_POS_PATH',
   'SQUARE_CATALOG_PATH',
@@ -44,6 +55,8 @@ async function main() {
   }
 
   const config: EnvConfig = {
+    LOCATIONS_PATH: process.env.LOCATIONS_PATH!,
+    VARIATION_PATTERNS_PATH: process.env.VARIATION_PATTERNS_PATH!,
     DOORDASH_ORDERS_PATH: process.env.DOORDASH_ORDERS_PATH!,
     TOAST_POS_PATH: process.env.TOAST_POS_PATH!,
     SQUARE_CATALOG_PATH: process.env.SQUARE_CATALOG_PATH!,
@@ -82,6 +95,24 @@ async function main() {
     console.error(`✗ Failed to save: ${err instanceof Error ? err.message : 'Unknown error'}`);
     process.exit(1);
   }
+
+  // Data integrity check
+  console.log('Step 4: Running data integrity check...');
+  const sourceData = getCachedSourceData();
+  const preprocessedData = getCachedPreprocessedData();
+
+  if (sourceData && preprocessedData) {
+    const integrityResult = checkDataIntegrity(sourceData, preprocessedData);
+    logDataIntegrityReport(integrityResult);
+
+    if (!integrityResult.success) {
+      console.log('\nNote: Data integrity warnings were found. Review the report above.');
+    }
+  } else {
+    console.log('⚠ Could not run integrity check: cached data not available');
+  }
+
+  console.log('\n✓ Preprocessing complete!');
 }
 
 main();

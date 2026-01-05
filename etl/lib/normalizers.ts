@@ -1,5 +1,66 @@
 import { levenshtein } from './levenshtein.js';
+import { getVariationPatterns, getAbbreviationMap } from './variation-patterns.js';
 import type { DbProduct } from './types.js';
+
+/**
+ * Result of extracting a variation from a product name
+ */
+export interface VariationExtractionResult {
+  baseName: string;
+  variation?: string;
+  variationType?: 'quantity' | 'size' | 'serving' | 'strength';
+}
+
+/**
+ * Extract variation info from a product name.
+ * e.g., "Churros 12pcs" → { baseName: "Churros", variation: "12 pcs", variationType: "quantity" }
+ * e.g., "Fries - Large" → { baseName: "Fries", variation: "Large", variationType: "size" }
+ * e.g., "Lg Coke" → { baseName: "Coke", variation: "Large", variationType: "size" }
+ */
+export function extractVariation(name: string): VariationExtractionResult {
+  const trimmed = name.trim();
+  const patterns = getVariationPatterns();
+
+  for (const pattern of patterns) {
+    const match = trimmed.match(pattern.regex);
+    if (match) {
+      const baseName = trimmed.replace(pattern.regex, '').trim();
+      return {
+        baseName,
+        variation: pattern.format(match),
+        variationType: pattern.type,
+      };
+    }
+  }
+
+  return { baseName: trimmed };
+}
+
+/**
+ * Expand abbreviations in a name for better Levenshtein matching.
+ * e.g., "Coke" → "coca-cola"
+ * e.g., "Fries" → "french fries"
+ */
+export function expandAbbreviation(name: string): string {
+  const lower = name.toLowerCase().trim();
+  const abbreviationMap = getAbbreviationMap();
+
+  // Check for exact match in abbreviation map
+  if (abbreviationMap[lower]) {
+    return abbreviationMap[lower];
+  }
+
+  return lower;
+}
+
+/**
+ * Get the normalized base name for Levenshtein comparison.
+ * Applies abbreviation expansion after extracting variation.
+ */
+export function getNormalizedBaseName(name: string): string {
+  const { baseName } = extractVariation(name);
+  return expandAbbreviation(baseName);
+}
 
 /**
  * Strip emojis and normalize category names
@@ -32,6 +93,7 @@ export function normalizeProductName(raw: string): string {
 
 /**
  * Find the best matching canonical product for a raw name
+ * Uses variation extraction and abbreviation expansion for better matching
  * Returns null if no match within threshold
  */
 export function findCanonicalProduct(
@@ -39,21 +101,22 @@ export function findCanonicalProduct(
   products: Array<DbProduct & { id: string }>,
   threshold: number = 3
 ): (DbProduct & { id: string }) | null {
-  const normalized = normalizeProductName(rawName);
+  // Extract base name (without variation) and expand abbreviations
+  const normalizedBaseName = getNormalizedBaseName(rawName);
 
-  // Exact match first
+  // Exact match first (using normalized base name)
   const exact = products.find(p =>
-    normalizeProductName(p.name) === normalized
+    getNormalizedBaseName(p.name) === normalizedBaseName
   );
   if (exact) return exact;
 
-  // Fuzzy match with Levenshtein
+  // Fuzzy match with Levenshtein on normalized base names
   let bestMatch: (DbProduct & { id: string }) | null = null;
   let bestDistance = Infinity;
 
   for (const product of products) {
-    const productNormalized = normalizeProductName(product.name);
-    const dist = levenshtein(normalized, productNormalized, {
+    const productNormalizedBase = getNormalizedBaseName(product.name);
+    const dist = levenshtein(normalizedBaseName, productNormalizedBase, {
       maxDistance: threshold
     });
 
@@ -69,7 +132,7 @@ export function findCanonicalProduct(
     return bestMatch;
   }
 
-  const maxRatioDist = Math.floor(normalized.length * 0.25);
+  const maxRatioDist = Math.floor(normalizedBaseName.length * 0.25);
   if (bestMatch && bestDistance <= maxRatioDist && bestDistance <= 5) {
     return bestMatch;
   }

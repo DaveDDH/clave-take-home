@@ -349,9 +349,45 @@ export const SquarePaymentsDataSchema = z.object({
 });
 
 // ============================================================================
+// LOCATIONS CONFIG SCHEMA
+// ============================================================================
+
+const LocationConfigSchema = z.object({
+  name: z.string().min(1, 'Location name is required'),
+  toast_id: z.string().min(1, 'Toast ID is required'),
+  doordash_id: z.string().min(1, 'DoorDash ID is required'),
+  square_id: z.string().min(1, 'Square ID is required'),
+});
+
+export const LocationsConfigSchema = z.object({
+  locations: z.array(LocationConfigSchema).min(1, 'At least one location is required'),
+});
+
+// ============================================================================
+// VARIATION PATTERNS CONFIG SCHEMA
+// ============================================================================
+
+const VariationPatternSchema = z.object({
+  name: z.string().min(1, 'Pattern name is required'),
+  regex: z.string().min(1, 'Regex pattern is required'),
+  flags: z.string().optional(),
+  type: z.enum(['quantity', 'size', 'serving', 'strength']),
+  format: z.string().min(1, 'Format template is required'),
+});
+
+export const VariationPatternsConfigSchema = z.object({
+  patterns: z.array(VariationPatternSchema).min(1, 'At least one pattern is required'),
+  abbreviations: z.record(z.string(), z.string()),
+});
+
+// ============================================================================
 // TYPE EXPORTS (inferred from schemas)
 // ============================================================================
 
+export type LocationConfig = z.infer<typeof LocationConfigSchema>;
+export type LocationsConfig = z.infer<typeof LocationsConfigSchema>;
+export type VariationPattern = z.infer<typeof VariationPatternSchema>;
+export type VariationPatternsConfig = z.infer<typeof VariationPatternsConfigSchema>;
 export type ToastData = z.infer<typeof ToastDataSchema>;
 export type ToastOrder = z.infer<typeof ToastOrderSchema>;
 export type ToastCheck = z.infer<typeof ToastCheckSchema>;

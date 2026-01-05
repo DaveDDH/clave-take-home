@@ -1,0 +1,28 @@
+{
+  "locations": [
+    {
+      "name": "Downtown",
+      "toast_id": "loc_downtown_001",
+      "doordash_id": "str_downtown_001",
+      "square_id": "LCN001DOWNTOWN"
+    },
+    {
+      "name": "Airport",
+      "toast_id": "loc_airport_002",
+      "doordash_id": "str_airport_002",
+      "square_id": "LCN002AIRPORT"
+    },
+    {
+      "name": "Mall Location",
+      "toast_id": "loc_mall_003",
+      "doordash_id": "str_mall_003",
+      "square_id": "LCN003MALL"
+    },
+    {
+      "name": "University",
+      "toast_id": "loc_univ_004",
+      "doordash_id": "str_university_004",
+      "square_id": "LCN004UNIV"
+    }
+  ]
+}

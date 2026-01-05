@@ -25,6 +25,8 @@ type Screen =
   | 'prompt_load_path';
 
 interface EnvConfig {
+  LOCATIONS_PATH: string;
+  VARIATION_PATTERNS_PATH: string;
   DOORDASH_ORDERS_PATH: string;
   TOAST_POS_PATH: string;
   SQUARE_CATALOG_PATH: string;
@@ -38,6 +40,8 @@ interface EnvConfig {
 // ============================================================================
 
 const REQUIRED_ENV_VARS = [
+  'LOCATIONS_PATH',
+  'VARIATION_PATTERNS_PATH',
   'DOORDASH_ORDERS_PATH',
   'TOAST_POS_PATH',
   'SQUARE_CATALOG_PATH',
@@ -63,6 +67,8 @@ function checkEnvVars(): { valid: boolean; missing: string[]; config?: EnvConfig
     valid: true,
     missing: [],
     config: {
+      LOCATIONS_PATH: process.env.LOCATIONS_PATH!,
+      VARIATION_PATTERNS_PATH: process.env.VARIATION_PATTERNS_PATH!,
       DOORDASH_ORDERS_PATH: process.env.DOORDASH_ORDERS_PATH!,
       TOAST_POS_PATH: process.env.TOAST_POS_PATH!,
       SQUARE_CATALOG_PATH: process.env.SQUARE_CATALOG_PATH!,

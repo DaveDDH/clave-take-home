@@ -8,6 +8,8 @@ import 'dotenv/config';
 import { runValidation, EnvConfig } from '../lib/cli-actions.js';
 
 const REQUIRED_ENV_VARS = [
+  'LOCATIONS_PATH',
+  'VARIATION_PATTERNS_PATH',
   'DOORDASH_ORDERS_PATH',
   'TOAST_POS_PATH',
   'SQUARE_CATALOG_PATH',
@@ -35,6 +37,8 @@ async function main() {
   }
 
   const config: EnvConfig = {
+    LOCATIONS_PATH: process.env.LOCATIONS_PATH!,
+    VARIATION_PATTERNS_PATH: process.env.VARIATION_PATTERNS_PATH!,
     DOORDASH_ORDERS_PATH: process.env.DOORDASH_ORDERS_PATH!,
     TOAST_POS_PATH: process.env.TOAST_POS_PATH!,
     SQUARE_CATALOG_PATH: process.env.SQUARE_CATALOG_PATH!,
@@ -48,6 +52,8 @@ async function main() {
   if (result.success) {
     console.log('✓ All files validated successfully!\n');
     console.log('Files validated:');
+    console.log('  - Locations Config');
+    console.log('  - Variation Patterns');
     console.log('  - Toast POS');
     console.log('  - DoorDash Orders');
     console.log('  - Square Locations');

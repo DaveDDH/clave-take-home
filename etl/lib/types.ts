@@ -1,3 +1,15 @@
+// Locations config type
+export interface LocationConfig {
+  name: string;
+  toast_id: string;
+  doordash_id: string;
+  square_id: string;
+}
+
+export interface LocationsConfig {
+  locations: LocationConfig[];
+}
+
 // Database types (matching schema.sql)
 export interface DbLocation {
   id?: string;
@@ -19,6 +31,14 @@ export interface DbProduct {
   name: string;
   category_id?: string;
   description?: string;
+}
+
+export interface DbProductVariation {
+  id?: string;
+  product_id: string;
+  name: string;
+  variation_type?: 'quantity' | 'size' | 'serving' | 'strength';
+  source_raw_name?: string;
 }
 
 export interface DbProductAlias {
@@ -53,6 +73,7 @@ export interface DbOrderItem {
   id?: string;
   order_id: string;
   product_id?: string;
+  variation_id?: string;
   original_name: string;
   quantity: number;
   unit_price_cents: number;

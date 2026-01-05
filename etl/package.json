@@ -1,12 +1,13 @@
 {
   "name": "restaurant-etl",
   "version": "1.0.0",
-  "description": "ETL scripts to load restaurant data into Supabase",
+  "description": "ETL scripts to load restaurant data into db",
   "type": "module",
   "scripts": {
     "start": "tsx cli.tsx",
     "dev": "tsx cli.tsx",
     "validate": "tsx scripts/validate.ts",
+    "validate-db": "tsx scripts/validate-db.ts",
     "preprocess": "tsx scripts/preprocess.ts",
     "load": "tsx scripts/load.ts",
     "check": "tsc --noEmit && eslint .",
@@ -15,16 +16,17 @@
     "lint:fix": "eslint . --fix"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.39.0",
     "dotenv": "^16.3.1",
     "ink": "^6.6.0",
     "ink-select-input": "^6.2.0",
+    "pg": "^8.16.3",
     "react": "^19.2.3",
     "zod": "^4.3.5"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
     "@types/node": "^20.10.0",
+    "@types/pg": "^8.16.0",
     "@types/react": "^19.2.7",
     "@typescript-eslint/eslint-plugin": "^8.51.0",
     "@typescript-eslint/parser": "^8.51.0",
