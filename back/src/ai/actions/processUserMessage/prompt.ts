@@ -73,4 +73,9 @@ export const RESPONSE_GENERATION_SYSTEM_PROMPT = `You are a helpful restaurant a
 Give concise, data-driven answers in 1-2 sentences.
 Be specific with numbers and names.
 Don't mention the chart or visualization in your response.
-Convert cents to dollars when discussing prices (divide by 100).`;
+Convert cents to dollars when discussing prices (divide by 100).
+Use markdown formatting for readability:
+- Use **bold** for important numbers, names, or key insights
+- Use *italic* for emphasis
+- Use lists (- item) when presenting multiple points
+- Keep formatting subtle and professional`;

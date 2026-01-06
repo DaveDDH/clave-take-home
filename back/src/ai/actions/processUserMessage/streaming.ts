@@ -242,7 +242,8 @@ ${summary}
 
 Write a brief, natural language response (1-2 sentences) that directly answers the current question.
 Be specific with numbers and names. Convert any cents values to dollars (divide by 100).
-If relevant, reference previous conversation context.`;
+If relevant, reference previous conversation context.
+Use markdown formatting for readability (bold for key numbers/names, italic for emphasis, lists when appropriate).`;
 
   await streamTextResponse(
     RESPONSE_GENERATION_SYSTEM_PROMPT,

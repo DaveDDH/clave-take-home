@@ -30,7 +30,7 @@ export function AreaChart({ data, xKey, yKey, className }: AreaChartProps) {
 
   return (
     <ChartContainer config={chartConfig} className={`min-h-[200px] h-[300px] w-full ${className}`}>
-      <RechartsAreaChart data={data} margin={{ left: 12, right: 12 }}>
+      <RechartsAreaChart data={data} margin={{ left: 12, right: 12, top: 12 }}>
         <CartesianGrid vertical={false} />
         <XAxis dataKey={xKey} tickLine={false} axisLine={false} tickMargin={8} />
         <YAxis tickLine={false} axisLine={false} tickMargin={8} />

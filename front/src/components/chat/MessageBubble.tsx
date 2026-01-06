@@ -54,52 +54,43 @@ export function MessageBubble({
     }));
   }, [blockCharts]);
 
+  // Check if typewriter animation is done
+  const typewriterDone = displayedContent === message.content;
+
   // Calculate reasoning text
   const reasoningText = useMemo(() => {
-    console.log("[MESSAGE-BUBBLE] Calculating reasoningText", {
-      messageId: message.id,
-      hasNextMessage: !!nextMessage,
-      isLoading,
-      nextMessageIsStreaming: nextMessage?.isStreaming,
-      messagePartialTimestamp: message.partialTimestamp,
-      nextMessageFinalTimestamp: nextMessage?.finalTimestamp,
-      isLastInBlock,
-    });
-
-    if (!nextMessage) {
-      console.log("[MESSAGE-BUBBLE] No next message, returning null");
+    // Don't show anything if the typewriter is still animating
+    if (!typewriterDone) {
       return null;
     }
 
-    // Show "Reasoning..." if still loading or next message is streaming
-    if (isLoading || nextMessage.isStreaming) {
-      console.log('[MESSAGE-BUBBLE] Returning "Reasoning..." because', {
-        isLoading,
-        nextMessageIsStreaming: nextMessage.isStreaming,
-      });
-      return "Reasoning...";
+    // If no next message exists yet
+    if (!nextMessage) {
+      // If we're still loading and this message has partial timestamp, show "Reasoning..."
+      if (isLoading && message.partialTimestamp) {
+        return "Reasoning...";
+      }
+      return null;
     }
 
-    // Show "Thought for X seconds" if we have timestamps
+    // Show "Thought for X seconds" as soon as we have both timestamps (when chart arrives)
     if (message.partialTimestamp && nextMessage.finalTimestamp) {
       const duration =
         (nextMessage.finalTimestamp - message.partialTimestamp) / 1000;
-      console.log('[MESSAGE-BUBBLE] Returning "Thought for X seconds"', {
-        duration,
-        partialTimestamp: message.partialTimestamp,
-        finalTimestamp: nextMessage.finalTimestamp,
-      });
       return `Thought for ${duration.toFixed(1)} seconds`;
     }
 
-    console.log("[MESSAGE-BUBBLE] No conditions met, returning null");
+    // Show "Reasoning..." if current message is done, but next message is streaming or we're still loading
+    if (isLoading || nextMessage.isStreaming) {
+      return "Reasoning...";
+    }
+
     return null;
   }, [
     isLoading,
     nextMessage,
     message.partialTimestamp,
-    isLastInBlock,
-    message.id,
+    typewriterDone,
   ]);
 
   const onCopyClick = async () => {
@@ -131,17 +122,6 @@ export function MessageBubble({
     );
   };
 
-  // Log when rendering reasoning section
-  if (!isUser && !isLastInBlock) {
-    console.log("[MESSAGE-BUBBLE] Rendering decision for reasoning section", {
-      messageId: message.id,
-      isUser,
-      isLastInBlock,
-      reasoningText,
-      willRender: !!reasoningText,
-    });
-  }
-
   if (message.charts?.length) {
     return (
       <div className="flex flex-col gap-2 justify-start animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -167,7 +147,7 @@ export function MessageBubble({
           onOpenChange={setSaveModalOpen}
           charts={widgetCharts}
         />
-        {!isUser && !isLastInBlock && reasoningText && (
+        {!isUser && reasoningText && (
           <div className="flex items-center gap-1.5 justify-start pl-4 mt-2">
             <Brain className="size-3.5 text-foreground" />
             <span className="text-sm text-foreground font-bold italic">
@@ -204,7 +184,7 @@ export function MessageBubble({
         onOpenChange={setSaveModalOpen}
         charts={widgetCharts}
       />
-      {!isUser && !isLastInBlock && reasoningText && (
+      {!isUser && reasoningText && (
         <div className="flex items-center gap-1.5 justify-start pl-4 mt-2">
           <Brain className="size-3.5 text-foreground" />
           <span className="text-sm text-foreground font-bold italic">

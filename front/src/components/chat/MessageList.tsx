@@ -117,28 +117,6 @@ export function MessageList({
 
           const nextMessage = !isLastInBlock ? messages[index + 1] : undefined;
 
-          // Debug logging
-          if (!message.role.includes('user')) {
-            console.log(`[MESSAGE-LIST] Message ${index}:`, {
-              id: message.id,
-              role: message.role,
-              isLastInBlock,
-              hasChartsInBlock,
-              partialTimestamp: message.partialTimestamp,
-              finalTimestamp: message.finalTimestamp,
-              isStreaming: message.isStreaming,
-              hasCharts: !!message.charts?.length,
-              contentLength: message.content.length,
-              nextMessage: nextMessage ? {
-                id: nextMessage.id,
-                role: nextMessage.role,
-                isStreaming: nextMessage.isStreaming,
-                partialTimestamp: nextMessage.partialTimestamp,
-                finalTimestamp: nextMessage.finalTimestamp,
-              } : 'none'
-            });
-          }
-
           return (
             <MessageBubble
               key={message.id}

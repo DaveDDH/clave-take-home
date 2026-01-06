@@ -142,9 +142,14 @@ async function processStreamingMessage(
           receivedComplete = true;
           clearTimeout(timeout);
           console.log('[CHAT-STORE] onComplete called', { assistantMessageId, secondMessageId });
-          // Don't disable isStreaming yet - let typewriter finish animating
-          // Only set isLoading: false to show action buttons
-          set(() => ({
+          // Set isStreaming: false on all messages and isLoading: false
+          // The typewriter animation is independent and controlled by the useTypewriter hook
+          set((state) => ({
+            messages: state.messages.map((msg) =>
+              msg.id === assistantMessageId || msg.id === secondMessageId
+                ? { ...msg, isStreaming: false }
+                : msg
+            ),
             isLoading: false,
           }));
         },
