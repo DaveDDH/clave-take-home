@@ -34,11 +34,11 @@ export function ChartMessage({ charts }: ChartMessageProps) {
 
   return (
     <>
-      <div className="w-fit max-w-[900px] relative pb-3 ml-6">
+      <div className="w-full max-w-[700px] relative pb-3 ml-0">
         <CardContent className="pt-0">
           <div className="flex flex-wrap gap-4">
             {charts.map((chart, index) => (
-              <div key={index} className="w-full">
+              <div key={index} className="w-full mr-24">
                 {renderChart(chart)}
               </div>
             ))}

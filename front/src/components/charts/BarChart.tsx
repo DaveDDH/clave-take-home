@@ -105,8 +105,9 @@ export function BarChart({ data, xKey, yKey, className }: BarChartProps) {
   const calculatedWidth = Math.max(minWidth, transformedData.length * (barWidth + gap) + 80);
 
   return (
-    <ChartContainer config={chartConfig} className={`min-h-[200px] h-[300px] ${className}`} style={{ width: calculatedWidth }}>
-      <RechartsBarChart data={transformedData} margin={{ left: 12, right: 12, top: 12 }} barCategoryGap={gap} barSize={barWidth}>
+    <div className={`w-full flex justify-center ${className}`}>
+      <ChartContainer config={chartConfig} className="min-h-[200px] h-[300px]" style={{ width: calculatedWidth }}>
+        <RechartsBarChart data={transformedData} margin={{ left: 12, right: 12, top: 12 }} barCategoryGap={gap} barSize={barWidth}>
         <CartesianGrid vertical={false} />
         <XAxis dataKey={actualXKey} tickLine={false} axisLine={false} tickMargin={8} />
         <YAxis tickLine={false} axisLine={false} tickMargin={8} />
@@ -124,6 +125,7 @@ export function BarChart({ data, xKey, yKey, className }: BarChartProps) {
           </Bar>
         ))}
       </RechartsBarChart>
-    </ChartContainer>
+      </ChartContainer>
+    </div>
   );
 }
