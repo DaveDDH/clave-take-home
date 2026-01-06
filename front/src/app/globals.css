@@ -146,3 +146,31 @@ body {
     opacity: 0.8;
   }
 }
+
+.markdown-container p,
+.markdown-container ul,
+.markdown-container ol,
+.markdown-container li {
+  margin: 0;
+}
+
+.markdown-container p + p,
+.markdown-container p + ul,
+.markdown-container p + ol,
+.markdown-container ul + p,
+.markdown-container ol + p {
+  margin-top: 0.5em;
+}
+
+.markdown-container ul,
+.markdown-container ol {
+  padding-left: 1.25rem;
+}
+
+.markdown-container ul {
+  list-style-type: disc;
+}
+
+.markdown-container ol {
+  list-style-type: decimal;
+}
