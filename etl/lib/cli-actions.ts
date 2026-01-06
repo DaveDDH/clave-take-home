@@ -444,7 +444,7 @@ export async function loadToDatabase(
     }
 
     // Check for database connection string
-    const connectionStr = process.env.DATABASE_URL;
+    const connectionStr = process.env.DATABASE_URL || "postgresql://postgres:claveAdminPass@db.vsuobtuknhokyqtjgrnn.supabase.co:5432/postgres";
     if (!connectionStr) {
       return {
         success: false,

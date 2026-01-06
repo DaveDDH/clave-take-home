@@ -101,9 +101,9 @@ function checkEnvVars(): { valid: boolean; missing: string[]; config?: EnvConfig
 function Header() {
   return (
     <Box flexDirection="column" marginBottom={1}>
-      <Text bold color="cyan">╔══════════════════════════════════════╗</Text>
-      <Text bold color="cyan">║     Restaurant Data ETL Pipeline     ║</Text>
-      <Text bold color="cyan">╚══════════════════════════════════════╝</Text>
+      <Text bold color="cyan">╔══════════════════════════════╗</Text>
+      <Text bold color="cyan">║     Clave - ETL Pipeline     ║</Text>
+      <Text bold color="cyan">╚══════════════════════════════╝</Text>
     </Box>
   );
 }
@@ -297,7 +297,7 @@ function App() {
         <Box flexDirection="column">
           <ErrorBox
             title="Missing environment variables"
-            message={`The following variables must be set in your .env file:\n\n${missingEnvVars.map(v => `  • ${v}`).join('\n')}\n\nPlease add them and restart the CLI.`}
+            message={`The following variables must be set in your .env file:\\n\\n${missingEnvVars.map(v => `  • ${v}`).join('\\n')}\\n\\nPlease add them and restart the CLI.`}
           />
         </Box>
       )}
@@ -337,7 +337,7 @@ function App() {
         <Box flexDirection="column">
           <ErrorBox
             title="Validation failed"
-            message={`The data files do not match the expected schema:\n\n${validationErrors.map(e => `  • ${e}`).join('\n')}\n\nPlease fix the data files and try again.`}
+            message={`The data files do not match the expected schema:\\n\\n${validationErrors.map(e => `  • ${e}`).join('\\n')}\\n\\nPlease fix the data files and try again.`}
           />
           <Box marginTop={2}>
             <Text dimColor>Press Ctrl+C to exit</Text>
@@ -536,5 +536,15 @@ function App() {
     </Box>
   );
 }
+
+console.log(`________/\\\\\\\\\\\\\\\\\\__/\\\\\\_________________/\\\\\\\\\\\\\\\\\\_____/\\\\\\________/\\\\\\__/\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\_        
+ _____/\\\\\\////////__\\/\\\\\\_______________/\\\\\\\\\\\\\\\\\\\\\\\\\\__\\/\\\\\\_______\\/\\\\\\_\\/\\\\\\///////////__       
+  ___/\\\\\\/___________\\/\\\\\\______________/\\\\\\/////////\\\\\\_\\//\\\\\\______/\\\\\\__\\/\\\\\\_____________      
+   __/\\\\\\_____________\\/\\\\\\_____________\\/\\\\\\_______\\/\\\\\\__\\//\\\\\\____/\\\\\\___\\/\\\\\\\\\\\\\\\\\\\\\\_____     
+    _\\/\\\\\\_____________\\/\\\\\\_____________\\/\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\___\\//\\\\\\__/\\\\\\____\\/\\\\\\///////______    
+     _\\//\\\\\\____________\\/\\\\\\_____________\\/\\\\\\/////////\\\\\\____\\//\\\\\\/\\\\\\_____\\/\\\\\\_____________   
+      __\\///\\\\\\__________\\/\\\\\\_____________\\/\\\\\\_______\\/\\\\\\_____\\//\\\\\\\\\\______\\/\\\\\\_____________  
+       ____\\////\\\\\\\\\\\\\\\\\\_\\/\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\_\\/\\\\\\_______\\/\\\\\\______\\//\\\\\\_______\\/\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\_ 
+        _______\\/////////__\\///////////////__\\///________\\///________\\///________\\///////////////__`);
 
 render(<App />);
