@@ -146,6 +146,7 @@ export async function processUserMessageStream(
 
     log("📜 Generated SQL:", undefined, processId);
     log("   " + sql.split("\n").join("\n   "), undefined, processId);
+    console.log("\n📜 CHOSEN SQL QUERY:\n" + sql + "\n");
     log("📦 Query Results:", `${data.length} rows`, processId);
 
     // Send SQL (for debug mode)

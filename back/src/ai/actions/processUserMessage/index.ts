@@ -154,6 +154,7 @@ export async function processUserMessage(
 
     log("📜 Generated SQL:", undefined, processId);
     log("   " + sql.split("\n").join("\n   "), undefined, processId);
+    console.log("\n📜 CHOSEN SQL QUERY:\n" + sql + "\n");
     log("📦 Query Results:", `${data.length} rows`, processId);
     if (data.length > 0 && data.length <= 3) {
       log("   Sample data:", JSON.stringify(data, null, 2), processId);
