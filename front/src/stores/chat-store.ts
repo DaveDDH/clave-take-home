@@ -52,11 +52,6 @@ async function processStreamingMessage(
           // Keep isStreaming true in case this is a data query (charts will arrive later)
           // If it's conversational, onComplete will mark it as not streaming
           const timestamp = Date.now();
-          console.log('[CHAT-STORE] onClassification called', {
-            assistantMessageId,
-            partialTimestamp: timestamp,
-            conversationalResponse: data.conversationalResponse.substring(0, 50) + '...'
-          });
           set((state) => ({
             messages: state.messages.map((msg) =>
               msg.id === assistantMessageId
@@ -73,11 +68,6 @@ async function processStreamingMessage(
           // Create a NEW message for charts + final response
           secondMessageId = crypto.randomUUID();
           const timestamp = Date.now();
-          console.log('[CHAT-STORE] onChart called', {
-            secondMessageId,
-            finalTimestamp: timestamp,
-            chartsCount: charts.length
-          });
           const chartMessage: Message = {
             id: secondMessageId,
             role: 'assistant',
@@ -97,7 +87,6 @@ async function processStreamingMessage(
         },
         onSQL: (sql) => {
           const targetId = secondMessageId || assistantMessageId;
-          console.log('[CHAT-STORE] onSQL called', { targetId, sql: sql.substring(0, 100) + '...' });
           set((state) => ({
             messages: state.messages.map((msg) =>
               msg.id === targetId ? { ...msg, sql } : msg
@@ -114,12 +103,6 @@ async function processStreamingMessage(
                 const updates: Partial<Message> = { content: msg.content + token };
                 if (!msg.finalTimestamp && msg.partialTimestamp) {
                   updates.finalTimestamp = Date.now();
-                  console.log('[CHAT-STORE] onContentDelta - setting finalTimestamp', {
-                    targetId,
-                    partialTimestamp: msg.partialTimestamp,
-                    finalTimestamp: updates.finalTimestamp,
-                    duration: (updates.finalTimestamp - msg.partialTimestamp) / 1000
-                  });
                 }
                 return { ...msg, ...updates };
               }
@@ -129,7 +112,6 @@ async function processStreamingMessage(
         },
         onContent: (content) => {
           const targetId = secondMessageId || assistantMessageId;
-          console.log('[CHAT-STORE] onContent called', { targetId, contentLength: content.length });
           set((state) => ({
             messages: state.messages.map((msg) =>
               msg.id === targetId
@@ -141,20 +123,12 @@ async function processStreamingMessage(
         onComplete: () => {
           receivedComplete = true;
           clearTimeout(timeout);
-          console.log('[CHAT-STORE] onComplete called', { assistantMessageId, secondMessageId });
-          // Set isStreaming: false on all messages and isLoading: false
-          // The typewriter animation is independent and controlled by the useTypewriter hook
-          set((state) => ({
-            messages: state.messages.map((msg) =>
-              msg.id === assistantMessageId || msg.id === secondMessageId
-                ? { ...msg, isStreaming: false }
-                : msg
-            ),
+          // Only set isLoading: false - keep isStreaming: true for typewriter animation
+          set(() => ({
             isLoading: false,
           }));
         },
         onError: (error) => {
-          console.error('[SSE] Error:', error);
           clearTimeout(timeout);
           const targetId = secondMessageId || assistantMessageId;
           set((state) => ({
