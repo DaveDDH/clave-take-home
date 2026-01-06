@@ -129,7 +129,7 @@ export function MessageBubble({
         <ChartMessage charts={message.charts} />
         {displayedContent && (
           <div className="max-w-[80%] rounded-2xl px-4 py-3 pt-0">
-            <div className="text-sm leading-relaxed">
+            <div className="text-sm leading-relaxed whitespace-pre-wrap">
               <Markdown remarkPlugins={[remarkGfm]}>
                 {displayedContent}
               </Markdown>
@@ -168,7 +168,7 @@ export function MessageBubble({
             isUser ? "bg-muted text-foreground" : ""
           }`}
         >
-          <div className="text-sm leading-relaxed">
+          <div className="text-sm leading-relaxed whitespace-pre-wrap">
             <Markdown remarkPlugins={[remarkGfm]}>{displayedContent}</Markdown>
           </div>
         </div>
