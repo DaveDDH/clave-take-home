@@ -98,9 +98,15 @@ export function BarChart({ data, xKey, yKey, className }: BarChartProps) {
   // Use 'category' for x-axis if we transformed the data
   const actualXKey = hasMultipleSeries ? 'category' : xKey;
 
+  // Calculate a reasonable width based on number of bars
+  const barWidth = 40;
+  const gap = 20;
+  const minWidth = 200;
+  const calculatedWidth = Math.max(minWidth, transformedData.length * (barWidth + gap) + 80);
+
   return (
-    <ChartContainer config={chartConfig} className={`min-h-[200px] h-[300px] w-full ${className}`}>
-      <RechartsBarChart data={transformedData} margin={{ left: 12, right: 12, top: 12 }}>
+    <ChartContainer config={chartConfig} className={`min-h-[200px] h-[300px] ${className}`} style={{ width: calculatedWidth }}>
+      <RechartsBarChart data={transformedData} margin={{ left: 12, right: 12, top: 12 }} barCategoryGap={gap} barSize={barWidth}>
         <CartesianGrid vertical={false} />
         <XAxis dataKey={actualXKey} tickLine={false} axisLine={false} tickMargin={8} />
         <YAxis tickLine={false} axisLine={false} tickMargin={8} />
