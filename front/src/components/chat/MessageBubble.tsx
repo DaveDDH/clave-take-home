@@ -102,7 +102,7 @@ export function MessageBubble({
       <div className={`flex  ${isUser ? "justify-end" : "justify-start"}`}>
         <div
           className={`max-w-[80%] rounded-2xl px-4 py-3 ${
-            isUser ? "bg-primary text-primary-foreground" : ""
+            isUser ? "bg-muted text-foreground" : ""
           }`}
         >
           <div className="whitespace-pre-wrap text-sm leading-relaxed">
