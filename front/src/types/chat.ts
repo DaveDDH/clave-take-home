@@ -1,11 +1,12 @@
-export type ChartType = 'area' | 'bar' | 'line' | 'pie' | 'radar' | 'radial';
+export type ChartType = 'area' | 'bar' | 'line' | 'pie' | 'radar' | 'radial' | 'table';
 
 export interface ChartData {
-  type: 'bar' | 'line' | 'pie' | 'area' | 'radar' | 'radial';
+  type: 'bar' | 'line' | 'pie' | 'area' | 'radar' | 'radial' | 'table';
   data: Record<string, unknown>[];
   config?: {
-    xKey: string;
-    yKey: string;
+    xKey?: string;
+    yKey?: string;
+    columns?: string[];
   };
 }
 

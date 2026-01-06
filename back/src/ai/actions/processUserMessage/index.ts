@@ -13,7 +13,7 @@ import { log, logError } from "#utils/logger.js";
 export interface ChartData {
   type: ChartType;
   data: Record<string, unknown>[];
-  config?: { xKey: string; yKey: string };
+  config?: { xKey?: string; yKey?: string; columns?: string[] };
 }
 
 export interface ProcessedMessage {
@@ -209,12 +209,14 @@ export async function processUserMessage(
                 type: chartConfig.type,
                 data: formattedData,
                 config:
-                  chartConfig.xKey && chartConfig.yKey
-                    ? {
-                        xKey: cleanXKey!,
-                        yKey: cleanYKey!,
-                      }
-                    : undefined,
+                  chartConfig.type === "table"
+                    ? { columns: chartConfig.columns }
+                    : chartConfig.xKey && chartConfig.yKey
+                      ? {
+                          xKey: cleanXKey!,
+                          yKey: cleanYKey!,
+                        }
+                      : undefined,
               },
             ]
           : undefined,

@@ -7,6 +7,7 @@ import { CardContent } from "@/components/ui/card";
 import {
   AreaChart,
   BarChart,
+  DataTable,
   LineChart,
   PieChart,
   RadarChart,
@@ -91,5 +92,7 @@ function renderChart(chart: ChartData): React.ReactNode {
       );
     case "radial":
       return <RadialChart data={chart.data as never} />;
+    case "table":
+      return <DataTable data={chart.data as never} columns={chart.config?.columns} />;
   }
 }

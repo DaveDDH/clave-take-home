@@ -177,12 +177,14 @@ export async function processUserMessageStream(
           type: chartConfig.type,
           data: formattedData,
           config:
-            chartConfig.xKey && chartConfig.yKey
-              ? {
-                  xKey: cleanXKey!,
-                  yKey: cleanYKey!,
-                }
-              : undefined,
+            chartConfig.type === "table"
+              ? { columns: chartConfig.columns }
+              : chartConfig.xKey && chartConfig.yKey
+                ? {
+                    xKey: cleanXKey!,
+                    yKey: cleanYKey!,
+                  }
+                : undefined,
         },
       ]);
     }

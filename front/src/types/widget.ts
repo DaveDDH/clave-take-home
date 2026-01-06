@@ -6,6 +6,7 @@ import type {
   PieChartData,
   RadarChartData,
   RadialChartData,
+  TableChartData,
 } from './chart';
 
 export interface AxisChartConfig {
@@ -18,15 +19,20 @@ export interface RadarChartConfig {
   valueKey: string;
 }
 
+export interface TableChartConfig {
+  columns?: string[];
+}
+
 export type ChartData =
   | AreaChartData
   | BarChartData
   | LineChartData
   | PieChartData
   | RadarChartData
-  | RadialChartData;
+  | RadialChartData
+  | TableChartData;
 
-export type ChartConfig = AxisChartConfig | RadarChartConfig | undefined;
+export type ChartConfig = AxisChartConfig | RadarChartConfig | TableChartConfig | undefined;
 
 export interface WidgetChart {
   type: ChartType;

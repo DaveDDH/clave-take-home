@@ -1,9 +1,10 @@
-export type ChartType = "bar" | "line" | "area" | "pie" | "radar" | "radial" | "none";
+export type ChartType = "bar" | "line" | "area" | "pie" | "radar" | "radial" | "table" | "none";
 
 export interface ChartConfig {
   type: ChartType;
   xKey?: string;
   yKey?: string;
+  columns?: string[];
 }
 
 // Determine chart axes from data structure
@@ -16,6 +17,11 @@ export function determineChartAxes(
   }
 
   const columns = Object.keys(data[0]);
+
+  // For tables, return all columns
+  if (chartType === "table") {
+    return { type: chartType, columns };
+  }
 
   // Find numeric and non-numeric columns
   const numericColumns = columns.filter((col) => {

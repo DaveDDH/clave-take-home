@@ -9,13 +9,14 @@ import { Button } from '@/components/ui/button';
 import {
   AreaChart,
   BarChart,
+  DataTable,
   LineChart,
   PieChart,
   RadarChart,
   RadialChart,
 } from '@/components/charts';
 import { RemoveWidgetModal } from './RemoveWidgetModal';
-import type { Widget, WidgetChart, AxisChartConfig, RadarChartConfig } from '@/types/widget';
+import type { Widget, WidgetChart, AxisChartConfig, RadarChartConfig, TableChartConfig } from '@/types/widget';
 import type {
   AreaChartData,
   BarChartData,
@@ -23,6 +24,7 @@ import type {
   PieChartData,
   RadarChartData,
   RadialChartData,
+  TableChartData,
 } from '@/types/chart';
 
 interface WidgetCardProps {
@@ -138,5 +140,9 @@ function renderChart(chart: WidgetChart): React.ReactNode {
     }
     case 'radial':
       return <RadialChart data={chart.data as RadialChartData} />;
+    case 'table': {
+      const config = chart.config as TableChartConfig;
+      return <DataTable data={chart.data as TableChartData} columns={config?.columns} />;
+    }
   }
 }

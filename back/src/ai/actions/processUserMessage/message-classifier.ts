@@ -6,7 +6,7 @@ const MessageClassificationSchema = z.object({
   isDataQuery: z.boolean(),
   reasoning: z.string(),
   conversationalResponse: z.string(),
-  chartType: z.enum(["bar", "line", "pie", "area", "radar", "radial", "none"]),
+  chartType: z.enum(["bar", "line", "pie", "area", "radar", "radial", "table", "none"]),
 });
 
 export type MessageClassification = z.infer<typeof MessageClassificationSchema>;
@@ -72,6 +72,7 @@ Chart Type Selection (REQUIRED for ALL messages):
 - "area": Cumulative trends over time, volume over time (e.g., "total revenue over time")
 - "radar": Multi-dimensional comparisons, performance metrics across categories (e.g., "compare locations across metrics")
 - "radial": Single metric progress or gauge (e.g., "completion rate", "target achievement")
+- "table": Detailed records, raw data listings, multi-column data (3+ columns), when user asks to "show", "list", "display records", or wants specific row details (e.g., "show all orders", "list transactions", "what are the details")
 - "none": Conversational messages or queries that don't benefit from visualization`;
 }
 
