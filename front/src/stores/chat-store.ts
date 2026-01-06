@@ -11,6 +11,7 @@ interface ChatState {
   sendMessage: (content: string) => Promise<void>;
   regenerateFrom: (messageId: string) => Promise<void>;
   clearMessages: () => void;
+  markTypewriterComplete: (messageId: string) => void;
 }
 
 type SetState = (
@@ -239,4 +240,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
     await processStreamingMessage(apiMessages, assistantId, set);
   },
   clearMessages: () => set({ messages: [] }),
+  markTypewriterComplete: (messageId: string) => {
+    set((state) => ({
+      messages: state.messages.map((msg) =>
+        msg.id === messageId ? { ...msg, isStreaming: false } : msg
+      ),
+    }));
+  },
 }));

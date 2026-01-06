@@ -35,8 +35,11 @@ export function useTypewriter({ text, enabled, speed = 50, onComplete }: UseType
 
     // If we've displayed everything, call onComplete and return
     if (state.index >= text.length) {
-      if (onComplete) {
-        onComplete();
+      // Only call onComplete if we actually had content to animate
+      if (text.length > 0) {
+        if (onComplete) {
+          onComplete();
+        }
       }
       return;
     }

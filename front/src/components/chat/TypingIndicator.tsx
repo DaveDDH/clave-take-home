@@ -11,13 +11,13 @@ export function TypingIndicator() {
 
   return (
     <div className="flex justify-start">
-      <div className="rounded-2xl px-4 py-3">
+      <div className="rounded-2xl px-6 ml-3">
         <div className="flex items-center justify-center">
           <Image
             src={logoSrc}
             alt="Loading"
-            width={40}
-            height={40}
+            width={30}
+            height={30}
             style={{
               animation: 'pulse-scale 1.5s ease-in-out infinite',
             }}

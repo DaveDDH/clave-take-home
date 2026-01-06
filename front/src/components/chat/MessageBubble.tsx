@@ -39,11 +39,15 @@ export function MessageBubble({
 
   const [saveModalOpen, setSaveModalOpen] = useState(false);
   const regenerateFrom = useChatStore((state) => state.regenerateFrom);
+  const markTypewriterComplete = useChatStore((state) => state.markTypewriterComplete);
 
   const displayedContent = useTypewriter({
     text: message.content,
     enabled: typewriterEnabled,
     speed: 50, // 50 characters per second
+    onComplete: () => {
+      markTypewriterComplete(message.id);
+    },
   });
 
   const widgetCharts = useMemo<WidgetChart[]>(() => {
