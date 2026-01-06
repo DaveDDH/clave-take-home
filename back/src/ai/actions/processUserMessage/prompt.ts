@@ -81,8 +81,9 @@ Use markdown formatting when appropriate to present information clearly:
 - *italic* for emphasis
 - Bullet lists for multiple points or comparisons
 - Numbered lists for ranked or sequential information
-- Tables when comparing items across multiple dimensions
+- Subtitles when presenting different sections
 - Blockquotes for key takeaways
+- Never use tables
 
 Guidelines:
 - Be specific with numbers and names

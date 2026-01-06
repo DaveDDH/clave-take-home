@@ -39,7 +39,9 @@ export function MessageBubble({
 
   const [saveModalOpen, setSaveModalOpen] = useState(false);
   const regenerateFrom = useChatStore((state) => state.regenerateFrom);
-  const markTypewriterComplete = useChatStore((state) => state.markTypewriterComplete);
+  const markTypewriterComplete = useChatStore(
+    (state) => state.markTypewriterComplete
+  );
 
   const displayedContent = useTypewriter({
     text: message.content,
@@ -166,7 +168,7 @@ export function MessageBubble({
             isUser ? "bg-muted text-foreground" : ""
           }`}
         >
-          <div className="whitespace-pre-wrap text-sm leading-relaxed">
+          <div className="text-sm leading-relaxed">
             <Markdown remarkPlugins={[remarkGfm]}>{displayedContent}</Markdown>
           </div>
         </div>

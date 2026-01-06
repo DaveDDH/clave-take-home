@@ -282,7 +282,7 @@ Data summary for this question:
 ${summary}
 
 Provide an analysis with specific data, share any insights about what this reveals, and end with a follow-up question to explore further.
-Use markdown formatting where it helps (bold, lists, tables). Convert cents to dollars.`;
+Use markdown formatting where it helps (bold, lists, subtitles). Convert cents to dollars.`;
 
   return generateTextResponse(RESPONSE_GENERATION_SYSTEM_PROMPT, prompt, {
     temperature: 0.3,
