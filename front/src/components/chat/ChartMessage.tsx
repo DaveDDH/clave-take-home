@@ -37,10 +37,7 @@ export function ChartMessage({ charts }: ChartMessageProps) {
         <CardContent className="pt-0">
           <div className="flex flex-wrap gap-4">
             {charts.map((chart, index) => (
-              <div key={index} className="w-[400px]">
-                <h3 className="mb-2 text-sm font-medium">
-                  {getChartTitle(chart.type)}
-                </h3>
+              <div key={index} className="w-full">
                 {renderChart(chart)}
               </div>
             ))}
@@ -54,18 +51,6 @@ export function ChartMessage({ charts }: ChartMessageProps) {
       />
     </>
   );
-}
-
-function getChartTitle(chartType: string): string {
-  const titles: Record<string, string> = {
-    area: "Area Chart",
-    bar: "Bar Chart",
-    line: "Line Chart",
-    pie: "Pie Chart",
-    radar: "Radar Chart",
-    radial: "Radial Chart",
-  };
-  return titles[chartType] || "Chart";
 }
 
 function renderChart(chart: ChartData): React.ReactNode {
