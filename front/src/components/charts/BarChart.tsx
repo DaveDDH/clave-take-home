@@ -95,36 +95,49 @@ export function BarChart({ data, xKey, yKey, className }: BarChartProps) {
     return config;
   }, [yKeys, useCellColors, transformedData, hasMultipleSeries, xKey]);
 
-  // Use 'category' for x-axis if we transformed the data
-  const actualXKey = hasMultipleSeries ? 'category' : xKey;
+  // Use 'category' for category axis if we transformed the data
+  const categoryKey = hasMultipleSeries ? 'category' : xKey;
 
-  // Calculate a reasonable width based on number of bars
-  const barWidth = 40;
-  const gap = 20;
-  const minWidth = 200;
-  const calculatedWidth = Math.max(minWidth, transformedData.length * (barWidth + gap) + 80);
+  // Calculate height based on number of bars (horizontal layout)
+  const barHeight = 32;
+  const gap = 12;
+  const minHeight = 150;
+  const calculatedHeight = Math.max(minHeight, transformedData.length * (barHeight + gap) + 40);
 
   return (
     <div className={`w-full flex justify-center ${className}`}>
-      <ChartContainer config={chartConfig} className="min-h-[200px] h-[300px]" style={{ width: calculatedWidth }}>
-        <RechartsBarChart data={transformedData} margin={{ left: 12, right: 12, top: 12 }} barCategoryGap={gap} barSize={barWidth}>
-        <CartesianGrid vertical={false} />
-        <XAxis dataKey={actualXKey} tickLine={false} axisLine={false} tickMargin={8} />
-        <YAxis tickLine={false} axisLine={false} tickMargin={8} />
-        <ChartTooltip content={<ChartTooltipContent />} />
-        {yKeys.map((key) => (
-          <Bar
-            key={key}
-            dataKey={key}
-            fill={useCellColors ? undefined : COLORS[yKeys.indexOf(key) % COLORS.length]}
-            radius={4}
-          >
-            {useCellColors && transformedData.map((_, index) => (
-              <Cell key={index} fill={COLORS[index % COLORS.length]} />
-            ))}
-          </Bar>
-        ))}
-      </RechartsBarChart>
+      <ChartContainer config={chartConfig} className="w-full max-w-[600px]" style={{ height: calculatedHeight }}>
+        <RechartsBarChart
+          data={transformedData}
+          layout="vertical"
+          margin={{ left: 20, right: 20, top: 12, bottom: 12 }}
+          barCategoryGap={gap}
+          barSize={barHeight}
+        >
+          <CartesianGrid horizontal={false} />
+          <XAxis type="number" tickLine={false} axisLine={false} tickMargin={8} />
+          <YAxis
+            type="category"
+            dataKey={categoryKey}
+            tickLine={false}
+            axisLine={false}
+            tickMargin={8}
+            width={100}
+          />
+          <ChartTooltip content={<ChartTooltipContent />} />
+          {yKeys.map((key) => (
+            <Bar
+              key={key}
+              dataKey={key}
+              fill={useCellColors ? undefined : COLORS[yKeys.indexOf(key) % COLORS.length]}
+              radius={4}
+            >
+              {useCellColors && transformedData.map((_, index) => (
+                <Cell key={index} fill={COLORS[index % COLORS.length]} />
+              ))}
+            </Bar>
+          ))}
+        </RechartsBarChart>
       </ChartContainer>
     </div>
   );
