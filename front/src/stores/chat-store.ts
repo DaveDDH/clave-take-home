@@ -48,7 +48,6 @@ async function processStreamingMessage(
       { useConsistency: true, debug: false },
       {
         onClassification: (data) => {
-          console.log('[SSE] Classification received:', data.conversationalResponse.substring(0, 50));
           // Update first message with classification
           // Keep isStreaming true in case this is a data query (charts will arrive later)
           // If it's conversational, onComplete will mark it as not streaming
@@ -61,7 +60,6 @@ async function processStreamingMessage(
           }));
         },
         onChart: (charts) => {
-          console.log('[SSE] Charts received:', charts.length, 'chart(s)');
           // Create a NEW message for charts + final response
           secondMessageId = crypto.randomUUID();
           const chartMessage: Message = {
@@ -81,7 +79,6 @@ async function processStreamingMessage(
           }));
         },
         onSQL: (sql) => {
-          console.log('[SSE] SQL received');
           const targetId = secondMessageId || assistantMessageId;
           set((state) => ({
             messages: state.messages.map((msg) =>
@@ -92,28 +89,16 @@ async function processStreamingMessage(
         onContentDelta: (token) => {
           // Stream into the second message (with charts) if it exists, otherwise first message
           const targetId = secondMessageId || assistantMessageId;
-          set((state) => {
-            const updatedMessages = state.messages.map((msg) => {
+          set((state) => ({
+            messages: state.messages.map((msg) => {
               if (msg.id === targetId) {
-                const newContent = msg.content + token;
-                console.log('[TYPEWRITER] Appending token to message:', {
-                  messageId: msg.id,
-                  isFirstMessage: msg.id === assistantMessageId,
-                  isSecondMessage: msg.id === secondMessageId,
-                  isStreaming: msg.isStreaming,
-                  oldContentLength: msg.content.length,
-                  newContentLength: newContent.length,
-                  hasCharts: !!msg.charts,
-                });
-                return { ...msg, content: newContent };
+                return { ...msg, content: msg.content + token };
               }
               return msg;
-            });
-            return { messages: updatedMessages };
-          });
+            }),
+          }));
         },
         onContent: (content) => {
-          console.log('[SSE] Full content received:', content.substring(0, 50));
           const targetId = secondMessageId || assistantMessageId;
           set((state) => ({
             messages: state.messages.map((msg) =>
@@ -124,25 +109,13 @@ async function processStreamingMessage(
           }));
         },
         onComplete: () => {
-          console.log('[SSE] Stream complete');
           receivedComplete = true;
           clearTimeout(timeout);
-          set((state) => {
-            const finalMessage = state.messages.find(msg =>
-              msg.id === (secondMessageId || assistantMessageId)
-            );
-            console.log('[SSE] Final message:', finalMessage);
-            return {
-              messages: state.messages.map((msg) => {
-                // Mark both first and second messages as not streaming
-                if (msg.id === assistantMessageId || msg.id === secondMessageId) {
-                  return { ...msg, isStreaming: false };
-                }
-                return msg;
-              }),
-              isLoading: false,
-            };
-          });
+          // Don't disable isStreaming yet - let typewriter finish animating
+          // Only set isLoading: false to show action buttons
+          set(() => ({
+            isLoading: false,
+          }));
         },
         onError: (error) => {
           console.error('[SSE] Error:', error);

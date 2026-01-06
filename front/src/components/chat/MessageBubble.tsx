@@ -34,22 +34,15 @@ export function MessageBubble({
 
   // Use typewriter effect for assistant messages that are streaming
   const typewriterEnabled = !isUser && message.isStreaming === true;
-  console.log('[TYPEWRITER] MessageBubble render:', {
-    messageId: message.id,
-    isUser,
-    isStreaming: message.isStreaming,
-    typewriterEnabled,
-    contentLength: message.content.length,
-    hasCharts: !!message.charts,
-  });
+
+  const [saveModalOpen, setSaveModalOpen] = useState(false);
+  const regenerateFrom = useChatStore((state) => state.regenerateFrom);
 
   const displayedContent = useTypewriter({
     text: message.content,
     enabled: typewriterEnabled,
     speed: 50, // 50 characters per second
   });
-  const [saveModalOpen, setSaveModalOpen] = useState(false);
-  const regenerateFrom = useChatStore((state) => state.regenerateFrom);
 
   const widgetCharts = useMemo<WidgetChart[]>(() => {
     return blockCharts.map((chart) => ({
