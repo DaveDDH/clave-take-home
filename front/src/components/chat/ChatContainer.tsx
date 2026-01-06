@@ -11,7 +11,7 @@ export function ChatContainer() {
   const sendMessage = useChatStore((state) => state.sendMessage);
 
   return (
-    <div className="flex h-full flex-col bg-background">
+    <div className="flex h-full flex-col">
       <MessageList
         messages={messages}
         isLoading={isLoading}

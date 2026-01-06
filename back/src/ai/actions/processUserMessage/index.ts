@@ -281,9 +281,8 @@ Current user question about restaurant analytics:
 Data summary for this question:
 ${summary}
 
-Write a brief, natural language response (1-2 sentences) that directly answers the current question.
-Be specific with numbers and names. Convert any cents values to dollars (divide by 100).
-If relevant, reference previous conversation context.`;
+Provide an analysis with specific data, share any insights about what this reveals, and end with a follow-up question to explore further.
+Use markdown formatting where it helps (bold, lists, tables). Convert cents to dollars.`;
 
   return generateTextResponse(RESPONSE_GENERATION_SYSTEM_PROMPT, prompt, {
     temperature: 0.3,

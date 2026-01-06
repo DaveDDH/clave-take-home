@@ -12,7 +12,7 @@ export function Header() {
     theme === "dark" ? "/clave-logo_darkmode.webp" : "/clave-logo.webp";
 
   return (
-    <header className="flex h-11 w-full border-b border-border bg-car px-4 justify-between items-center shrink-0">
+    <header className="flex h-11 w-full border-b border-border bg-card dark:bg-background px-4 justify-between items-center shrink-0">
       <Image
         src={logoSrc}
         alt="Clave"

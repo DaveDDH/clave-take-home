@@ -15,7 +15,7 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <div className="flex h-full w-56 flex-col border-r border-border bg-card shrink-0">
+    <div className="flex h-full w-56 flex-col border-r border-border bg-card dark:bg-background shrink-0">
       <nav className="flex-1 p-2">
         <ul className="space-y-1">
           {navItems.map((item) => {

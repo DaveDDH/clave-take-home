@@ -60,7 +60,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
             placeholder="Ask something..."
             disabled={disabled}
             rows={1}
-            className="flex-1 resize-none border-0 bg-transparent p-0 text-sm placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none rounded-0!"
+            className="flex-1 resize-none border-0 bg-transparent dark:bg-transparent p-0 text-sm placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none rounded-0!"
           />
           <div className="flex items-center gap-2">
             {mounted ? (
