@@ -15,18 +15,22 @@ export async function processUserMessageStream(
   userQuestion: string,
   conversationHistory: ConversationMessage[] = [],
   options: ProcessOptions = {},
-  sseWriter: SSEWriter
+  sseWriter: SSEWriter,
+  processId?: string
 ): Promise<void> {
   const { useConsistency = true, debug = false } = options;
 
   const requestStartTime = Date.now();
 
-  log("\n========================================");
-  log("🚀 C3 Text-to-SQL Streaming Started");
-  log("========================================");
-  log("📝 User Question:", userQuestion);
-  log("💬 Conversation History Length:", conversationHistory.length);
-  log("⚙️  Options:", { useConsistency, debug });
+  log("\n========================================", undefined, processId);
+  log("🚀 C3 Text-to-SQL Streaming Started", undefined, processId);
+  log("========================================", undefined, processId);
+  log("📝 User Question:", userQuestion, processId);
+  log("💬 Conversation History Length:", conversationHistory.length, processId);
+  log("⚙️  Options:", { useConsistency, debug }, processId);
+  if (processId) {
+    log("🆔 Process ID:", processId, processId);
+  }
 
   try {
     // Send start event
@@ -34,7 +38,7 @@ export async function processUserMessageStream(
     sseWriter.sendProgress("Starting analysis...", "init");
 
     // Step 0: Run classification and schema linking IN PARALLEL
-    log("\n🔍 Step 0: Parallel Classification & Schema Linking");
+    log("\n🔍 Step 0: Parallel Classification & Schema Linking", undefined, processId);
     const parallelStart = Date.now();
 
     const { getDataContext } = await import("./data-context.js");
@@ -49,24 +53,24 @@ export async function processUserMessageStream(
       const latest = new Date(dataContext.orderDateRange.latest)
         .toISOString()
         .split("T")[0];
-      log(`   📅 Data available from ${earliest} to ${latest}`);
+      log(`   📅 Data available from ${earliest} to ${latest}`, undefined, processId);
     }
 
-    // Run classification and schema linking in parallel
-    const [classification, linkedSchema] = await Promise.all([
-      classifyMessage(userQuestion, conversationHistory, dataContext),
-      linkSchema(userQuestion, conversationHistory),
-    ]);
+    // Start both tasks in parallel (don't wait for both)
+    const classificationPromise = classifyMessage(userQuestion, conversationHistory, dataContext, processId);
+    const schemaLinkingPromise = linkSchema(userQuestion, conversationHistory, processId);
 
-    const parallelTime = Date.now() - parallelStart;
-    log(`✅ Parallel tasks complete (${parallelTime}ms)`);
-    log(`   Is Data Query: ${classification.isDataQuery}`);
-    log(`   Chart Type: ${classification.chartType}`);
-    log(`   Reasoning: ${classification.reasoning}`);
-    log(`   Conversational Response: ${classification.conversationalResponse}`);
-    log(`   Linked Schema: ${linkedSchema.tables.map((t) => t.name).join(", ")}`);
+    // Wait for classification first - it determines if we need schema linking
+    const classification = await classificationPromise;
+    const classificationTime = Date.now() - parallelStart;
 
-    // Send classification response immediately
+    log(`✅ Classification complete (${classificationTime}ms)`, undefined, processId);
+    log(`   Is Data Query: ${classification.isDataQuery}`, undefined, processId);
+    log(`   Chart Type: ${classification.chartType}`, undefined, processId);
+    log(`   Reasoning: ${classification.reasoning}`, undefined, processId);
+    log(`   Conversational Response: ${classification.conversationalResponse}`, undefined, processId);
+
+    // Send classification response immediately - don't wait for schema linking!
     sseWriter.sendClassification({
       isDataQuery: classification.isDataQuery,
       chartType: classification.chartType,
@@ -77,20 +81,29 @@ export async function processUserMessageStream(
     if (!classification.isDataQuery) {
       const totalTime = Date.now() - requestStartTime;
 
-      log("\n✨ Conversational Response Complete (skipped C3 pipeline)!");
-      log(`⏱️  Total Request Time: ${totalTime}ms (${(totalTime / 1000).toFixed(2)}s)`);
-      log("========================================\n");
+      log("\n✨ Conversational Response Complete (skipped C3 pipeline)!", undefined, processId);
+      log(`⏱️  Total Request Time: ${totalTime}ms (${(totalTime / 1000).toFixed(2)}s)`, undefined, processId);
+      log("========================================\n", undefined, processId);
 
       sseWriter.sendComplete();
       sseWriter.close();
       return;
     }
 
-    log("\n🔄 Proceeding with C3 pipeline for data query");
+    // Now wait for schema linking to complete (it's been running in parallel)
+    log("\n🔄 Proceeding with C3 pipeline for data query", undefined, processId);
+    log("   ⏳ Waiting for schema linking to complete...", undefined, processId);
+
+    const linkedSchema = await schemaLinkingPromise;
+    const schemaLinkingTime = Date.now() - parallelStart;
+
+    log(`✅ Schema linking complete (${schemaLinkingTime}ms total, started ${classificationTime}ms ago)`, undefined, processId);
+    log(`   Linked Schema: ${linkedSchema.tables.map((t) => t.name).join(", ")}`, undefined, processId);
+
     sseWriter.sendProgress("Identified relevant tables...", "schema");
 
     // Step 2 & 3: SQL Generation + Consistency
-    log("\n🔧 Step 2-3: SQL Generation + Self-Consistency");
+    log("\n🔧 Step 2-3: SQL Generation + Self-Consistency", undefined, processId);
     sseWriter.sendProgress("Generating SQL query...", "sql");
 
     let sql: string;
@@ -99,39 +112,41 @@ export async function processUserMessageStream(
 
     const startSQLGeneration = Date.now();
     if (useConsistency) {
-      log("🔄 Using self-consistency voting (3 candidates)");
+      log("🔄 Using self-consistency voting (3 candidates)", undefined, processId);
       const result = await selfConsistencyVote(
         userQuestion,
         linkedSchema,
         3,
         conversationHistory,
-        dataContext
+        dataContext,
+        processId
       );
       sql = result.sql;
       data = result.data;
       confidence = result.confidence;
 
       const sqlGenerationTime = Date.now() - startSQLGeneration;
-      log(`✅ Self-Consistency Vote Complete (${sqlGenerationTime}ms)`);
-      log(`   Confidence: ${(confidence * 100).toFixed(1)}%`);
+      log(`✅ Self-Consistency Vote Complete (${sqlGenerationTime}ms)`, undefined, processId);
+      log(`   Confidence: ${(confidence * 100).toFixed(1)}%`, undefined, processId);
     } else {
-      log("⚡ Using single query (fast mode)");
+      log("⚡ Using single query (fast mode)", undefined, processId);
       const result = await singleQuery(
         userQuestion,
         linkedSchema,
         conversationHistory,
-        dataContext
+        dataContext,
+        processId
       );
       sql = result.sql;
       data = result.data;
 
       const sqlGenerationTime = Date.now() - startSQLGeneration;
-      log(`✅ Single Query Complete (${sqlGenerationTime}ms)`);
+      log(`✅ Single Query Complete (${sqlGenerationTime}ms)`, undefined, processId);
     }
 
-    log("📜 Generated SQL:");
-    log("   " + sql.split("\n").join("\n   "));
-    log("📦 Query Results:", `${data.length} rows`);
+    log("📜 Generated SQL:", undefined, processId);
+    log("   " + sql.split("\n").join("\n   "), undefined, processId);
+    log("📦 Query Results:", `${data.length} rows`, processId);
 
     // Send SQL (for debug mode)
     if (debug) {
@@ -139,19 +154,19 @@ export async function processUserMessageStream(
     }
 
     // Step 4: Determine chart axes from data
-    log("\n📈 Step 4: Determining Chart Configuration");
+    log("\n📈 Step 4: Determining Chart Configuration", undefined, processId);
     sseWriter.sendProgress("Querying database...", "query");
 
     const chartConfig = determineChartAxes(data, classification.chartType);
-    log("✅ Chart Type (from classifier):", chartConfig.type);
+    log("✅ Chart Type (from classifier):", chartConfig.type, processId);
     if (chartConfig.xKey && chartConfig.yKey) {
-      log(`   X-axis: ${chartConfig.xKey}, Y-axis: ${chartConfig.yKey}`);
+      log(`   X-axis: ${chartConfig.xKey}, Y-axis: ${chartConfig.yKey}`, undefined, processId);
     }
 
     // Step 5: Format data for chart and send immediately
-    log("\n🎨 Step 5: Formatting Data for Chart");
+    log("\n🎨 Step 5: Formatting Data for Chart", undefined, processId);
     const formattedData = formatDataForChart(data, chartConfig);
-    log(`✅ Data Formatted: ${formattedData.length} rows`);
+    log(`✅ Data Formatted: ${formattedData.length} rows`, undefined, processId);
 
     const cleanXKey = chartConfig.xKey?.replace("_cents", "");
     const cleanYKey = chartConfig.yKey?.replace("_cents", "");
@@ -173,7 +188,7 @@ export async function processUserMessageStream(
     }
 
     // Step 6: Generate Natural Language Response with streaming
-    log("\n💬 Step 6: Streaming Natural Language Response");
+    log("\n💬 Step 6: Streaming Natural Language Response", undefined, processId);
     sseWriter.sendProgress("Generating response...", "response");
 
     const startResponse = Date.now();
@@ -182,25 +197,26 @@ export async function processUserMessageStream(
       data,
       chartConfig,
       conversationHistory,
-      sseWriter
+      sseWriter,
+      processId
     );
     const responseTime = Date.now() - startResponse;
-    log(`✅ Response Streamed (${responseTime}ms)`);
+    log(`✅ Response Streamed (${responseTime}ms)`, undefined, processId);
 
     const totalTime = Date.now() - requestStartTime;
 
-    log("\n✨ C3 Streaming Complete!");
-    log(`⏱️  Total Request Time: ${totalTime}ms (${(totalTime / 1000).toFixed(2)}s)`);
-    log("========================================\n");
+    log("\n✨ C3 Streaming Complete!", undefined, processId);
+    log(`⏱️  Total Request Time: ${totalTime}ms (${(totalTime / 1000).toFixed(2)}s)`, undefined, processId);
+    log("========================================\n", undefined, processId);
 
     sseWriter.sendComplete();
     sseWriter.close();
   } catch (error) {
     const totalTime = Date.now() - requestStartTime;
 
-    logError("\n❌ Error processing user message:", error);
-    log(`⏱️  Request failed after ${totalTime}ms (${(totalTime / 1000).toFixed(2)}s)`);
-    log("========================================\n");
+    logError("\n❌ Error processing user message:", error, processId);
+    log(`⏱️  Request failed after ${totalTime}ms (${(totalTime / 1000).toFixed(2)}s)`, undefined, processId);
+    log("========================================\n", undefined, processId);
 
     const errorMessage = generateErrorMessage(error);
     sseWriter.sendError(errorMessage);
@@ -213,7 +229,8 @@ async function generateNaturalResponseStream(
   data: Record<string, unknown>[],
   chartConfig: ChartConfig,
   conversationHistory: ConversationMessage[],
-  sseWriter: SSEWriter
+  sseWriter: SSEWriter,
+  processId?: string
 ): Promise<void> {
   if (data.length === 0) {
     const fallbackMessage =
@@ -248,7 +265,7 @@ Use markdown formatting for readability (bold for key numbers/names, italic for 
   await streamTextResponse(
     RESPONSE_GENERATION_SYSTEM_PROMPT,
     prompt,
-    { temperature: 0.3 },
+    { temperature: 0.3, label: "Streaming Natural Language Response", processId },
     (token) => {
       sseWriter.sendContentDelta(token);
     }

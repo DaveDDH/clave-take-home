@@ -8,7 +8,8 @@ export async function generateSQL(
   linkedSchema: LinkedSchema,
   temperature: number = 0.0,
   conversationHistory: Array<{ role: string; content: string }> = [],
-  dataContext?: DataContext
+  dataContext?: DataContext,
+  processId?: string
 ): Promise<string> {
   const schemaSection = formatLinkedSchema(linkedSchema);
 
@@ -72,7 +73,7 @@ Current date and time: ${dateAndTime}
   const response = await generateTextResponse(
     getCalibrationSystemPrompt(),
     userPrompt,
-    { temperature }
+    { temperature, label: "SQL Generation", processId }
   );
 
   return cleanSQL(response);

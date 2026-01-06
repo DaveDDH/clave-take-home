@@ -80,8 +80,8 @@ export async function processUserMessage(
 
     // Run classification and schema linking in parallel
     const [classification, linkedSchema] = await Promise.all([
-      classifyMessage(userQuestion, conversationHistory, dataContext),
-      linkSchema(userQuestion, conversationHistory),
+      classifyMessage(userQuestion, conversationHistory, dataContext, processId),
+      linkSchema(userQuestion, conversationHistory, processId),
     ]);
 
     const parallelTime = Date.now() - parallelStart;
@@ -174,7 +174,8 @@ export async function processUserMessage(
       userQuestion,
       data,
       chartConfig,
-      conversationHistory
+      conversationHistory,
+      processId
     );
     const responseTime = Date.now() - startResponse;
     log(`✅ Response Generated (${responseTime}ms)`, undefined, processId);
@@ -252,7 +253,8 @@ async function generateNaturalResponse(
   question: string,
   data: Record<string, unknown>[],
   chartConfig: ChartConfig,
-  conversationHistory: ConversationMessage[]
+  conversationHistory: ConversationMessage[],
+  processId?: string
 ): Promise<string> {
   if (data.length === 0) {
     return "I couldn't find any data matching your query. Please try rephrasing your question or check if the data exists for the criteria you specified.";
@@ -283,6 +285,8 @@ If relevant, reference previous conversation context.`;
 
   return generateTextResponse(RESPONSE_GENERATION_SYSTEM_PROMPT, prompt, {
     temperature: 0.3,
+    label: "Natural Language Response",
+    processId,
   });
 }
 

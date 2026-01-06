@@ -27,6 +27,9 @@ router.post("/chat/stream", async (req: Request, res: Response) => {
       });
     }
 
+    // Generate a unique process ID for tracking
+    const processId = `chat-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+
     // SSEWriter sets headers and flushes them
     const sseWriter = new SSEWriter(res);
 
@@ -40,7 +43,8 @@ router.post("/chat/stream", async (req: Request, res: Response) => {
       lastUserMessage.content,
       messages,
       processOptions,
-      sseWriter
+      sseWriter,
+      processId
     );
   } catch (error) {
     console.error("Chat stream endpoint error:", error);

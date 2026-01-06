@@ -78,7 +78,8 @@ Chart Type Selection (REQUIRED for ALL messages):
 export async function classifyMessage(
   userMessage: string,
   conversationHistory: Array<{ role: string; content: string }>,
-  dataContext?: DataContext
+  dataContext?: DataContext,
+  processId?: string
 ): Promise<MessageClassification> {
   let conversationContext = "";
   if (conversationHistory.length > 1) {
@@ -99,6 +100,6 @@ Classify this message and provide a conversational response.`;
     buildClassificationPrompt(dataContext),
     prompt,
     MessageClassificationSchema,
-    { temperature: 0.3 }
+    { temperature: 0.3, label: "Message Classification", processId }
   );
 }

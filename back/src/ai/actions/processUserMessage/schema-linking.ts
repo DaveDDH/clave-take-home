@@ -18,7 +18,8 @@ export type LinkedSchema = z.infer<typeof LinkedSchemaSchema>;
 
 export async function linkSchema(
   userQuestion: string,
-  conversationHistory: Array<{ role: string; content: string }> = []
+  conversationHistory: Array<{ role: string; content: string }> = [],
+  processId?: string
 ): Promise<LinkedSchema> {
   // Include conversation context if there's history
   let conversationContext = "";
@@ -50,7 +51,7 @@ Output the tables and their relevant columns, plus any foreign keys needed for J
     SCHEMA_LINKING_SYSTEM_PROMPT,
     prompt,
     LinkedSchemaSchema,
-    { temperature: 0.0 }
+    { temperature: 0.0, label: "Schema Linking", processId }
   );
 }
 
