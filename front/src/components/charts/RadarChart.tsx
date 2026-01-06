@@ -15,6 +15,7 @@ import {
   type ChartConfig,
 } from '@/components/ui/chart';
 import type { RadarChartData } from '@/types/chart';
+import { capitalizeWords } from '@/lib/utils';
 
 interface RadarChartProps {
   data: RadarChartData;
@@ -27,7 +28,7 @@ export function RadarChart({ data, labelKey, valueKey, className }: RadarChartPr
   const chartConfig = useMemo<ChartConfig>(
     () => ({
       [valueKey]: {
-        label: valueKey,
+        label: capitalizeWords(valueKey.replace(/_/g, ' ')),
         color: 'var(--chart-4)',
       },
     }),

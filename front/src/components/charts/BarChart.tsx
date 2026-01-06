@@ -9,6 +9,7 @@ import {
   type ChartConfig,
 } from '@/components/ui/chart';
 import type { BarChartData } from '@/types/chart';
+import { capitalizeWords } from '@/lib/utils';
 
 const COLORS = [
   'var(--chart-1)',
@@ -76,9 +77,9 @@ export function BarChart({ data, xKey, yKey, className }: BarChartProps) {
     if (useCellColors) {
       // Create config entries for each data point
       transformedData.forEach((item, index) => {
-        const label = String(item[hasMultipleSeries ? 'category' : xKey] || `Item ${index + 1}`);
-        config[label] = {
-          label,
+        const key = String(item[hasMultipleSeries ? 'category' : xKey] || `Item ${index + 1}`);
+        config[key] = {
+          label: capitalizeWords(key.replace(/_/g, ' ')),
           color: COLORS[index % COLORS.length],
         };
       });
@@ -86,7 +87,7 @@ export function BarChart({ data, xKey, yKey, className }: BarChartProps) {
       // Create config entries for each series
       yKeys.forEach((key, index) => {
         config[key] = {
-          label: key.replace(/_/g, ' '),
+          label: capitalizeWords(key.replace(/_/g, ' ')),
           color: COLORS[index % COLORS.length],
         };
       });

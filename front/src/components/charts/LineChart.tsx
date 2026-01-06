@@ -9,6 +9,7 @@ import {
   type ChartConfig,
 } from '@/components/ui/chart';
 import type { LineChartData } from '@/types/chart';
+import { capitalizeWords } from '@/lib/utils';
 
 interface LineChartProps {
   data: LineChartData;
@@ -43,7 +44,7 @@ export function LineChart({ data, xKey, yKey, className }: LineChartProps) {
 
     yKeys.forEach((key, index) => {
       config[key] = {
-        label: key.replace(/_/g, ' '),
+        label: capitalizeWords(key.replace(/_/g, ' ')),
         color: colors[index % colors.length],
       };
     });

@@ -9,6 +9,7 @@ import {
   type ChartConfig,
 } from '@/components/ui/chart';
 import type { AreaChartData } from '@/types/chart';
+import { capitalizeWords } from '@/lib/utils';
 
 interface AreaChartProps {
   data: AreaChartData;
@@ -21,7 +22,7 @@ export function AreaChart({ data, xKey, yKey, className }: AreaChartProps) {
   const chartConfig = useMemo<ChartConfig>(
     () => ({
       [yKey]: {
-        label: yKey,
+        label: capitalizeWords(yKey.replace(/_/g, ' ')),
         color: 'var(--chart-2)',
       },
     }),

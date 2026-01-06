@@ -8,6 +8,7 @@ import {
   type ChartConfig,
 } from '@/components/ui/chart';
 import type { PieChartData } from '@/types/chart';
+import { capitalizeWords } from '@/lib/utils';
 
 interface PieChartProps {
   data: PieChartData;
@@ -25,7 +26,7 @@ const COLORS = [
 export function PieChart({ data, className }: PieChartProps) {
   const chartConfig = data.reduce<ChartConfig>((acc, item, index) => {
     acc[item.name] = {
-      label: item.name,
+      label: capitalizeWords(item.name.replace(/_/g, ' ')),
       color: COLORS[index % COLORS.length],
     };
     return acc;

@@ -8,6 +8,7 @@ import {
   type ChartConfig,
 } from '@/components/ui/chart';
 import type { RadialChartData } from '@/types/chart';
+import { capitalizeWords } from '@/lib/utils';
 
 interface RadialChartProps {
   data: RadialChartData;
@@ -30,7 +31,7 @@ export function RadialChart({ data, className }: RadialChartProps) {
 
   const chartConfig = data.reduce<ChartConfig>((acc, item, index) => {
     acc[item.name] = {
-      label: item.name,
+      label: capitalizeWords(item.name.replace(/_/g, ' ')),
       color: COLORS[index % COLORS.length],
     };
     return acc;
