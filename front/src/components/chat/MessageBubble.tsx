@@ -86,12 +86,7 @@ export function MessageBubble({
     }
 
     return null;
-  }, [
-    isLoading,
-    nextMessage,
-    message.partialTimestamp,
-    typewriterDone,
-  ]);
+  }, [isLoading, nextMessage, message.partialTimestamp, typewriterDone]);
 
   const onCopyClick = async () => {
     try {
@@ -116,8 +111,8 @@ export function MessageBubble({
     onClick: () => void
   ) => {
     return (
-      <Button onClick={onClick} variant="ghost">
-        <IconComponent className="text-gray-400" />
+      <Button onClick={onClick} variant="ghost" className="group">
+        <IconComponent className="text-gray-400 group-hover:text-foreground transition-colors" />
       </Button>
     );
   };
