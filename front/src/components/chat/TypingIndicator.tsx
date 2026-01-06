@@ -1,11 +1,27 @@
+'use client';
+
+import Image from 'next/image';
+import { useThemeStore } from '@/stores/theme-store';
+
 export function TypingIndicator() {
+  const theme = useThemeStore((state) => state.theme);
+  const logoSrc = theme === 'dark'
+    ? '/clave-logo-icon_darkmode.png'
+    : '/clave-logo-icon.png';
+
   return (
     <div className="flex justify-start">
-      <div className="rounded-2xl bg-muted px-4 py-3">
-        <div className="flex gap-1">
-          <span className="size-2 animate-bounce rounded-full bg-muted-foreground [animation-delay:-0.3s]" />
-          <span className="size-2 animate-bounce rounded-full bg-muted-foreground [animation-delay:-0.15s]" />
-          <span className="size-2 animate-bounce rounded-full bg-muted-foreground" />
+      <div className="rounded-2xl px-4 py-3">
+        <div className="flex items-center justify-center">
+          <Image
+            src={logoSrc}
+            alt="Loading"
+            width={40}
+            height={40}
+            style={{
+              animation: 'pulse-scale 1.5s ease-in-out infinite',
+            }}
+          />
         </div>
       </div>
     </div>
