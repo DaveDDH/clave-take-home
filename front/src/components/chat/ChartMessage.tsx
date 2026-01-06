@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Save } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+
+import { CardContent } from "@/components/ui/card";
+
 import {
   AreaChart,
   BarChart,
@@ -33,19 +33,8 @@ export function ChartMessage({ charts }: ChartMessageProps) {
 
   return (
     <>
-      <Card className="w-fit max-w-[900px] relative">
-        <div className="absolute top-3 right-3">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setSaveModalOpen(true)}
-          >
-            <Save className="mr-1 h-4 w-4" />
-            Save Widget
-          </Button>
-        </div>
-
-        <CardContent className="pt-6">
+      <div className="w-fit max-w-[900px] relative">
+        <CardContent className="pt-0">
           <div className="flex flex-wrap gap-4">
             {charts.map((chart, index) => (
               <div key={index} className="w-[400px]">
@@ -57,7 +46,7 @@ export function ChartMessage({ charts }: ChartMessageProps) {
             ))}
           </div>
         </CardContent>
-      </Card>
+      </div>
       <SaveWidgetModal
         open={saveModalOpen}
         onOpenChange={setSaveModalOpen}

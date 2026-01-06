@@ -10,6 +10,7 @@ interface ChatState {
   messages: Message[];
   isLoading: boolean;
   sendMessage: (content: string) => Promise<void>;
+  regenerateFrom: (messageId: string) => Promise<void>;
   clearMessages: () => void;
 }
 
@@ -103,6 +104,124 @@ export const useChatStore = create<ChatState>((set, get) => ({
       throw new Error('Process polling timeout');
     } catch (error) {
       console.error('Failed to send message:', error);
+
+      const errorMessage: Message = {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: 'Sorry, something went wrong. Please try again.',
+        error:
+          error instanceof Error
+            ? error.message
+            : 'An unknown error occurred',
+      };
+
+      set((state) => ({
+        messages: [...state.messages, errorMessage],
+        isLoading: false,
+      }));
+    }
+  },
+  regenerateFrom: async (messageId: string) => {
+    if (get().isLoading) return;
+
+    const messages = get().messages;
+    const messageIndex = messages.findIndex((msg) => msg.id === messageId);
+
+    if (messageIndex === -1) return;
+
+    // Find the last user message before this assistant message block
+    let lastUserMessageIndex = messageIndex;
+    while (
+      lastUserMessageIndex > 0 &&
+      messages[lastUserMessageIndex].role !== 'user'
+    ) {
+      lastUserMessageIndex--;
+    }
+
+    if (messages[lastUserMessageIndex].role !== 'user') {
+      console.error('No user message found before assistant block');
+      return;
+    }
+
+    // Remove all messages from the assistant block onwards (keep the user message)
+    const messagesUpToUser = messages.slice(0, lastUserMessageIndex + 1);
+
+    set({
+      messages: messagesUpToUser,
+      isLoading: true,
+    });
+
+    try {
+      // Convert messages to API format
+      const apiMessages: ApiMessage[] = messagesUpToUser.map((msg) => ({
+        role: msg.role,
+        content: msg.content,
+      }));
+
+      // Start the async process
+      const processId = await startChatProcess(apiMessages, {
+        useConsistency: true,
+        debug: false,
+      });
+
+      let hasPartialResponse = false;
+
+      // Poll for results with partial response support
+      let attempts = 0;
+      const maxAttempts = 120;
+      const intervalMs = 1000;
+
+      while (attempts < maxAttempts) {
+        const status = await getProcessStatus(processId);
+
+        // Show partial response as soon as available
+        if (
+          status.partialResponse &&
+          !hasPartialResponse &&
+          status.status === 'processing'
+        ) {
+          hasPartialResponse = true;
+          const partialMessage: Message = {
+            id: crypto.randomUUID(),
+            role: 'assistant',
+            content: status.partialResponse,
+          };
+
+          set((state) => ({
+            messages: [...state.messages, partialMessage],
+          }));
+        }
+
+        // Final result ready
+        if (status.status === 'completed' && status.result) {
+          const finalMessage: Message = {
+            id: crypto.randomUUID(),
+            role: 'assistant',
+            content: status.result.content,
+            charts: status.result.charts,
+            sql: status.result.sql,
+          };
+
+          // Add final message (don't replace partial)
+          set((state) => ({
+            messages: [...state.messages, finalMessage],
+            isLoading: false,
+          }));
+          return;
+        }
+
+        // Process failed
+        if (status.status === 'failed') {
+          throw new Error(status.error || 'Process failed');
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, intervalMs));
+        attempts++;
+      }
+
+      throw new Error('Process polling timeout');
+    } catch (error) {
+      console.error('Failed to regenerate message:', error);
 
       const errorMessage: Message = {
         id: crypto.randomUUID(),

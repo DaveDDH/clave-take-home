@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
-import { AppShell } from '@/components/layout';
+import { AppShell, ThemeProvider } from '@/components/layout';
 import './globals.css';
 
 const geistSans = Geist({
@@ -27,11 +27,34 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  const stored = localStorage.getItem('theme-storage');
+                  if (stored) {
+                    const { state } = JSON.parse(stored);
+                    if (state?.theme) {
+                      document.documentElement.classList.add(state.theme);
+                    }
+                  }
+                } catch (e) {
+                  // Ignore errors, will fall back to default light theme
+                }
+              })();
+            `,
+          }}
+        />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <AppShell>{children}</AppShell>
+        <ThemeProvider>
+          <AppShell>{children}</AppShell>
+        </ThemeProvider>
       </body>
     </html>
   );
