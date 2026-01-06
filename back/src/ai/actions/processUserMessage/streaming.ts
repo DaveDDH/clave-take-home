@@ -256,11 +256,12 @@ async function generateNaturalResponseStream(
 Current user question about restaurant analytics:
 "${question}"
 
-Data summary for this question:
+Data retrieved (user will see this in a chart/table):
 ${summary}
 
-Provide an analysis with specific data, share any insights about what this reveals, and end with a follow-up question to explore further.
-Use markdown formatting where it helps (bold, lists, tables). Convert cents to dollars.`;
+The user can see all the data points in the visualization. DO NOT repeat or list the data.
+Instead, provide a concise high-level analysis with insights about what this data means, any patterns or observations, and end with a follow-up question.
+Use markdown for emphasis. Convert cents to dollars.`;
 
   await streamTextResponse(
     RESPONSE_GENERATION_SYSTEM_PROMPT,
