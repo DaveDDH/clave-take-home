@@ -76,7 +76,7 @@ export function BarChart({ data, xKey, yKey, className }: BarChartProps) {
   const actualXKey = hasMultipleSeries ? 'category' : xKey;
 
   return (
-    <ChartContainer config={chartConfig} className={`aspect-square max-h-[200px] ${className}`}>
+    <ChartContainer config={chartConfig} className={`min-h-[200px] h-[300px] w-full ${className}`}>
       <RechartsBarChart data={transformedData} margin={{ left: 12, right: 12 }}>
         <CartesianGrid vertical={false} />
         <XAxis dataKey={actualXKey} tickLine={false} axisLine={false} tickMargin={8} />

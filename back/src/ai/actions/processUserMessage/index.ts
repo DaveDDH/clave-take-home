@@ -10,13 +10,15 @@ import {
 import { RESPONSE_GENERATION_SYSTEM_PROMPT } from "./prompt.js";
 import { log, logError } from "#utils/logger.js";
 
+export interface ChartData {
+  type: ChartType;
+  data: Record<string, unknown>[];
+  config?: { xKey: string; yKey: string };
+}
+
 export interface ProcessedMessage {
   content: string;
-  charts?: Array<{
-    type: ChartType;
-    data: Record<string, unknown>[];
-    config?: { xKey: string; yKey: string };
-  }>;
+  charts?: ChartData[];
   sql?: string;
   debug?: {
     linkedSchema: unknown;
@@ -97,15 +99,6 @@ export async function processUserMessage(
       undefined,
       processId
     );
-
-    // Set partial response immediately for user feedback
-    if (processId) {
-      const processStore = (await import("#stores/processStore.js")).default;
-      processStore.setPartialResponse(
-        processId,
-        classification.conversationalResponse
-      );
-    }
 
     // If it's not a data query, return the conversational response immediately
     if (!classification.isDataQuery) {

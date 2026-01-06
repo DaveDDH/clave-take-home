@@ -16,4 +16,7 @@ export interface Message {
   charts?: ChartData[];
   sql?: string;
   error?: string;
+  isStreaming?: boolean;
+  timestamp?: number;
+  thinkingDuration?: number;
 }

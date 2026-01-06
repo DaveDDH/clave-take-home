@@ -10,12 +10,6 @@ export interface ChatRequestOptions {
   debug?: boolean;
 }
 
-export interface ChatResponse {
-  processId: string;
-}
-
-export type ProcessStatus = 'pending' | 'processing' | 'completed' | 'failed';
-
 export interface ChartData {
   type: 'bar' | 'line' | 'pie' | 'area' | 'radar' | 'radial';
   data: Record<string, unknown>[];
@@ -25,92 +19,107 @@ export interface ChartData {
   };
 }
 
-export interface ProcessedMessage {
-  content: string;
-  charts?: ChartData[];
-  sql?: string;
-  debug?: {
-    linkedSchema: unknown;
-    confidence?: number;
-    candidateCount?: number;
-    successfulExecutions?: number;
-  };
+// SSE streaming API
+export interface StreamHandlers {
+  onClassification?: (data: {
+    isDataQuery: boolean;
+    chartType: string;
+    conversationalResponse: string;
+  }) => void;
+  onProgress?: (message: string, step: string) => void;
+  onSQL?: (sql: string) => void;
+  onChart?: (charts: ChartData[]) => void;
+  onContentDelta?: (token: string) => void;
+  onContent?: (content: string) => void;
+  onComplete?: () => void;
+  onError?: (error: string) => void;
 }
 
-export interface ProcessStatusResponse {
-  id: string;
-  status: ProcessStatus;
-  result?: ProcessedMessage;
-  partialResponse?: string;
-  error?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export async function startChatProcess(
+export async function streamChatResponse(
   messages: ApiMessage[],
-  options?: ChatRequestOptions
-): Promise<string> {
-  const response = await fetch(`${API_BASE_URL}/api/chat`, {
+  options: ChatRequestOptions,
+  handlers: StreamHandlers
+): Promise<() => void> {
+  const response = await fetch(`${API_BASE_URL}/api/chat/stream`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      Accept: 'text/event-stream',
     },
-    body: JSON.stringify({
-      messages,
-      options: options || { useConsistency: true, debug: false },
-    }),
+    body: JSON.stringify({ messages, options }),
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to start chat process: ${response.statusText}`);
+    throw new Error(`Failed to start stream: ${response.statusText}`);
   }
 
-  const data: ChatResponse = await response.json();
-  return data.processId;
-}
+  const reader = response.body!.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
 
-export async function getProcessStatus(
-  processId: string
-): Promise<ProcessStatusResponse> {
-  const response = await fetch(
-    `${API_BASE_URL}/api/chat/status/${processId}`,
-    {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+  const readStream = async () => {
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (!line.trim() || line.startsWith(':')) continue;
+
+          const eventMatch = line.match(/^event: (.+)/m);
+          const dataMatch = line.match(/^data: (.+)/m);
+
+          if (eventMatch && dataMatch) {
+            const eventType = eventMatch[1];
+            const dataStr = dataMatch[1];
+
+            try {
+              const event = JSON.parse(dataStr);
+
+              switch (eventType) {
+                case 'classification':
+                  handlers.onClassification?.(event);
+                  break;
+                case 'progress':
+                  handlers.onProgress?.(event.message, event.step);
+                  break;
+                case 'sql':
+                  handlers.onSQL?.(event.sql);
+                  break;
+                case 'chart':
+                  handlers.onChart?.(event.charts);
+                  break;
+                case 'content-delta':
+                  handlers.onContentDelta?.(event.token);
+                  break;
+                case 'content':
+                  handlers.onContent?.(event.content);
+                  break;
+                case 'complete':
+                  handlers.onComplete?.();
+                  break;
+                case 'error':
+                  handlers.onError?.(event.error);
+                  break;
+              }
+            } catch (err) {
+              console.error('Failed to parse SSE event:', err);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      handlers.onError?.(
+        error instanceof Error ? error.message : 'Stream failed'
+      );
     }
-  );
+  };
 
-  if (!response.ok) {
-    throw new Error(`Failed to get process status: ${response.statusText}`);
-  }
+  readStream();
 
-  return response.json();
-}
-
-export async function pollProcessStatus(
-  processId: string,
-  intervalMs: number = 1000,
-  maxAttempts: number = 120
-): Promise<ProcessedMessage> {
-  let attempts = 0;
-
-  while (attempts < maxAttempts) {
-    const status = await getProcessStatus(processId);
-
-    if (status.status === 'completed' && status.result) {
-      return status.result;
-    }
-
-    if (status.status === 'failed') {
-      throw new Error(status.error || 'Process failed');
-    }
-
-    await new Promise((resolve) => setTimeout(resolve, intervalMs));
-    attempts++;
-  }
-
-  throw new Error('Process polling timeout');
+  return () => reader.cancel();
 }

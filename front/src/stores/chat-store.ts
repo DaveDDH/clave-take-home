@@ -1,8 +1,7 @@
 import { create } from 'zustand';
 import type { Message } from '@/types/chat';
 import {
-  startChatProcess,
-  getProcessStatus,
+  streamChatResponse,
   type ApiMessage,
 } from '@/lib/api';
 
@@ -12,6 +11,162 @@ interface ChatState {
   sendMessage: (content: string) => Promise<void>;
   regenerateFrom: (messageId: string) => Promise<void>;
   clearMessages: () => void;
+}
+
+type SetState = (
+  updater: (state: ChatState) => Partial<ChatState>
+) => void;
+
+async function processStreamingMessage(
+  apiMessages: ApiMessage[],
+  assistantMessageId: string,
+  set: SetState
+): Promise<void> {
+  let receivedComplete = false;
+  let secondMessageId: string | null = null;
+  const timeout = setTimeout(() => {
+    if (!receivedComplete) {
+      const targetId = secondMessageId || assistantMessageId;
+      set((state) => ({
+        messages: state.messages.map((msg) =>
+          msg.id === targetId
+            ? {
+                ...msg,
+                error: 'Connection timeout',
+                isStreaming: false,
+              }
+            : msg
+        ),
+        isLoading: false,
+      }));
+    }
+  }, 120000); // 2 min timeout
+
+  try {
+    await streamChatResponse(
+      apiMessages,
+      { useConsistency: true, debug: false },
+      {
+        onClassification: (data) => {
+          console.log('[SSE] Classification received:', data.conversationalResponse.substring(0, 50));
+          // Update first message with classification
+          // Keep isStreaming true in case this is a data query (charts will arrive later)
+          // If it's conversational, onComplete will mark it as not streaming
+          set((state) => ({
+            messages: state.messages.map((msg) =>
+              msg.id === assistantMessageId
+                ? { ...msg, content: data.conversationalResponse }
+                : msg
+            ),
+          }));
+        },
+        onChart: (charts) => {
+          console.log('[SSE] Charts received:', charts.length, 'chart(s)');
+          // Create a NEW message for charts + final response
+          secondMessageId = crypto.randomUUID();
+          const chartMessage: Message = {
+            id: secondMessageId,
+            role: 'assistant',
+            content: '',
+            charts,
+            isStreaming: true,
+          };
+          set((state) => ({
+            messages: [
+              // Mark first message as complete (no longer streaming)
+              ...state.messages.map((msg) =>
+                msg.id === assistantMessageId
+                  ? { ...msg, isStreaming: false }
+                  : msg
+              ),
+              // Add second message with charts
+              chartMessage,
+            ],
+          }));
+        },
+        onSQL: (sql) => {
+          console.log('[SSE] SQL received');
+          const targetId = secondMessageId || assistantMessageId;
+          set((state) => ({
+            messages: state.messages.map((msg) =>
+              msg.id === targetId ? { ...msg, sql } : msg
+            ),
+          }));
+        },
+        onContentDelta: (token) => {
+          console.log('[SSE] Token received:', token);
+          // Stream into the second message (with charts) if it exists, otherwise first message
+          const targetId = secondMessageId || assistantMessageId;
+          set((state) => ({
+            messages: state.messages.map((msg) => {
+              if (msg.id === targetId) {
+                return { ...msg, content: msg.content + token };
+              }
+              return msg;
+            }),
+          }));
+        },
+        onContent: (content) => {
+          console.log('[SSE] Full content received:', content.substring(0, 50));
+          const targetId = secondMessageId || assistantMessageId;
+          set((state) => ({
+            messages: state.messages.map((msg) =>
+              msg.id === targetId
+                ? { ...msg, content }
+                : msg
+            ),
+          }));
+        },
+        onComplete: () => {
+          console.log('[SSE] Stream complete');
+          receivedComplete = true;
+          clearTimeout(timeout);
+          const targetId = secondMessageId || assistantMessageId;
+          set((state) => {
+            const finalMessage = state.messages.find(msg => msg.id === targetId);
+            console.log('[SSE] Final message:', finalMessage);
+            return {
+              messages: state.messages.map((msg) =>
+                msg.id === targetId
+                  ? { ...msg, isStreaming: false }
+                  : msg
+              ),
+              isLoading: false,
+            };
+          });
+        },
+        onError: (error) => {
+          console.error('[SSE] Error:', error);
+          clearTimeout(timeout);
+          const targetId = secondMessageId || assistantMessageId;
+          set((state) => ({
+            messages: state.messages.map((msg) =>
+              msg.id === targetId
+                ? { ...msg, error, isStreaming: false }
+                : msg
+            ),
+            isLoading: false,
+          }));
+        },
+      }
+    );
+  } catch (error) {
+    clearTimeout(timeout);
+    const targetId = secondMessageId || assistantMessageId;
+    set((state) => ({
+      messages: state.messages.map((msg) =>
+        msg.id === targetId
+          ? {
+              ...msg,
+              content: msg.content || 'Sorry, something went wrong.',
+              error: error instanceof Error ? error.message : 'Unknown error',
+              isStreaming: false,
+            }
+          : msg
+      ),
+      isLoading: false,
+    }));
+  }
 }
 
 export const useChatStore = create<ChatState>((set, get) => ({
@@ -26,100 +181,27 @@ export const useChatStore = create<ChatState>((set, get) => ({
       content: content.trim(),
     };
 
+    const assistantId = crypto.randomUUID();
+    const assistantMessage: Message = {
+      id: assistantId,
+      role: 'assistant',
+      content: '',
+      isStreaming: true,
+    };
+
     set((state) => ({
-      messages: [...state.messages, userMessage],
+      messages: [...state.messages, userMessage, assistantMessage],
       isLoading: true,
     }));
 
-    try {
-      // Convert messages to API format
-      const apiMessages: ApiMessage[] = [...get().messages, userMessage].map(
-        (msg) => ({
-          role: msg.role,
-          content: msg.content,
-        })
-      );
+    const apiMessages: ApiMessage[] = [...get().messages, userMessage].map(
+      (msg) => ({
+        role: msg.role,
+        content: msg.content,
+      })
+    );
 
-      // Start the async process
-      const processId = await startChatProcess(apiMessages, {
-        useConsistency: true,
-        debug: false,
-      });
-
-      let hasPartialResponse = false;
-
-      // Poll for results with partial response support
-      let attempts = 0;
-      const maxAttempts = 120;
-      const intervalMs = 1000;
-
-      while (attempts < maxAttempts) {
-        const status = await getProcessStatus(processId);
-
-        // Show partial response as soon as available
-        if (
-          status.partialResponse &&
-          !hasPartialResponse &&
-          status.status === 'processing'
-        ) {
-          hasPartialResponse = true;
-          const partialMessage: Message = {
-            id: crypto.randomUUID(),
-            role: 'assistant',
-            content: status.partialResponse,
-          };
-
-          set((state) => ({
-            messages: [...state.messages, partialMessage],
-          }));
-        }
-
-        // Final result ready
-        if (status.status === 'completed' && status.result) {
-          const finalMessage: Message = {
-            id: crypto.randomUUID(),
-            role: 'assistant',
-            content: status.result.content,
-            charts: status.result.charts,
-            sql: status.result.sql,
-          };
-
-          // Add final message (don't replace partial)
-          set((state) => ({
-            messages: [...state.messages, finalMessage],
-            isLoading: false,
-          }));
-          return;
-        }
-
-        // Process failed
-        if (status.status === 'failed') {
-          throw new Error(status.error || 'Process failed');
-        }
-
-        await new Promise((resolve) => setTimeout(resolve, intervalMs));
-        attempts++;
-      }
-
-      throw new Error('Process polling timeout');
-    } catch (error) {
-      console.error('Failed to send message:', error);
-
-      const errorMessage: Message = {
-        id: crypto.randomUUID(),
-        role: 'assistant',
-        content: 'Sorry, something went wrong. Please try again.',
-        error:
-          error instanceof Error
-            ? error.message
-            : 'An unknown error occurred',
-      };
-
-      set((state) => ({
-        messages: [...state.messages, errorMessage],
-        isLoading: false,
-      }));
-    }
+    await processStreamingMessage(apiMessages, assistantId, set);
   },
   regenerateFrom: async (messageId: string) => {
     if (get().isLoading) return;
@@ -129,7 +211,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     if (messageIndex === -1) return;
 
-    // Find the last user message before this assistant message block
     let lastUserMessageIndex = messageIndex;
     while (
       lastUserMessageIndex > 0 &&
@@ -143,101 +224,27 @@ export const useChatStore = create<ChatState>((set, get) => ({
       return;
     }
 
-    // Remove all messages from the assistant block onwards (keep the user message)
     const messagesUpToUser = messages.slice(0, lastUserMessageIndex + 1);
 
+    const assistantId = crypto.randomUUID();
+    const assistantMessage: Message = {
+      id: assistantId,
+      role: 'assistant',
+      content: '',
+      isStreaming: true,
+    };
+
     set({
-      messages: messagesUpToUser,
+      messages: [...messagesUpToUser, assistantMessage],
       isLoading: true,
     });
 
-    try {
-      // Convert messages to API format
-      const apiMessages: ApiMessage[] = messagesUpToUser.map((msg) => ({
-        role: msg.role,
-        content: msg.content,
-      }));
+    const apiMessages: ApiMessage[] = messagesUpToUser.map((msg) => ({
+      role: msg.role,
+      content: msg.content,
+    }));
 
-      // Start the async process
-      const processId = await startChatProcess(apiMessages, {
-        useConsistency: true,
-        debug: false,
-      });
-
-      let hasPartialResponse = false;
-
-      // Poll for results with partial response support
-      let attempts = 0;
-      const maxAttempts = 120;
-      const intervalMs = 1000;
-
-      while (attempts < maxAttempts) {
-        const status = await getProcessStatus(processId);
-
-        // Show partial response as soon as available
-        if (
-          status.partialResponse &&
-          !hasPartialResponse &&
-          status.status === 'processing'
-        ) {
-          hasPartialResponse = true;
-          const partialMessage: Message = {
-            id: crypto.randomUUID(),
-            role: 'assistant',
-            content: status.partialResponse,
-          };
-
-          set((state) => ({
-            messages: [...state.messages, partialMessage],
-          }));
-        }
-
-        // Final result ready
-        if (status.status === 'completed' && status.result) {
-          const finalMessage: Message = {
-            id: crypto.randomUUID(),
-            role: 'assistant',
-            content: status.result.content,
-            charts: status.result.charts,
-            sql: status.result.sql,
-          };
-
-          // Add final message (don't replace partial)
-          set((state) => ({
-            messages: [...state.messages, finalMessage],
-            isLoading: false,
-          }));
-          return;
-        }
-
-        // Process failed
-        if (status.status === 'failed') {
-          throw new Error(status.error || 'Process failed');
-        }
-
-        await new Promise((resolve) => setTimeout(resolve, intervalMs));
-        attempts++;
-      }
-
-      throw new Error('Process polling timeout');
-    } catch (error) {
-      console.error('Failed to regenerate message:', error);
-
-      const errorMessage: Message = {
-        id: crypto.randomUUID(),
-        role: 'assistant',
-        content: 'Sorry, something went wrong. Please try again.',
-        error:
-          error instanceof Error
-            ? error.message
-            : 'An unknown error occurred',
-      };
-
-      set((state) => ({
-        messages: [...state.messages, errorMessage],
-        isLoading: false,
-      }));
-    }
+    await processStreamingMessage(apiMessages, assistantId, set);
   },
   clearMessages: () => set({ messages: [] }),
 }));

@@ -6,7 +6,7 @@ import type { WidgetChart } from "@/types/widget";
 import { ChartMessage } from "./ChartMessage";
 import { SaveWidgetModal } from "./SaveWidgetModal";
 import { useChatStore } from "@/stores/chat-store";
-import { Copy, RotateCw, Save } from "lucide-react";
+import { Copy, RotateCw, Save, Brain } from "lucide-react";
 import { Button } from "../ui/button";
 
 import Markdown from "react-markdown";
@@ -73,14 +73,17 @@ export function MessageBubble({
   if (message.charts?.length) {
     return (
       <div className="flex flex-col gap-2 justify-start animate-in fade-in slide-in-from-bottom-2 duration-300">
+        <ChartMessage charts={message.charts} />
         {message.content && (
           <div className="max-w-[80%] rounded-2xl px-4 py-3 pt-0">
             <div className="whitespace-pre-wrap text-sm leading-relaxed">
               <Markdown remarkPlugins={[remarkGfm]}>{message.content}</Markdown>
+              {message.isStreaming && (
+                <span className="inline-block ml-1 w-[2px] h-4 bg-primary animate-pulse" />
+              )}
             </div>
           </div>
         )}
-        <ChartMessage charts={message.charts} />
         {!isUser && isLastInBlock && !isLoading && (
           <div className="flex items-center gap-1 pl-4">
             {chatQuickAction(Copy, onCopyClick)}
@@ -93,6 +96,14 @@ export function MessageBubble({
           onOpenChange={setSaveModalOpen}
           charts={widgetCharts}
         />
+        {!isUser && !isLastInBlock && (
+          <div className="flex items-center gap-1.5 justify-start pl-4 mt-2">
+            <Brain className="size-3.5 text-foreground" />
+            <span className="text-sm text-foreground font-bold italic">
+              Reasoning...
+            </span>
+          </div>
+        )}
       </div>
     );
   }
@@ -107,6 +118,9 @@ export function MessageBubble({
         >
           <div className="whitespace-pre-wrap text-sm leading-relaxed">
             <Markdown remarkPlugins={[remarkGfm]}>{message.content}</Markdown>
+            {message.isStreaming && (
+              <span className="inline-block ml-1 w-[2px] h-4 bg-primary animate-pulse" />
+            )}
           </div>
         </div>
       </div>
@@ -122,6 +136,14 @@ export function MessageBubble({
         onOpenChange={setSaveModalOpen}
         charts={widgetCharts}
       />
+      {!isUser && !isLastInBlock && (
+        <div className="flex items-center gap-1.5 justify-start pl-4 mt-2">
+          <Brain className="size-3.5 text-foreground" />
+          <span className="text-sm text-foreground font-bold italic">
+            Reasoning...
+          </span>
+        </div>
+      )}
     </div>
   );
 }

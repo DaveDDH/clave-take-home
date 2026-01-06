@@ -27,10 +27,13 @@ function loadTestFiles() {
   });
 }
 
-async function startChatProcess(query) {
-  const response = await fetch(`${API_BASE_URL}/api/chat`, {
+async function streamChatResponse(query) {
+  const response = await fetch(`${API_BASE_URL}/api/chat/stream`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'text/event-stream',
+    },
     body: JSON.stringify({
       messages: [{ role: 'user', content: query }],
       options: { useConsistency: true, debug: false },
@@ -41,46 +44,94 @@ async function startChatProcess(query) {
     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
   }
 
-  const data = await response.json();
-  return data.processId;
-}
+  return new Promise((resolve, reject) => {
+    const result = {
+      content: '',
+      charts: null,
+      sql: null,
+    };
 
-async function getProcessStatus(processId) {
-  const response = await fetch(`${API_BASE_URL}/api/chat/status/${processId}`, {
-    method: 'GET',
-    headers: { 'Content-Type': 'application/json' },
+    let buffer = '';
+    let isComplete = false;
+    const timeout = setTimeout(() => {
+      if (!isComplete) {
+        reject(new Error('Stream timeout'));
+      }
+    }, 120000); // 2 min timeout
+
+    // Read stream
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+
+    const readStream = async () => {
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n\n');
+          buffer = lines.pop() || '';
+
+          for (const line of lines) {
+            if (!line.trim() || line.startsWith(':')) continue;
+
+            const eventMatch = line.match(/^event: (.+)/m);
+            const dataMatch = line.match(/^data: (.+)/m);
+
+            if (eventMatch && dataMatch) {
+              const eventType = eventMatch[1];
+              const dataStr = dataMatch[1];
+
+              try {
+                const event = JSON.parse(dataStr);
+
+                switch (eventType) {
+                  case 'classification':
+                    result.content = event.conversationalResponse;
+                    break;
+                  case 'chart':
+                    result.charts = event.charts;
+                    break;
+                  case 'sql':
+                    result.sql = event.sql;
+                    break;
+                  case 'content-delta':
+                    result.content += event.token;
+                    break;
+                  case 'content':
+                    result.content = event.content;
+                    break;
+                  case 'complete':
+                    isComplete = true;
+                    clearTimeout(timeout);
+                    resolve(result);
+                    return;
+                  case 'error':
+                    clearTimeout(timeout);
+                    reject(new Error(event.error));
+                    return;
+                }
+              } catch (err) {
+                console.error('Failed to parse SSE event:', err);
+              }
+            }
+          }
+        }
+
+        // Stream ended without complete event
+        if (!isComplete) {
+          clearTimeout(timeout);
+          reject(new Error('Stream ended without complete event'));
+        }
+      } catch (error) {
+        clearTimeout(timeout);
+        reject(error);
+      }
+    };
+
+    readStream();
   });
-
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-  }
-
-  return response.json();
-}
-
-async function pollProcessStatus(processId, maxAttempts = 60) {
-  let attempts = 0;
-
-  while (attempts < maxAttempts) {
-    const status = await getProcessStatus(processId);
-
-    if (status.status === 'completed') {
-      // Return result with logs
-      return {
-        result: status.result,
-        logs: status.logs || [],
-      };
-    }
-
-    if (status.status === 'failed') {
-      throw new Error(status.error || 'Process failed', { cause: { logs: status.logs } });
-    }
-
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    attempts++;
-  }
-
-  throw new Error('Process polling timeout');
 }
 
 function compareCharts(actual, expected) {
@@ -167,19 +218,13 @@ function compareCharts(actual, expected) {
 
 async function testQuery(testCase, index, total) {
   const startTime = Date.now();
-  let logs = [];
 
   try {
     console.log(`\n[${index + 1}/${total}] Testing: "${testCase.query}"`);
     console.log(`  File: ${testCase.file}`);
 
-    // Start process
-    const processId = await startChatProcess(testCase.query);
-    console.log(`  Process ID: ${processId}`);
-
-    // Poll for result
-    const { result, logs: processLogs } = await pollProcessStatus(processId);
-    logs = processLogs;
+    // Stream response
+    const result = await streamChatResponse(testCase.query);
     const duration = Date.now() - startTime;
 
     // Compare charts
@@ -187,35 +232,18 @@ async function testQuery(testCase, index, total) {
 
     if (comparison.match) {
       console.log(`  ✅ PASSED (${duration}ms)`);
-      return { file: testCase.file, query: testCase.query, success: true, duration, logs };
+      return { file: testCase.file, query: testCase.query, success: true, duration };
     } else {
       console.log(`  ❌ FAILED (${duration}ms)`);
       comparison.errors.forEach(error => console.log(`     - ${error}`));
 
-      // Print logs for failed test
-      console.log(`\n  📋 Process Logs:`);
-      if (logs.length > 0) {
-        logs.forEach(log => console.log(`     ${log}`));
-      } else {
-        console.log(`     (no logs available)`);
-      }
-
-      return { file: testCase.file, query: testCase.query, success: false, duration, errors: comparison.errors, logs };
+      return { file: testCase.file, query: testCase.query, success: false, duration, errors: comparison.errors };
     }
   } catch (error) {
     const duration = Date.now() - startTime;
     console.log(`  ❌ ERROR (${duration}ms): ${error.message}`);
 
-    // Print logs for errored test
-    console.log(`\n  📋 Process Logs:`);
-    const errorLogs = error.cause?.logs || logs;
-    if (errorLogs.length > 0) {
-      errorLogs.forEach(log => console.log(`     ${log}`));
-    } else {
-      console.log(`     (no logs available)`);
-    }
-
-    return { file: testCase.file, query: testCase.query, success: false, duration, errors: [error.message], logs: errorLogs };
+    return { file: testCase.file, query: testCase.query, success: false, duration, errors: [error.message] };
   }
 }
 

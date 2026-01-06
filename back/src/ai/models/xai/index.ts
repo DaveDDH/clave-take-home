@@ -1,5 +1,5 @@
 import { createXai } from "@ai-sdk/xai";
-import { generateText, generateObject } from "ai";
+import { generateText, generateObject, streamText } from "ai";
 import { z } from "zod";
 
 import { XAI_API_KEY, MODEL } from "#constants/index.js";
@@ -45,4 +45,27 @@ export async function generateObjectResponse<T>(
     temperature: options?.temperature ?? 0.0,
   });
   return object;
+}
+
+export async function streamTextResponse(
+  systemPrompt: string,
+  userPrompt: string,
+  options: { temperature?: number },
+  onToken: (token: string) => void
+): Promise<string> {
+  const model = getGrokModel();
+  const result = await streamText({
+    model,
+    system: systemPrompt,
+    prompt: userPrompt,
+    temperature: options?.temperature ?? 0.0,
+  });
+
+  let fullText = '';
+  for await (const chunk of result.textStream) {
+    fullText += chunk;
+    onToken(chunk);
+  }
+
+  return fullText;
 }
