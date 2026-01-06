@@ -37,7 +37,7 @@ export function RadialChart({ data, className }: RadialChartProps) {
   }, {});
 
   return (
-    <ChartContainer config={chartConfig} className={`aspect-square max-h-[200px] ${className}`}>
+    <ChartContainer config={chartConfig} className={`min-h-[200px] h-[300px] w-full ${className}`}>
       <RechartsRadialBarChart
         data={chartData}
         innerRadius={20}

@@ -35,7 +35,7 @@ export function RadarChart({ data, labelKey, valueKey, className }: RadarChartPr
   );
 
   return (
-    <ChartContainer config={chartConfig} className={`aspect-square max-h-[200px] ${className}`}>
+    <ChartContainer config={chartConfig} className={`min-h-[200px] h-[300px] w-full ${className}`}>
       <RechartsRadarChart data={data} cx="50%" cy="50%" outerRadius="60%">
         <PolarGrid />
         <PolarAngleAxis dataKey={labelKey} tick={{ fontSize: 10 }} />

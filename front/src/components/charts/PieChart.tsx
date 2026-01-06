@@ -32,7 +32,7 @@ export function PieChart({ data, className }: PieChartProps) {
   }, {});
 
   return (
-    <ChartContainer config={chartConfig} className={`aspect-square max-h-[200px] ${className}`}>
+    <ChartContainer config={chartConfig} className={`min-h-[200px] h-[300px] w-full ${className}`}>
       <RechartsPieChart>
         <ChartTooltip content={<ChartTooltipContent />} />
         <Pie data={data} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={60}>

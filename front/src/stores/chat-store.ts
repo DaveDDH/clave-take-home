@@ -73,12 +73,8 @@ async function processStreamingMessage(
           };
           set((state) => ({
             messages: [
-              // Mark first message as complete (no longer streaming)
-              ...state.messages.map((msg) =>
-                msg.id === assistantMessageId
-                  ? { ...msg, isStreaming: false }
-                  : msg
-              ),
+              // Keep first message (let typewriter finish)
+              ...state.messages,
               // Add second message with charts
               chartMessage,
             ],
@@ -94,17 +90,27 @@ async function processStreamingMessage(
           }));
         },
         onContentDelta: (token) => {
-          console.log('[SSE] Token received:', token);
           // Stream into the second message (with charts) if it exists, otherwise first message
           const targetId = secondMessageId || assistantMessageId;
-          set((state) => ({
-            messages: state.messages.map((msg) => {
+          set((state) => {
+            const updatedMessages = state.messages.map((msg) => {
               if (msg.id === targetId) {
-                return { ...msg, content: msg.content + token };
+                const newContent = msg.content + token;
+                console.log('[TYPEWRITER] Appending token to message:', {
+                  messageId: msg.id,
+                  isFirstMessage: msg.id === assistantMessageId,
+                  isSecondMessage: msg.id === secondMessageId,
+                  isStreaming: msg.isStreaming,
+                  oldContentLength: msg.content.length,
+                  newContentLength: newContent.length,
+                  hasCharts: !!msg.charts,
+                });
+                return { ...msg, content: newContent };
               }
               return msg;
-            }),
-          }));
+            });
+            return { messages: updatedMessages };
+          });
         },
         onContent: (content) => {
           console.log('[SSE] Full content received:', content.substring(0, 50));
@@ -121,16 +127,19 @@ async function processStreamingMessage(
           console.log('[SSE] Stream complete');
           receivedComplete = true;
           clearTimeout(timeout);
-          const targetId = secondMessageId || assistantMessageId;
           set((state) => {
-            const finalMessage = state.messages.find(msg => msg.id === targetId);
+            const finalMessage = state.messages.find(msg =>
+              msg.id === (secondMessageId || assistantMessageId)
+            );
             console.log('[SSE] Final message:', finalMessage);
             return {
-              messages: state.messages.map((msg) =>
-                msg.id === targetId
-                  ? { ...msg, isStreaming: false }
-                  : msg
-              ),
+              messages: state.messages.map((msg) => {
+                // Mark both first and second messages as not streaming
+                if (msg.id === assistantMessageId || msg.id === secondMessageId) {
+                  return { ...msg, isStreaming: false };
+                }
+                return msg;
+              }),
               isLoading: false,
             };
           });

@@ -52,7 +52,7 @@ export function LineChart({ data, xKey, yKey, className }: LineChartProps) {
   }, [yKeys]);
 
   return (
-    <ChartContainer config={chartConfig} className={`aspect-square max-h-[200px] ${className}`}>
+    <ChartContainer config={chartConfig} className={`min-h-[200px] h-[300px] w-full ${className}`}>
       <RechartsLineChart data={data} margin={{ left: 12, right: 12 }}>
         <CartesianGrid vertical={false} />
         <XAxis dataKey={xKey} tickLine={false} axisLine={false} tickMargin={8} />

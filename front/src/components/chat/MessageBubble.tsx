@@ -6,6 +6,7 @@ import type { WidgetChart } from "@/types/widget";
 import { ChartMessage } from "./ChartMessage";
 import { SaveWidgetModal } from "./SaveWidgetModal";
 import { useChatStore } from "@/stores/chat-store";
+import { useTypewriter } from "@/hooks/useTypewriter";
 import { Copy, RotateCw, Save, Brain } from "lucide-react";
 import { Button } from "../ui/button";
 
@@ -30,6 +31,23 @@ export function MessageBubble({
   isLoading = false,
 }: MessageBubbleProps) {
   const isUser = message.role === "user";
+
+  // Use typewriter effect for assistant messages that are streaming
+  const typewriterEnabled = !isUser && message.isStreaming === true;
+  console.log('[TYPEWRITER] MessageBubble render:', {
+    messageId: message.id,
+    isUser,
+    isStreaming: message.isStreaming,
+    typewriterEnabled,
+    contentLength: message.content.length,
+    hasCharts: !!message.charts,
+  });
+
+  const displayedContent = useTypewriter({
+    text: message.content,
+    enabled: typewriterEnabled,
+    speed: 50, // 50 characters per second
+  });
   const [saveModalOpen, setSaveModalOpen] = useState(false);
   const regenerateFrom = useChatStore((state) => state.regenerateFrom);
 
@@ -74,13 +92,10 @@ export function MessageBubble({
     return (
       <div className="flex flex-col gap-2 justify-start animate-in fade-in slide-in-from-bottom-2 duration-300">
         <ChartMessage charts={message.charts} />
-        {message.content && (
+        {displayedContent && (
           <div className="max-w-[80%] rounded-2xl px-4 py-3 pt-0">
             <div className="whitespace-pre-wrap text-sm leading-relaxed">
-              <Markdown remarkPlugins={[remarkGfm]}>{message.content}</Markdown>
-              {message.isStreaming && (
-                <span className="inline-block ml-1 w-[2px] h-4 bg-primary animate-pulse" />
-              )}
+              <Markdown remarkPlugins={[remarkGfm]}>{displayedContent}</Markdown>
             </div>
           </div>
         )}
@@ -117,10 +132,7 @@ export function MessageBubble({
           }`}
         >
           <div className="whitespace-pre-wrap text-sm leading-relaxed">
-            <Markdown remarkPlugins={[remarkGfm]}>{message.content}</Markdown>
-            {message.isStreaming && (
-              <span className="inline-block ml-1 w-[2px] h-4 bg-primary animate-pulse" />
-            )}
+            <Markdown remarkPlugins={[remarkGfm]}>{displayedContent}</Markdown>
           </div>
         </div>
       </div>

@@ -8,25 +8,24 @@ import { MessageBubble } from "./MessageBubble";
 import { TypingIndicator } from "./TypingIndicator";
 
 const EXAMPLE_QUERIES = [
-  "Show me sales comparison between Downtown and Airport locations",
-  "What were my top 5 selling products last week?",
-  "Graph hourly sales for Friday vs Saturday at all stores",
-  "Compare delivery vs dine-in revenue this month",
-  "Show me total sales by location",
   "What was the revenue yesterday?",
   "List the top 10 selling items",
-  "Compare sales between Downtown and Airport",
-  "Show me Downtown vs University revenue",
-  "Which location had the highest sales?",
-  "Show me sales for January 2nd",
-  "What were hourly sales on the 3rd?",
-  "Graph daily revenue for the first week",
   "What are the top selling items at the Mall?",
-  "Show me beverage sales across all locations",
-  "Which category generates the most revenue?",
+  "Show me total sales by location",
+  "What were hourly sales on the 3rd?",
+  "Show me sales for January 2nd",
+  "Which location had the highest sales?",
+  "Show me sales comparison between Downtown and Airport locations",
+  "Show me Downtown vs University revenue",
   "Compare delivery vs dine-in revenue",
-  "How much came from DoorDash?",
   "Show me takeout orders by location",
+  "Which category generates the most revenue?",
+  "Graph hourly sales for Friday vs Saturday at all stores",
+
+  "Graph daily revenue for the first week",
+  "Show me beverage sales across all locations",
+  "How much came from DoorDash?",
+  
   "Show me peak hours for each location",
   "What's the average order value by channel?",
   "Graph the trend of delivery orders over time",
@@ -112,7 +111,9 @@ export function MessageList({
           );
           const blockCharts = blockMessages.flatMap((msg) => msg.charts || []);
           const hasChartsInBlock = blockCharts.length > 0;
-          const blockContent = blockMessages.map((msg) => msg.content).join('\n\n');
+          const blockContent = blockMessages
+            .map((msg) => msg.content)
+            .join("\n\n");
 
           return (
             <MessageBubble
