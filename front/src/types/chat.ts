@@ -17,6 +17,6 @@ export interface Message {
   sql?: string;
   error?: string;
   isStreaming?: boolean;
-  timestamp?: number;
-  thinkingDuration?: number;
+  partialTimestamp?: number;
+  finalTimestamp?: number;
 }

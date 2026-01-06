@@ -20,6 +20,7 @@ interface MessageBubbleProps {
   blockCharts?: ChartData[];
   blockContent?: string;
   isLoading?: boolean;
+  nextMessage?: Message;
 }
 
 export function MessageBubble({
@@ -27,8 +28,9 @@ export function MessageBubble({
   isLastInBlock = false,
   hasChartsInBlock = false,
   blockCharts = [],
-  blockContent = '',
+  blockContent = "",
   isLoading = false,
+  nextMessage,
 }: MessageBubbleProps) {
   const isUser = message.role === "user";
 
@@ -51,6 +53,54 @@ export function MessageBubble({
       config: chart.config,
     }));
   }, [blockCharts]);
+
+  // Calculate reasoning text
+  const reasoningText = useMemo(() => {
+    console.log("[MESSAGE-BUBBLE] Calculating reasoningText", {
+      messageId: message.id,
+      hasNextMessage: !!nextMessage,
+      isLoading,
+      nextMessageIsStreaming: nextMessage?.isStreaming,
+      messagePartialTimestamp: message.partialTimestamp,
+      nextMessageFinalTimestamp: nextMessage?.finalTimestamp,
+      isLastInBlock,
+    });
+
+    if (!nextMessage) {
+      console.log("[MESSAGE-BUBBLE] No next message, returning null");
+      return null;
+    }
+
+    // Show "Reasoning..." if still loading or next message is streaming
+    if (isLoading || nextMessage.isStreaming) {
+      console.log('[MESSAGE-BUBBLE] Returning "Reasoning..." because', {
+        isLoading,
+        nextMessageIsStreaming: nextMessage.isStreaming,
+      });
+      return "Reasoning...";
+    }
+
+    // Show "Thought for X seconds" if we have timestamps
+    if (message.partialTimestamp && nextMessage.finalTimestamp) {
+      const duration =
+        (nextMessage.finalTimestamp - message.partialTimestamp) / 1000;
+      console.log('[MESSAGE-BUBBLE] Returning "Thought for X seconds"', {
+        duration,
+        partialTimestamp: message.partialTimestamp,
+        finalTimestamp: nextMessage.finalTimestamp,
+      });
+      return `Thought for ${duration.toFixed(1)} seconds`;
+    }
+
+    console.log("[MESSAGE-BUBBLE] No conditions met, returning null");
+    return null;
+  }, [
+    isLoading,
+    nextMessage,
+    message.partialTimestamp,
+    isLastInBlock,
+    message.id,
+  ]);
 
   const onCopyClick = async () => {
     try {
@@ -81,6 +131,17 @@ export function MessageBubble({
     );
   };
 
+  // Log when rendering reasoning section
+  if (!isUser && !isLastInBlock) {
+    console.log("[MESSAGE-BUBBLE] Rendering decision for reasoning section", {
+      messageId: message.id,
+      isUser,
+      isLastInBlock,
+      reasoningText,
+      willRender: !!reasoningText,
+    });
+  }
+
   if (message.charts?.length) {
     return (
       <div className="flex flex-col gap-2 justify-start animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -88,7 +149,9 @@ export function MessageBubble({
         {displayedContent && (
           <div className="max-w-[80%] rounded-2xl px-4 py-3 pt-0">
             <div className="whitespace-pre-wrap text-sm leading-relaxed">
-              <Markdown remarkPlugins={[remarkGfm]}>{displayedContent}</Markdown>
+              <Markdown remarkPlugins={[remarkGfm]}>
+                {displayedContent}
+              </Markdown>
             </div>
           </div>
         )}
@@ -104,11 +167,11 @@ export function MessageBubble({
           onOpenChange={setSaveModalOpen}
           charts={widgetCharts}
         />
-        {!isUser && !isLastInBlock && (
+        {!isUser && !isLastInBlock && reasoningText && (
           <div className="flex items-center gap-1.5 justify-start pl-4 mt-2">
             <Brain className="size-3.5 text-foreground" />
             <span className="text-sm text-foreground font-bold italic">
-              Reasoning...
+              {reasoningText}
             </span>
           </div>
         )}
@@ -141,11 +204,11 @@ export function MessageBubble({
         onOpenChange={setSaveModalOpen}
         charts={widgetCharts}
       />
-      {!isUser && !isLastInBlock && (
+      {!isUser && !isLastInBlock && reasoningText && (
         <div className="flex items-center gap-1.5 justify-start pl-4 mt-2">
           <Brain className="size-3.5 text-foreground" />
           <span className="text-sm text-foreground font-bold italic">
-            Reasoning...
+            {reasoningText}
           </span>
         </div>
       )}
