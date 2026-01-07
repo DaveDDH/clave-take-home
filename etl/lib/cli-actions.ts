@@ -404,6 +404,14 @@ function getSchemaSQL(): string {
   return readFileSync(schemaPath, 'utf-8');
 }
 
+/**
+ * Get the gold views SQL content
+ */
+function getGoldViewsSQL(): string {
+  const goldViewsPath = join(__dirname, '..', 'gold_views.sql');
+  return readFileSync(goldViewsPath, 'utf-8');
+}
+
 export type LoadProgressCallback = (message: string) => void;
 
 /**
@@ -467,9 +475,19 @@ export async function loadToDatabase(
     await client.query(schemaSQL);
     log('Schema ready');
 
-    // If cleanDb, truncate all tables in reverse order (respect foreign keys)
+    // If cleanDb, drop views and truncate all tables
     if (cleanDb) {
       log('Cleaning existing data...');
+      // Drop gold views first (they depend on base tables)
+      await client.query(`
+        DROP VIEW IF EXISTS gold_category_performance CASCADE;
+        DROP VIEW IF EXISTS gold_hourly_trends CASCADE;
+        DROP VIEW IF EXISTS gold_product_performance CASCADE;
+        DROP VIEW IF EXISTS gold_daily_sales CASCADE;
+        DROP VIEW IF EXISTS gold_order_items CASCADE;
+        DROP VIEW IF EXISTS gold_orders CASCADE;
+      `);
+      // Truncate tables in reverse order (respect foreign keys)
       await client.query(`
         TRUNCATE TABLE payments, order_items, orders,
                        product_aliases, product_variations, products,
@@ -658,6 +676,12 @@ export async function loadToDatabase(
       );
       stats.payments++;
     }
+
+    // 9. Create gold views for optimized analytics queries
+    log('Creating gold views for analytics...');
+    const goldViewsSQL = getGoldViewsSQL();
+    await client.query(goldViewsSQL);
+    log('Gold views created');
 
     log('Closing connection...');
     await client.end();
