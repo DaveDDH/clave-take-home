@@ -1,17 +1,17 @@
 # Clave Engineering Take-Home Assessment
 
-## Architecture Evolution: From Demo to Production
+## Architecture Evolution
 
-This demo uses a normalized PostgreSQL schema with static JSON data. For production scale (1000+ restaurants, real-time webhooks), the architecture would evolve as follows:
+This demo uses a normalized PostgreSQL schema populated with data from the JSON files you provided. For production scale (1000+ restaurants, real-time events), the architecture would evolve as follows:
 
-| Aspect | Demo (Current) | Production |
-|--------|----------------|------------|
-| **Data Model** | Normalized schema + Gold Views | Event Sourcing + CQRS |
-| **Tenancy** | Single-tenant | Multi-tenant with Row-Level Security |
-| **Data Ingestion** | Batch ETL from JSON files | Real-time webhooks (Toast, DoorDash, Square) |
-| **Storage** | Supabase Postgres | Hot (Redis) / Warm (TimescaleDB) / Cold (S3) |
-| **Query Layer** | Gold Views (pre-joined, pre-aggregated) | Materialized projections + continuous aggregates |
-| **Scaling** | Vertical | Horizontal (tenant-based partitioning) |
-| **Audit Trail** | None | Append-only event store with replay |
+| Aspect | Demo (Current) | Production | Comparison |
+|--------|----------------|------------|------------|
+| **Data Model** | Normalized schema + Gold Views | Event Sourcing + CQRS | +Audit trail, +replay from any point in time, +separate read/write optimization |
+| **Tenancy** | Single-tenant | Multi-tenant with RLS | +Automatic data isolation per restaurant, +scales to 1000s of tenants |
+| **Data Ingestion** | One-time batch load from JSON files | Live webhooks from POS systems | +Real-time updates, +no manual ETL runs needed |
+| **Storage** | Supabase Postgres | Hot (Redis) / Warm (TimescaleDB) / Cold (S3) | +90% storage cost reduction, +query speed matched to data freshness |
+| **Query Layer** | Gold Views (manual refresh) | Continuous aggregates (auto-refresh) | +Views update automatically, +no stale data |
+| **Scaling** | Vertical (bigger server) | Horizontal (tenant-based partitioning) | +Linear cost scaling, +no single point of failure |
+| **Audit Trail** | None | Append-only event store | +Full history, +compliance ready, +debug any past state |
 
 This is the pattern used by Uber, DoorDash, and Stripe for multi-tenant analytics workloads.
