@@ -489,7 +489,8 @@ export async function loadToDatabase(
       `);
       // Truncate tables in reverse order (respect foreign keys)
       await client.query(`
-        TRUNCATE TABLE payments, order_items, orders,
+        TRUNCATE TABLE messages, conversations,
+                       payments, order_items, orders,
                        product_aliases, product_variations, products,
                        categories, locations CASCADE
       `);

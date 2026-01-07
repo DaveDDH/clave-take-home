@@ -3,14 +3,13 @@ import { executeQuery } from "./index.js";
 interface DatabaseMetadata {
   locationNames: string[];
   categoryNames: string[];
-  // Can add more as needed
 }
 
-let cachedMetadata: DatabaseMetadata | null = null;
-
-export async function initializeMetadata(): Promise<void> {
-  console.log("🔄 Loading database metadata...");
-
+/**
+ * Fetches metadata fresh from the database each time.
+ * Stateless - no caching, safe for horizontal scaling.
+ */
+export async function getMetadata(): Promise<DatabaseMetadata> {
   try {
     // Query location names
     const locations = await executeQuery<{ name: string }>(
@@ -22,29 +21,16 @@ export async function initializeMetadata(): Promise<void> {
       "SELECT DISTINCT name FROM categories ORDER BY name"
     );
 
-    cachedMetadata = {
+    return {
       locationNames: locations.map((l) => l.name),
       categoryNames: categories.map((c) => c.name),
     };
-
-    console.log("✅ Database metadata loaded:");
-    console.log(`   Locations: ${cachedMetadata.locationNames.join(", ")}`);
-    console.log(`   Categories: ${cachedMetadata.categoryNames.join(", ")}`);
   } catch (error) {
-    console.error("❌ Failed to load database metadata:", error);
-    // Set empty defaults so the app can still run
-    cachedMetadata = {
+    console.error("Failed to load database metadata:", error);
+    // Return empty defaults so the app can still run
+    return {
       locationNames: [],
       categoryNames: [],
     };
   }
-}
-
-export function getMetadata(): DatabaseMetadata {
-  if (!cachedMetadata) {
-    throw new Error(
-      "Database metadata not initialized. Call initializeMetadata() first."
-    );
-  }
-  return cachedMetadata;
 }

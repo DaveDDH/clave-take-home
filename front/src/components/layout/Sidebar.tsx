@@ -1,44 +1,166 @@
 "use client";
 
 import Link from "next/link";
-
-import { usePathname } from "next/navigation";
-import { MessageSquare, LayoutDashboard } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { LayoutDashboard, Plus, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useEffect, useState } from "react";
+import { fetchConversations, type ConversationPreview } from "@/lib/api";
+import { useChatStore } from "@/stores/chat-store";
 
-const navItems = [
-  { href: "/copilot", label: "Copilot", icon: MessageSquare },
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-];
+const CONVERSATIONS_CACHE_KEY = "clave_conversations_cache";
+
+function getCachedConversations(): ConversationPreview[] {
+  try {
+    const cached = localStorage.getItem(CONVERSATIONS_CACHE_KEY);
+    return cached ? JSON.parse(cached) : [];
+  } catch {
+    return [];
+  }
+}
+
+function setCachedConversations(conversations: ConversationPreview[]): void {
+  try {
+    localStorage.setItem(CONVERSATIONS_CACHE_KEY, JSON.stringify(conversations));
+  } catch {
+    // Ignore storage errors
+  }
+}
 
 export function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const [conversations, setConversations] = useState<ConversationPreview[]>([]);
+  const {
+    conversationId,
+    pendingConversation,
+    loadConversation,
+    startNewConversation,
+  } = useChatStore();
+
+  const hasPendingConversation = !!pendingConversation;
+
+  // Load cached conversations on mount, then fetch fresh data
+  useEffect(() => {
+    // Fetch fresh data, loading from cache first
+    const load = async () => {
+      // Load from cache immediately before async fetch
+      const cached = getCachedConversations();
+      if (cached.length > 0) {
+        setConversations(cached);
+      }
+
+      try {
+        const data = await fetchConversations();
+        setConversations(data);
+        setCachedConversations(data);
+      } catch (error) {
+        console.error("Failed to fetch conversations:", error);
+      }
+    };
+    load();
+  }, [conversationId, hasPendingConversation]);
+
+  const handleNewConversation = () => {
+    startNewConversation();
+    router.push("/copilot");
+  };
+
+  const handleConversationClick = (id: string) => {
+    loadConversation(id);
+    router.push("/copilot");
+  };
+
+  const isCopilotActive = pathname === "/copilot";
+  const isDashboardActive = pathname === "/dashboard";
 
   return (
     <div className="flex h-full w-56 flex-col border-r border-border bg-card dark:bg-background shrink-0">
-      <nav className="flex-1 p-2">
+      <nav className="flex-1 p-2 overflow-y-auto">
         <ul className="space-y-1">
-          {navItems.map((item) => {
-            const isActive = pathname === item.href;
-            const Icon = item.icon;
+          {/* Copilot - New Conversation */}
+          <li>
+            <button
+              onClick={handleNewConversation}
+              className={cn(
+                "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all duration-200",
+                isCopilotActive && !conversationId && !pendingConversation
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              )}
+            >
+              <Plus className="size-4" />
+              New Chat
+            </button>
+          </li>
 
-            return (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  className={cn(
-                    "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all duration-200",
-                    isActive
-                      ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                  )}
-                >
-                  <Icon className="size-4" />
-                  {item.label}
-                </Link>
-              </li>
-            );
-          })}
+          {/* Dashboard */}
+          <li className="pt-0">
+            <Link
+              href="/dashboard"
+              className={cn(
+                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all duration-200",
+                isDashboardActive
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              )}
+            >
+              <LayoutDashboard className="size-4" />
+              Dashboard
+            </Link>
+          </li>
+
+          {/* Conversation History */}
+          {(conversations.length > 0 || pendingConversation) && (
+            <li className="pt-4">
+              <div className="px-3 py-1 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                History
+              </div>
+              <ul className="mt-0 space-y-0.5">
+                {/* Pending conversation (optimistic) */}
+                {pendingConversation && (
+                  <li>
+                    <div
+                      className={cn(
+                        "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-left",
+                        "bg-primary/10 text-primary"
+                      )}
+                      title={pendingConversation.preview}
+                    >
+                      <MessageCircle className="size-4 shrink-0 animate-pulse" />
+                      <span className="truncate">
+                        {pendingConversation.preview}
+                      </span>
+                    </div>
+                  </li>
+                )}
+                {/* Existing conversations */}
+                {conversations.map((conv) => {
+                  const isActive =
+                    conversationId === conv.id && isCopilotActive;
+                  const preview = conv.preview || "New conversation";
+
+                  return (
+                    <li key={conv.id}>
+                      <button
+                        onClick={() => handleConversationClick(conv.id)}
+                        className={cn(
+                          "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm transition-all duration-200 text-left",
+                          isActive
+                            ? "bg-primary/10 text-primary"
+                            : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                        )}
+                        title={preview}
+                      >
+                        <MessageCircle className="size-3 shrink-0" />
+                        <span className="truncate">{preview}</span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </li>
+          )}
         </ul>
       </nav>
     </div>

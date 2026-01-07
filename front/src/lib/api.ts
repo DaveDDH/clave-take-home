@@ -1,15 +1,5 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5006';
 
-export interface ApiMessage {
-  role: 'user' | 'assistant';
-  content: string;
-}
-
-export interface ChatRequestOptions {
-  useConsistency?: boolean;
-  debug?: boolean;
-}
-
 export interface ChartData {
   type: 'bar' | 'line' | 'pie' | 'area' | 'radar' | 'radial';
   data: Record<string, unknown>[];
@@ -17,6 +7,49 @@ export interface ChartData {
     xKey: string;
     yKey: string;
   };
+}
+
+export interface ApiMessage {
+  role: 'user' | 'assistant';
+  content: string;
+  charts?: ChartData[] | null;
+}
+
+export interface ChatRequestOptions {
+  useConsistency?: boolean;
+  debug?: boolean;
+}
+
+export interface ConversationPreview {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  preview: string | null;
+  message_count: number;
+}
+
+export interface ConversationWithMessages {
+  id: string;
+  messages: ApiMessage[];
+}
+
+// Fetch list of conversations
+export async function fetchConversations(): Promise<ConversationPreview[]> {
+  const response = await fetch(`${API_BASE_URL}/api/conversations`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch conversations');
+  }
+  const data = await response.json();
+  return data.conversations;
+}
+
+// Fetch a single conversation with all messages
+export async function fetchConversation(id: string): Promise<ConversationWithMessages> {
+  const response = await fetch(`${API_BASE_URL}/api/conversations/${id}`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch conversation');
+  }
+  return response.json();
 }
 
 // SSE streaming API
@@ -31,12 +64,14 @@ export interface StreamHandlers {
   onChart?: (charts: ChartData[]) => void;
   onContentDelta?: (token: string) => void;
   onContent?: (content: string) => void;
+  onConversationId?: (id: string) => void;
   onComplete?: () => void;
   onError?: (error: string) => void;
 }
 
 export async function streamChatResponse(
-  messages: ApiMessage[],
+  message: string,
+  conversationId: string | null,
   options: ChatRequestOptions,
   handlers: StreamHandlers
 ): Promise<() => void> {
@@ -46,7 +81,11 @@ export async function streamChatResponse(
       'Content-Type': 'application/json',
       Accept: 'text/event-stream',
     },
-    body: JSON.stringify({ messages, options }),
+    body: JSON.stringify({
+      message,
+      conversationId,
+      options,
+    }),
   });
 
   if (!response.ok) {
@@ -98,6 +137,9 @@ export async function streamChatResponse(
                   break;
                 case 'content':
                   handlers.onContent?.(event.content);
+                  break;
+                case 'conversationId':
+                  handlers.onConversationId?.(event.id);
                   break;
                 case 'complete':
                   handlers.onComplete?.();

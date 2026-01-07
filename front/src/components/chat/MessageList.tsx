@@ -1,11 +1,12 @@
 "use client";
 
 import { useRef, useEffect } from "react";
-import { MessageCircle } from "lucide-react";
+import Image from "next/image";
 import type { Message } from "@/types/chat";
 import { Badge } from "@/components/ui/badge";
 import { MessageBubble } from "./MessageBubble";
 import { TypingIndicator } from "./TypingIndicator";
+import { useThemeStore } from "@/stores/theme-store";
 
 const EXAMPLE_QUERIES = [
   "What was the revenue yesterday?",
@@ -25,7 +26,7 @@ const EXAMPLE_QUERIES = [
   "Graph daily revenue for the first week",
   "Show me beverage sales across all locations",
   "How much came from DoorDash?",
-  
+
   "Show me peak hours for each location",
   "What's the average order value by channel?",
   "Graph the trend of delivery orders over time",
@@ -51,12 +52,24 @@ export function MessageList({
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
 
+  const theme = useThemeStore((state) => state.theme);
+
+  const logoSrc =
+    theme === "dark" ? "/clave-logo-icon_darkmode.png" : "/clave-logo-icon.png";
+
   if (isEmpty) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-6 p-6">
         <div className="flex flex-col justify-center items-center">
-          <div className="rounded-full bg-muted p-4 w-fit">
-            <MessageCircle className="size-8 text-muted-foreground" />
+          <div className="rounded-full w-fit">
+            <Image
+              src={logoSrc}
+              alt="Clave"
+              width={35}
+              height={35}
+              priority
+              style={{ width: "auto", height: "100%" }}
+            />
           </div>
           <div className="text-center">
             <h2 className="text-xl font-semibold">Got questions?</h2>

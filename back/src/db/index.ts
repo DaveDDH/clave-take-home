@@ -24,6 +24,27 @@ export async function executeQuery<T = Record<string, unknown>>(
   }
 }
 
+/**
+ * Execute a write query (INSERT, UPDATE, DELETE) with parameterized values.
+ * Returns rows if the query uses RETURNING clause.
+ */
+export async function executeWriteQuery<T = Record<string, unknown>>(
+  sql: string,
+  params: unknown[] = []
+): Promise<T[]> {
+  const client = new Client({
+    connectionString: DATABASE_URL,
+  });
+
+  try {
+    await client.connect();
+    const result = await client.query(sql, params);
+    return result.rows as T[];
+  } finally {
+    await client.end();
+  }
+}
+
 export function isReadOnlyQuery(sql: string): boolean {
   const normalized = sql.trim().toUpperCase();
 

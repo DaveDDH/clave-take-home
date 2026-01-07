@@ -3,8 +3,8 @@
 
 import { getMetadata } from "#db/metadata.js";
 
-export function getCalibrationSystemPrompt(): string {
-  const metadata = getMetadata();
+export async function getCalibrationSystemPrompt(): Promise<string> {
+  const metadata = await getMetadata();
 
   // Build location names list
   const locationNamesList = metadata.locationNames.map((name) => `'${name}'`).join(", ");

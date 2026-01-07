@@ -71,7 +71,7 @@ Current date and time: ${dateAndTime}
 `;
 
   const response = await generateTextResponse(
-    getCalibrationSystemPrompt(),
+    await getCalibrationSystemPrompt(),
     userPrompt,
     { temperature, label: "SQL Generation", processId }
   );

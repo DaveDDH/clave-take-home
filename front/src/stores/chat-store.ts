@@ -1,15 +1,16 @@
 import { create } from 'zustand';
 import type { Message } from '@/types/chat';
-import {
-  streamChatResponse,
-  type ApiMessage,
-} from '@/lib/api';
+import { streamChatResponse, fetchConversation } from '@/lib/api';
 
 interface ChatState {
+  conversationId: string | null;
+  pendingConversation: { tempId: string; preview: string } | null;
   messages: Message[];
   isLoading: boolean;
   sendMessage: (content: string) => Promise<void>;
   regenerateFrom: (messageId: string) => Promise<void>;
+  loadConversation: (id: string) => Promise<void>;
+  startNewConversation: () => void;
   clearMessages: () => void;
   markTypewriterComplete: (messageId: string) => void;
 }
@@ -19,7 +20,8 @@ type SetState = (
 ) => void;
 
 async function processStreamingMessage(
-  apiMessages: ApiMessage[],
+  message: string,
+  conversationId: string | null,
   assistantMessageId: string,
   set: SetState
 ): Promise<void> {
@@ -45,13 +47,11 @@ async function processStreamingMessage(
 
   try {
     await streamChatResponse(
-      apiMessages,
+      message,
+      conversationId,
       { useConsistency: true, debug: false },
       {
         onClassification: (data) => {
-          // Update first message with classification
-          // Keep isStreaming true in case this is a data query (charts will arrive later)
-          // If it's conversational, onComplete will mark it as not streaming
           const timestamp = Date.now();
           set((state) => ({
             messages: state.messages.map((msg) =>
@@ -66,7 +66,6 @@ async function processStreamingMessage(
           }));
         },
         onChart: (charts) => {
-          // Create a NEW message for charts + final response
           secondMessageId = crypto.randomUUID();
           const timestamp = Date.now();
           const chartMessage: Message = {
@@ -78,12 +77,7 @@ async function processStreamingMessage(
             finalTimestamp: timestamp,
           };
           set((state) => ({
-            messages: [
-              // Keep first message (let typewriter finish)
-              ...state.messages,
-              // Add second message with charts
-              chartMessage,
-            ],
+            messages: [...state.messages, chartMessage],
           }));
         },
         onSQL: (sql) => {
@@ -95,12 +89,10 @@ async function processStreamingMessage(
           }));
         },
         onContentDelta: (token) => {
-          // Stream into the second message (with charts) if it exists, otherwise first message
           const targetId = secondMessageId || assistantMessageId;
           set((state) => ({
             messages: state.messages.map((msg) => {
               if (msg.id === targetId) {
-                // Set finalTimestamp on first content delta if not already set
                 const updates: Partial<Message> = { content: msg.content + token };
                 if (!msg.finalTimestamp && msg.partialTimestamp) {
                   updates.finalTimestamp = Date.now();
@@ -115,19 +107,17 @@ async function processStreamingMessage(
           const targetId = secondMessageId || assistantMessageId;
           set((state) => ({
             messages: state.messages.map((msg) =>
-              msg.id === targetId
-                ? { ...msg, content }
-                : msg
+              msg.id === targetId ? { ...msg, content } : msg
             ),
           }));
+        },
+        onConversationId: (id) => {
+          set(() => ({ conversationId: id, pendingConversation: null }));
         },
         onComplete: () => {
           receivedComplete = true;
           clearTimeout(timeout);
-          // Only set isLoading: false - keep isStreaming: true for typewriter animation
-          set(() => ({
-            isLoading: false,
-          }));
+          set(() => ({ isLoading: false }));
         },
         onError: (error) => {
           clearTimeout(timeout);
@@ -163,15 +153,26 @@ async function processStreamingMessage(
 }
 
 export const useChatStore = create<ChatState>((set, get) => ({
+  conversationId: null,
+  pendingConversation: null,
   messages: [],
   isLoading: false,
+
   sendMessage: async (content: string) => {
     if (!content.trim() || get().isLoading) return;
+
+    const trimmedContent = content.trim();
+    const currentConversationId = get().conversationId;
+
+    // Create pending conversation optimistically if this is a new conversation
+    const pendingConversation = !currentConversationId
+      ? { tempId: crypto.randomUUID(), preview: trimmedContent.slice(0, 50) }
+      : null;
 
     const userMessage: Message = {
       id: crypto.randomUUID(),
       role: 'user',
-      content: content.trim(),
+      content: trimmedContent,
     };
 
     const assistantId = crypto.randomUUID();
@@ -185,17 +186,17 @@ export const useChatStore = create<ChatState>((set, get) => ({
     set((state) => ({
       messages: [...state.messages, userMessage, assistantMessage],
       isLoading: true,
+      pendingConversation: pendingConversation || state.pendingConversation,
     }));
 
-    const apiMessages: ApiMessage[] = [...get().messages, userMessage].map(
-      (msg) => ({
-        role: msg.role,
-        content: msg.content,
-      })
+    await processStreamingMessage(
+      trimmedContent,
+      currentConversationId,
+      assistantId,
+      set
     );
-
-    await processStreamingMessage(apiMessages, assistantId, set);
   },
+
   regenerateFrom: async (messageId: string) => {
     if (get().isLoading) return;
 
@@ -218,6 +219,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }
 
     const messagesUpToUser = messages.slice(0, lastUserMessageIndex + 1);
+    const userMessage = messages[lastUserMessageIndex];
 
     const assistantId = crypto.randomUUID();
     const assistantMessage: Message = {
@@ -232,14 +234,41 @@ export const useChatStore = create<ChatState>((set, get) => ({
       isLoading: true,
     });
 
-    const apiMessages: ApiMessage[] = messagesUpToUser.map((msg) => ({
-      role: msg.role,
-      content: msg.content,
-    }));
-
-    await processStreamingMessage(apiMessages, assistantId, set);
+    await processStreamingMessage(
+      userMessage.content,
+      get().conversationId,
+      assistantId,
+      set
+    );
   },
-  clearMessages: () => set({ messages: [] }),
+
+  loadConversation: async (id: string) => {
+    try {
+      set({ isLoading: true, messages: [], conversationId: id });
+      const conversation = await fetchConversation(id);
+
+      // Convert API messages to UI messages
+      const uiMessages: Message[] = conversation.messages.map((msg) => ({
+        id: crypto.randomUUID(),
+        role: msg.role,
+        content: msg.content,
+        charts: msg.charts || undefined,
+        isStreaming: false,
+      }));
+
+      set({ messages: uiMessages, isLoading: false });
+    } catch (error) {
+      console.error('Failed to load conversation:', error);
+      set({ isLoading: false, conversationId: null });
+    }
+  },
+
+  startNewConversation: () => {
+    set({ conversationId: null, pendingConversation: null, messages: [], isLoading: false });
+  },
+
+  clearMessages: () => set({ messages: [], conversationId: null, pendingConversation: null }),
+
   markTypewriterComplete: (messageId: string) => {
     set((state) => ({
       messages: state.messages.map((msg) =>

@@ -34,7 +34,7 @@ export class SSEWriter {
     });
   }
 
-  private sendEvent(type: string, data: unknown): void {
+  sendEvent(type: string, data: unknown): void {
     if (this.closed || this.res.writableEnded) {
       return;
     }
