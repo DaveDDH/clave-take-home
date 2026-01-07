@@ -50,7 +50,10 @@ function levenshtein(a, b, options = {}) {
   return matrix[b.length][a.length];
 }
 
-const SIMILARITY_THRESHOLD = 2;
+// Dynamic threshold based on word length (same as product-groups.ts)
+function getSimilarityThreshold(wordLength) {
+  return wordLength <= 5 ? 1 : 2;
+}
 
 function escapeRegex(str) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -79,9 +82,10 @@ function matchProductToGroup(productName, verbose = false) {
         const nameWords = nameLower.split(/\s+/);
         for (const word of nameWords) {
           const distance = levenshtein(word, suffix);
-          if (distance <= SIMILARITY_THRESHOLD) {
-            logs.push(`  MATCH (suffix fuzzy): word "${word}" ~ "${suffix}" (distance=${distance}) -> ${baseName}`);
-            return { match: baseName, reason: `suffix fuzzy match: "${word}" ~ "${suffix}" (distance=${distance})`, logs };
+          const threshold = getSimilarityThreshold(Math.min(word.length, suffix.length));
+          if (distance <= threshold) {
+            logs.push(`  MATCH (suffix fuzzy): word "${word}" ~ "${suffix}" (distance=${distance}, threshold=${threshold}) -> ${baseName}`);
+            return { match: baseName, reason: `suffix fuzzy match: "${word}" ~ "${suffix}" (distance=${distance}, threshold=${threshold})`, logs };
           }
         }
       }
@@ -101,9 +105,10 @@ function matchProductToGroup(productName, verbose = false) {
           const nameWords = nameLower.split(/\s+/);
           for (const word of nameWords) {
             const distance = levenshtein(word, keyword);
-            if (distance <= SIMILARITY_THRESHOLD) {
-              logs.push(`  MATCH (keyword fuzzy): word "${word}" ~ "${keyword}" (distance=${distance}) -> ${baseName}`);
-              return { match: baseName, reason: `keyword fuzzy match: "${word}" ~ "${keyword}" (distance=${distance})`, logs };
+            const threshold = getSimilarityThreshold(Math.min(word.length, keyword.length));
+            if (distance <= threshold) {
+              logs.push(`  MATCH (keyword fuzzy): word "${word}" ~ "${keyword}" (distance=${distance}, threshold=${threshold}) -> ${baseName}`);
+              return { match: baseName, reason: `keyword fuzzy match: "${word}" ~ "${keyword}" (distance=${distance}, threshold=${threshold})`, logs };
             }
           }
         }
@@ -182,13 +187,14 @@ const comparisons = [
   ['pizza', 'pizza'],
 ];
 
-console.log('| Word 1     | Word 2     | Distance | Would Match? |');
-console.log('|------------|------------|----------|--------------|');
+console.log('| Word 1     | Word 2     | Distance | Threshold | Would Match? |');
+console.log('|------------|------------|----------|-----------|--------------|');
 
 for (const [w1, w2] of comparisons) {
   const dist = levenshtein(w1, w2);
-  const wouldMatch = dist <= SIMILARITY_THRESHOLD ? 'YES' : 'NO';
-  console.log(`| ${w1.padEnd(10)} | ${w2.padEnd(10)} | ${String(dist).padEnd(8)} | ${wouldMatch.padEnd(12)} |`);
+  const threshold = getSimilarityThreshold(Math.min(w1.length, w2.length));
+  const wouldMatch = dist <= threshold ? 'YES' : 'NO';
+  console.log(`| ${w1.padEnd(10)} | ${w2.padEnd(10)} | ${String(dist).padEnd(8)} | ${String(threshold).padEnd(9)} | ${wouldMatch.padEnd(12)} |`);
 }
 
 console.log('\n=== ROOT CAUSE ANALYSIS ===\n');

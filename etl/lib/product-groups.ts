@@ -7,7 +7,12 @@ import { readFileSync } from 'fs';
 import { ProductGroupsConfigSchema, type ProductGroupsConfig, type ProductGroup } from './schemas.js';
 import { levenshtein } from './levenshtein.js';
 
-const SIMILARITY_THRESHOLD = 2; // Max Levenshtein distance for fuzzy matching
+// Dynamic threshold based on word length to prevent false matches on short words
+// Short words (<=5 chars): max distance 1 (catches "Wngs" -> "Wings")
+// Longer words (>5 chars): max distance 2 (catches "Sandwhich" -> "Sandwich")
+function getSimilarityThreshold(wordLength: number): number {
+  return wordLength <= 5 ? 1 : 2;
+}
 
 export interface CompiledProductGroup {
   suffix?: string;
@@ -96,10 +101,22 @@ export function matchProductToGroup(productName: string): {
 
       // Fuzzy suffix match for single-word suffixes
       // This catches typos like "Wngs" → "Wings", "Piza" → "Pizza"
+      // Uses length-based threshold to prevent false matches on short words
       if (!group.suffix.includes(' ')) {
         const nameWords = nameLower.split(/\s+/);
         for (const word of nameWords) {
-          if (levenshtein(word, group.suffix) <= SIMILARITY_THRESHOLD) {
+          const threshold = getSimilarityThreshold(Math.min(word.length, group.suffix.length));
+          const distance = levenshtein(word, group.suffix);
+
+          if (distance <= threshold && distance > 0) {
+            // Additional check: reject same-length words with small distance
+            // These are likely "minimal pairs" (different words) not typos
+            // e.g., "rings" vs "wings" (both 5 chars, distance 1) = different words
+            // e.g., "wngs" vs "wings" (4 vs 5 chars, distance 1) = likely typo
+            if (word.length === group.suffix.length) {
+              continue; // Skip - same length suggests a different word, not a typo
+            }
+
             // Extract variation by removing the fuzzy-matched word
             const variation = extractVariationFromFuzzyMatch(productName, word);
             return {
@@ -129,10 +146,20 @@ export function matchProductToGroup(productName: string): {
 
         // Fuzzy match using Levenshtein for single-word keywords
         // This catches typos like "expresso" → "espresso", "coffe" → "coffee"
+        // Uses length-based threshold to prevent false matches on short words
         if (!keyword.includes(' ')) {
           const nameWords = nameLower.split(/\s+/);
           for (const word of nameWords) {
-            if (levenshtein(word, keyword) <= SIMILARITY_THRESHOLD) {
+            const threshold = getSimilarityThreshold(Math.min(word.length, keyword.length));
+            const distance = levenshtein(word, keyword);
+
+            if (distance <= threshold && distance > 0) {
+              // Additional check: reject same-length words with small distance
+              // These are likely "minimal pairs" (different words) not typos
+              if (word.length === keyword.length) {
+                continue; // Skip - same length suggests a different word, not a typo
+              }
+
               const variation = nameLower === group.baseName.toLowerCase()
                 ? null
                 : productName.trim();
