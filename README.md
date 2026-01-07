@@ -12,6 +12,6 @@ This demo uses a normalized PostgreSQL schema populated with data from the JSON 
 | **Storage** | Supabase Postgres | Hot (Redis) / Warm (TimescaleDB) / Cold (S3) | +90% storage cost reduction, +query speed matched to data freshness |
 | **Query Layer** | Gold Views (manual refresh) | Continuous aggregates (auto-refresh) | +Views update automatically, +no stale data |
 | **Scaling** | Vertical (bigger server) | Horizontal (tenant-based partitioning) | +Linear cost scaling, +no single point of failure |
-| **Audit Trail** | None | Append-only event store | +Full history, +compliance ready, +debug any past state |
+| **Audit Trail** | None | Append-only event store | +Full history, \ncompliance ready, +debug any past state |
 
 This is the pattern used by Uber, DoorDash, and Stripe for multi-tenant analytics workloads.
