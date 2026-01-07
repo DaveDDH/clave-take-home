@@ -22,11 +22,9 @@ const EXAMPLE_QUERIES = [
   "Show me takeout orders by location",
   "Which category generates the most revenue?",
   "Graph hourly sales for Friday vs Saturday at all stores",
-
   "Graph daily revenue for the first week",
   "Show me beverage sales across all locations",
   "How much came from DoorDash?",
-
   "Show me peak hours for each location",
   "What's the average order value by channel?",
   "Graph the trend of delivery orders over time",

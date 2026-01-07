@@ -4,109 +4,100 @@
 
 This is the generated product grouping:
 
-| product_name        | variation_name         | source_raw_name              | variation_type |
-| ------------------- | ---------------------- | ---------------------------- | -------------- |
-| Ahi Tuna Bowl       | null                   | null                         | null           |
-| Avocado Toast       | null                   | null                         | null           |
-| Bacon               | null                   | null                         | null           |
-| BBQ Pulled Pork     | null                   | null                         | null           |
-| Breakfast Burrito   | null                   | null                         | null           |
-| Brunch Platter      | null                   | null                         | null           |
-| Bruschetta          | null                   | null                         | null           |
-| Burger              | Classic                | Classic Burger               | semantic       |
-| Burger              | Double                 | Classic Burger - Double      | null           |
-| Burger              | Veggie                 | Veggie Burger                | semantic       |
-| Chips               | null                   | null                         | null           |
-| Churros             | 12 pcs                 | Churros - 12 piece           | quantity       |
-| Churros             | 6 pcs                  | Churros - 6 piece            | quantity       |
-| Clam Chowder        | null                   | null                         | null           |
-| Coffee              | Cold Brew              | Cold Brew                    | semantic       |
-| Coffee              | Double                 | Espresso - Double            | null           |
-| Coffee              | Espresso               | Espresso                     | semantic       |
-| Coffee              | Large                  | Coffee - Large               | null           |
-| Coffee              | reg                    | coffe - reg                  | null           |
-| Coffee              | Single                 | Espresso - Single            | null           |
-| Coleslaw            | null                   | null                         | null           |
-| Crab Cakes          | null                   | null                         | null           |
-| Craft Beer          | Pint                   | Craft Beer - Pint            | null           |
-| Croissant           | null                   | null                         | null           |
-| Edamame             | null                   | null                         | null           |
-| Eggs Benedict       | null                   | null                         | null           |
-| expresso            | dbl shot               | expresso - dbl shot          | null           |
-| Fish & Chips        | null                   | null                         | null           |
-| Fish Tacos          | null                   | null                         | null           |
-| Fries               | French                 | French Fries                 | semantic       |
-| Fries               | Fries - Large          | Fries - Large                | semantic       |
-| Fries               | Large                  | French Fries - Large         | null           |
-| Fries               | Small                  | French Fries - Small         | null           |
-| Fries               | Sweet Potato           | Sweet Potato Fries           | semantic       |
-| Fries               | Truffle                | Truffle Fries                | semantic       |
-| Fruit               | Fresh                  | Fresh Fruit                  | semantic       |
-| Fruit               | Fresh Fruit Cup        | Fresh Fruit Cup              | semantic       |
-| Garlic Bread        | null                   | null                         | null           |
-| Guacamole & Chips   | null                   | null                         | null           |
-| Hash Browns         | null                   | null                         | null           |
-| Iced Tea            | null                   | null                         | null           |
-| Lemonade            | null                   | null                         | null           |
-| Loaded Baked Potato | null                   | null                         | null           |
-| Lobster Roll        | null                   | null                         | null           |
-| Margarita           | null                   | null                         | null           |
-| Mashed Potatoes     | null                   | null                         | null           |
-| Milkshake           | Chocolate              | Milkshake - Chocolate        | null           |
-| Milkshake           | Strawberry             | Milkshake - Strawberry       | null           |
-| Milkshake           | Vanilla                | Milkshake - Vanilla          | null           |
-| Nachos              | Nachos Grande          | Nachos Grande                | semantic       |
-| Nachos              | Nachos Supreme         | Nachos Supreme               | semantic       |
-| Onion Rings         | null                   | null                         | null           |
-| Orange Juice        | null                   | null                         | null           |
-| Pancake Stack       | null                   | null                         | null           |
-| Pasta               | Chicken Alfredo        | Chicken Alfredo              | semantic       |
-| Pasta               | Lobster Mac & Cheese   | Lobster Mac & Cheese         | semantic       |
-| Pasta               | Pasta Primavera        | Pasta Primavera              | semantic       |
-| Pasta               | Shrimp Scampi          | Shrimp Scampi                | semantic       |
-| Pickle Spear        | null                   | null                         | null           |
-| Pitcher of Beer     | null                   | null                         | null           |
-| Pizza               | BBQ Chicken            | BBQ Chicken Pizza            | semantic       |
-| Pizza               | Margherita             | Margherita Pizza             | semantic       |
-| Pizza               | Margherita Pizza Slice | Margherita Pizza Slice       | semantic       |
-| Pizza               | Slice                  | Margherita Pizza - Slice     | null           |
-| Pizza               | Whole Pie              | Margherita Pizza - Whole Pie | null           |
-| Quesadilla          | null                   | null                         | null           |
-| Salad               | Caesar                 | Caesar Salad                 | semantic       |
-| Salad               | Garden                 | Garden Salad                 | semantic       |
-| Salad               | House                  | House Salad                  | semantic       |
-| Sandwich            | Club                   | Club Sandwich                | semantic       |
-| Sandwich            | Egg                    | Egg Sandwich                 | semantic       |
-| Sandwich            | Griled Chicken         | Griled Chicken Sandwhich     | semantic       |
-| Sandwich            | Griled Chiken          | Griled Chiken Sandwich       | semantic       |
-| Sandwich            | Grilled Chicken        | Grilled Chicken Sandwich     | semantic       |
-| Sandwich            | Reuben                 | Reuben Sandwich              | semantic       |
-| Sandwich            | Turkey Club            | Turkey Club                  | semantic       |
-| Smoothie Bowl       | null                   | null                         | null           |
-| Soft Drink          | Coca-Cola              | Coca-Cola                    | semantic       |
-| Soft Drink          | fountain soda          | fountain soda                | semantic       |
-| Soft Drink          | Large                  | Coca-Cola - Large            | null           |
-| Soft Drink          | lg                     | fountain soda - lg           | null           |
-| Soft Drink          | Lg Coke                | Lg Coke                      | semantic       |
-| Soft Drink          | sm                     | fountain soda - sm           | null           |
-| Soft Drink          | Small                  | Coca-Cola - Small            | null           |
-| Steak               | Filet Mignon           | Filet Mignon                 | semantic       |
-| Steak               | Philly Cheesesteak     | Philly Cheesesteak           | semantic       |
-| Steak               | Prime Rib              | Prime Rib                    | semantic       |
-| Steak               | Ribeye Steak           | Ribeye Steak                 | semantic       |
-| Tiramisu            | null                   | null                         | null           |
-| Wine                | Bottle                 | House Red Wine - Bottle      | null           |
-| Wine                | Glass                  | House Red Wine - Glass       | null           |
-| Wine                | House                  | House Wine                   | semantic       |
-| Wine                | House Red              | House Red Wine               | semantic       |
-| Wings               | 12 pcs                 | Buffalo Wings - 12 piece     | quantity       |
-| Wings               | 6 pcs                  | Buffalo Wings - 6 piece      | quantity       |
-| Wings               | Buffalo                | Buffalo Wings                | semantic       |
-| Wings               | Buffalo Wings 12pc     | Buffalo Wings 12pc           | semantic       |
-| Wings               | Chicken                | Chicken Wings                | semantic       |
-| Wings               | Wings 12pc             | Wings 12pc                   | semantic       |
-| Wrap                | Buffalo Chicken        | Buffalo Chicken Wrap         | semantic       |
-| Wrap                | Veggie                 | Veggie Wrap                  | semantic       |
+| product_name        | variation_name       | category_name      | source_raw_name              | variation_type |
+| ------------------- | -------------------- | ------------------ | ---------------------------- | -------------- |
+| Ahi Tuna Bowl       | null                 | Entrees            | null                         | null           |
+| Avocado Toast       | null                 | Breakfast          | null                         | null           |
+| Bacon               | null                 | Breakfast          | null                         | null           |
+| BBQ Pulled Pork     | null                 | Entrees            | null                         | null           |
+| Breakfast Burrito   | null                 | Breakfast          | null                         | null           |
+| Brunch Platter      | null                 | Breakfast          | null                         | null           |
+| Bruschetta          | null                 | Appetizers         | null                         | null           |
+| Burger              | Classic              | Burgers            | Classic Burger               | semantic       |
+| Burger              | Double               | Burgers            | Classic Burger - Double      | null           |
+| Burger              | Veggie               | Burgers            | Veggie Burger                | semantic       |
+| Chips               | null                 | Sides              | null                         | null           |
+| Churros             | 12 pcs               | Desserts           | Churros - 12 piece           | quantity       |
+| Churros             | 6 pcs                | Desserts           | Churros - 6 piece            | quantity       |
+| Clam Chowder        | null                 | Appetizers         | null                         | null           |
+| Coffee              | Cold Brew            | Drinks             | Cold Brew                    | semantic       |
+| Coffee              | Dbl Shot             | Drinks             | expresso - dbl shot          | null           |
+| Coffee              | Double               | Drinks             | Espresso - Double            | null           |
+| Coffee              | Espresso             | Drinks             | Espresso                     | semantic       |
+| Coffee              | Large                | Drinks             | Coffee - Large               | null           |
+| Coffee              | Reg                  | Drinks             | coffe - reg                  | null           |
+| Coffee              | Single               | Drinks             | Espresso - Single            | null           |
+| Coleslaw            | null                 | Sides              | null                         | null           |
+| Crab Cakes          | null                 | Entrees            | null                         | null           |
+| Craft Beer          | Pint                 | Beer & Wine        | Craft Beer - Pint            | null           |
+| Croissant           | null                 | Breakfast          | null                         | null           |
+| Edamame             | null                 | Appetizers         | null                         | null           |
+| Eggs Benedict       | null                 | Breakfast          | null                         | null           |
+| Fish & Chips        | null                 | Entrees            | null                         | null           |
+| Fish Tacos          | null                 | Entrees            | null                         | null           |
+| Fries               | French               | Sides & Appetizers | French Fries                 | semantic       |
+| Fries               | Large                | Sides & Appetizers | French Fries - Large         | null           |
+| Fries               | Small                | Sides & Appetizers | French Fries - Small         | null           |
+| Fries               | Sweet Potato         | Sides & Appetizers | Sweet Potato Fries           | semantic       |
+| Fries               | Truffle              | Sides & Appetizers | Truffle Fries                | semantic       |
+| Fruit               | Fresh                | Sides & Appetizers | Fresh Fruit                  | semantic       |
+| Fruit               | Fresh Fruit Cup      | Sides & Appetizers | Fresh Fruit Cup              | semantic       |
+| Garlic Bread        | null                 | Appetizers         | null                         | null           |
+| Guacamole & Chips   | null                 | Appetizers         | null                         | null           |
+| Hash Browns         | null                 | Breakfast          | null                         | null           |
+| Iced Tea            | null                 | Drinks             | null                         | null           |
+| Lemonade            | null                 | Beverages          | null                         | null           |
+| Loaded Baked Potato | null                 | Sides              | null                         | null           |
+| Lobster Roll        | null                 | Entrees            | null                         | null           |
+| Margarita           | null                 | Cocktails          | null                         | null           |
+| Mashed Potatoes     | null                 | Sides              | null                         | null           |
+| Milkshake           | Chocolate            | Drinks             | Milkshake - Chocolate        | null           |
+| Milkshake           | Strawberry           | Drinks             | Milkshake - Strawberry       | null           |
+| Milkshake           | Vanilla              | Drinks             | Milkshake - Vanilla          | null           |
+| Nachos              | Nachos Grande        | Sides & Appetizers | Nachos Grande                | semantic       |
+| Nachos              | Nachos Supreme       | Sides & Appetizers | Nachos Supreme               | semantic       |
+| Onion Rings         | null                 | Sides              | null                         | null           |
+| Orange Juice        | null                 | Drinks             | null                         | null           |
+| Pancake Stack       | null                 | Breakfast          | null                         | null           |
+| Pasta               | Chicken Alfredo      | Pasta              | Chicken Alfredo              | semantic       |
+| Pasta               | Lobster Mac & Cheese | Pasta              | Lobster Mac & Cheese         | semantic       |
+| Pasta               | Pasta Primavera      | Pasta              | Pasta Primavera              | semantic       |
+| Pasta               | Shrimp Scampi        | Pasta              | Shrimp Scampi                | semantic       |
+| Pickle Spear        | null                 | Sides              | null                         | null           |
+| Pitcher of Beer     | null                 | Beer & Wine        | null                         | null           |
+| Pizza               | BBQ Chicken          | Entrees            | BBQ Chicken Pizza            | semantic       |
+| Pizza               | Margherita           | Entrees            | Margherita Pizza             | semantic       |
+| Pizza               | Slice                | Entrees            | Margherita Pizza - Slice     | null           |
+| Pizza               | Whole Pie            | Entrees            | Margherita Pizza - Whole Pie | null           |
+| Quesadilla          | null                 | Entrees            | null                         | null           |
+| Salad               | Caesar               | Sides & Appetizers | Caesar Salad                 | semantic       |
+| Salad               | Garden               | Sides & Appetizers | Garden Salad                 | semantic       |
+| Salad               | House                | Sides & Appetizers | House Salad                  | semantic       |
+| Sandwich            | Club                 | Sandwiches         | Club Sandwich                | semantic       |
+| Sandwich            | Egg                  | Sandwiches         | Egg Sandwich                 | semantic       |
+| Sandwich            | Grilled Chicken      | Sandwiches         | Grilled Chicken Sandwich     | semantic       |
+| Sandwich            | Reuben               | Sandwiches         | Reuben Sandwich              | semantic       |
+| Sandwich            | Turkey Club          | Sandwiches         | Turkey Club                  | semantic       |
+| Smoothie Bowl       | null                 | Breakfast          | null                         | null           |
+| Soft Drink          | Coca-Cola            | Drinks             | Coca-Cola                    | semantic       |
+| Soft Drink          | Fountain Soda        | Drinks             | fountain soda                | semantic       |
+| Soft Drink          | Large                | Drinks             | Coca-Cola - Large            | null           |
+| Soft Drink          | Small                | Drinks             | Coca-Cola - Small            | null           |
+| Steak               | Filet Mignon         | Entrees            | Filet Mignon                 | semantic       |
+| Steak               | Philly Cheesesteak   | Entrees            | Philly Cheesesteak           | semantic       |
+| Steak               | Prime Rib            | Entrees            | Prime Rib                    | semantic       |
+| Steak               | Ribeye Steak         | Entrees            | Ribeye Steak                 | semantic       |
+| Tiramisu            | null                 | Desserts           | null                         | null           |
+| Wine                | Bottle               | Beer & Wine        | House Red Wine - Bottle      | null           |
+| Wine                | Glass                | Beer & Wine        | House Red Wine - Glass       | null           |
+| Wine                | House                | Beer & Wine        | House Wine                   | semantic       |
+| Wine                | House Red            | Beer & Wine        | House Red Wine               | semantic       |
+| Wings               | 12 pcs               | Sides & Appetizers | Buffalo Wings - 12 piece     | quantity       |
+| Wings               | 6 pcs                | Sides & Appetizers | Buffalo Wings - 6 piece      | quantity       |
+| Wings               | Buffalo              | Sides & Appetizers | Buffalo Wings                | semantic       |
+| Wings               | Chicken              | Sides & Appetizers | Chicken Wings                | semantic       |
+| Wrap                | Buffalo Chicken      | Sandwiches         | Buffalo Chicken Wrap         | semantic       |
+| Wrap                | Veggie               | Sandwiches         | Veggie Wrap                  | semantic       |
 
 ## Architecture Evolution
 

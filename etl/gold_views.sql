@@ -137,10 +137,15 @@ SELECT
   SUM(CASE WHEN order_type = 'delivery' THEN total ELSE 0 END) AS delivery_revenue,
   SUM(CASE WHEN order_type IN ('takeout', 'pickup') THEN total ELSE 0 END) AS takeout_revenue,
 
-  -- By source
+  -- By source (counts)
   COUNT(DISTINCT CASE WHEN source = 'toast' THEN order_id END) AS toast_orders,
   COUNT(DISTINCT CASE WHEN source = 'doordash' THEN order_id END) AS doordash_orders,
   COUNT(DISTINCT CASE WHEN source = 'square' THEN order_id END) AS square_orders,
+
+  -- By source (revenue)
+  SUM(CASE WHEN source = 'toast' THEN total ELSE 0 END) AS toast_revenue,
+  SUM(CASE WHEN source = 'doordash' THEN total ELSE 0 END) AS doordash_revenue,
+  SUM(CASE WHEN source = 'square' THEN total ELSE 0 END) AS square_revenue,
 
   -- Tips and fees
   SUM(tip) AS total_tips,
@@ -225,14 +230,15 @@ COMMENT ON VIEW gold_hourly_trends IS
 
 
 -- ============================================================================
--- VIEW 6: gold.category_performance - Category-level analytics
+-- VIEW 6: gold.category_performance - Category-level analytics by location
 -- ============================================================================
--- Use for: Category rankings, menu analysis
--- Benefits: Pre-aggregated by category
+-- Use for: Category rankings, menu analysis, category sales by location
+-- Benefits: Pre-aggregated by category and location
 
 CREATE OR REPLACE VIEW gold_category_performance AS
 SELECT
   category_name,
+  location_name,
 
   -- Product count
   COUNT(DISTINCT product_name) AS products_in_category,
@@ -250,7 +256,68 @@ SELECT
 
 FROM gold_order_items
 WHERE category_name IS NOT NULL
-GROUP BY category_name;
+GROUP BY category_name, location_name;
 
 COMMENT ON VIEW gold_category_performance IS
-'Category-level analytics. Use for menu performance analysis.';
+'Category-level analytics by location. Use for menu performance and category comparison across locations.';
+
+
+-- ============================================================================
+-- VIEW 7: gold.product_by_location - Product performance per location
+-- ============================================================================
+-- Use for: Top products at specific locations, location-specific bestsellers
+-- Benefits: Pre-aggregated by product and location
+
+CREATE OR REPLACE VIEW gold_product_by_location AS
+SELECT
+  product_name,
+  category_name,
+  location_name,
+
+  -- Sales metrics
+  COUNT(DISTINCT order_id) AS orders_containing,
+  SUM(quantity) AS total_units_sold,
+  SUM(total_price) AS total_revenue,
+  AVG(unit_price) AS avg_unit_price,
+
+  -- By order type
+  SUM(CASE WHEN order_type = 'dine_in' THEN quantity ELSE 0 END) AS dine_in_units,
+  SUM(CASE WHEN order_type = 'delivery' THEN quantity ELSE 0 END) AS delivery_units,
+  SUM(CASE WHEN order_type IN ('takeout', 'pickup') THEN quantity ELSE 0 END) AS takeout_units
+
+FROM gold_order_items
+WHERE product_name IS NOT NULL
+GROUP BY product_name, category_name, location_name;
+
+COMMENT ON VIEW gold_product_by_location IS
+'Product performance by location. Use for location-specific bestsellers and product rankings.';
+
+
+-- ============================================================================
+-- VIEW 8: gold.payments - Payment method analytics
+-- ============================================================================
+-- Use for: Payment method popularity, payment trends, card brand analysis
+-- Benefits: Pre-aggregated payment data with location context
+
+CREATE OR REPLACE VIEW gold_payments AS
+SELECT
+  p.payment_type,
+  p.card_brand,
+  l.name AS location_name,
+  DATE(p.created_at) AS payment_date,
+
+  -- Metrics
+  COUNT(*) AS payment_count,
+  SUM(p.amount_cents) / 100.0 AS total_amount,
+  SUM(p.tip_cents) / 100.0 AS total_tips,
+  AVG(p.amount_cents) / 100.0 AS avg_payment_amount,
+  SUM(p.processing_fee_cents) / 100.0 AS total_processing_fees
+
+FROM payments p
+JOIN orders o ON p.order_id = o.id
+JOIN locations l ON o.location_id = l.id
+WHERE o.status IN ('completed', 'delivered', 'picked_up')
+GROUP BY p.payment_type, p.card_brand, l.name, DATE(p.created_at);
+
+COMMENT ON VIEW gold_payments IS
+'Payment analytics by type, card brand, and location. Use for payment method analysis.';
