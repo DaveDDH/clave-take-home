@@ -109,12 +109,15 @@ export function matchProductToGroup(productName: string): {
           const distance = levenshtein(word, group.suffix);
 
           if (distance <= threshold && distance > 0) {
-            // Additional check: reject same-length words with small distance
-            // These are likely "minimal pairs" (different words) not typos
+            // Additional check: reject same-length words with small distance for SHORT words
+            // Short words have more "minimal pairs" (different words that differ by 1 char)
             // e.g., "rings" vs "wings" (both 5 chars, distance 1) = different words
             // e.g., "wngs" vs "wings" (4 vs 5 chars, distance 1) = likely typo
-            if (word.length === group.suffix.length) {
-              continue; // Skip - same length suggests a different word, not a typo
+            // But for longer words (>6 chars), typos are more common:
+            // e.g., "expresso" vs "espresso" (both 8 chars, distance 1) = typo
+            const shorterLength = Math.min(word.length, group.suffix.length);
+            if (word.length === group.suffix.length && shorterLength <= 6) {
+              continue; // Skip - same length short word suggests different word, not typo
             }
 
             // Extract variation by removing the fuzzy-matched word
@@ -154,10 +157,11 @@ export function matchProductToGroup(productName: string): {
             const distance = levenshtein(word, keyword);
 
             if (distance <= threshold && distance > 0) {
-              // Additional check: reject same-length words with small distance
-              // These are likely "minimal pairs" (different words) not typos
-              if (word.length === keyword.length) {
-                continue; // Skip - same length suggests a different word, not a typo
+              // Additional check: reject same-length words with small distance for SHORT words
+              // But allow for longer words where typos are more common
+              const shorterLength = Math.min(word.length, keyword.length);
+              if (word.length === keyword.length && shorterLength <= 6) {
+                continue; // Skip - same length short word suggests different word, not typo
               }
 
               const variation = nameLower === group.baseName.toLowerCase()

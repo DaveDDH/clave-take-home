@@ -11,6 +11,7 @@ import {
   normalizeCardBrand,
   extractVariation,
   getNormalizedBaseName,
+  normalizeVariationName,
 } from './normalizers.js';
 import { levenshtein } from './levenshtein.js';
 import { matchProductToGroup } from './product-groups.js';
@@ -470,6 +471,43 @@ function buildUnifiedCatalog(sources: SourceData): {
   const variationMap = new Map<string, string>();
   const seenVariations = new Set<string>();
 
+  // Track variation names per product for deduplication
+  const variationNamesByProduct = new Map<string, Map<string, string>>(); // productId -> (normalizedName -> canonicalName)
+
+  /**
+   * Find or create a canonical variation name for a product.
+   * Handles deduplication of similar names (e.g., "Griled Chicken" vs "Grilled Chicken")
+   */
+  function getCanonicalVariationName(productId: string, variationName: string): string {
+    if (!variationNamesByProduct.has(productId)) {
+      variationNamesByProduct.set(productId, new Map());
+    }
+    const productVariations = variationNamesByProduct.get(productId)!;
+
+    const normalizedLower = variationName.toLowerCase();
+
+    // Check for exact match first
+    if (productVariations.has(normalizedLower)) {
+      return productVariations.get(normalizedLower)!;
+    }
+
+    // Check for similar names (Levenshtein distance <= 2)
+    for (const [existingLower, existingCanonical] of productVariations) {
+      const distance = levenshtein(normalizedLower, existingLower, { maxDistance: 2 });
+      if (distance <= 2) {
+        // Found similar name - use the longer/better one as canonical
+        const canonical = existingCanonical.length >= variationName.length ? existingCanonical : variationName;
+        productVariations.set(normalizedLower, canonical);
+        productVariations.set(existingLower, canonical);
+        return canonical;
+      }
+    }
+
+    // No similar name found - this is a new canonical name
+    productVariations.set(normalizedLower, variationName);
+    return variationName;
+  }
+
   for (const group of productGroups) {
     const productId = randomUUID();
     const categoryId = group.categoryId
@@ -493,15 +531,23 @@ function buildUnifiedCatalog(sources: SourceData): {
 
       // Add extracted variation
       if (item.extractedVariation) {
-        const variationKey = `${productId}:${item.extractedVariation.toLowerCase()}`;
+        // Normalize the variation name (handle "lg" → "Large", "12pc" → "12 pcs", etc.)
+        const { normalized: normalizedName, variationType: normalizedType } =
+          normalizeVariationName(item.extractedVariation);
+        const finalType = normalizedType || item.extractedVariationType;
+
+        // Deduplicate similar variation names
+        const canonicalName = getCanonicalVariationName(productId, normalizedName);
+        const variationKey = `${productId}:${canonicalName.toLowerCase()}`;
+
         if (!seenVariations.has(variationKey)) {
           seenVariations.add(variationKey);
           const variationId = randomUUID();
           product_variations.push({
             id: variationId,
             product_id: productId,
-            name: item.extractedVariation,
-            variation_type: item.extractedVariationType,
+            name: canonicalName,
+            variation_type: finalType,
             source_raw_name: item.originalName,
           });
           variationMap.set(variationKey, variationId);
@@ -515,18 +561,26 @@ function buildUnifiedCatalog(sources: SourceData): {
 
           if (sqVariation.name.toLowerCase() === 'regular') continue;
 
-          const { variation: normalizedVar, variationType } = extractVariation(sqVariation.name);
-          const varName = normalizedVar || sqVariation.name;
+          const { variation: extractedVar, variationType } = extractVariation(sqVariation.name);
+          const rawVarName = extractedVar || sqVariation.name;
 
-          const variationKey = `${productId}:${varName.toLowerCase()}`;
+          // Normalize the variation name
+          const { normalized: normalizedName, variationType: normalizedType } =
+            normalizeVariationName(rawVarName);
+          const finalType = normalizedType || variationType;
+
+          // Deduplicate similar variation names
+          const canonicalName = getCanonicalVariationName(productId, normalizedName);
+          const variationKey = `${productId}:${canonicalName.toLowerCase()}`;
+
           if (!seenVariations.has(variationKey)) {
             seenVariations.add(variationKey);
             const variationId = randomUUID();
             product_variations.push({
               id: variationId,
               product_id: productId,
-              name: varName,
-              variation_type: variationType,
+              name: canonicalName,
+              variation_type: finalType,
               source_raw_name: `${item.originalName} - ${sqVariation.name}`,
             });
             variationMap.set(variationKey, variationId);

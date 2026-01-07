@@ -12,6 +12,17 @@ export interface VariationExtractionResult {
 }
 
 /**
+ * Size abbreviation map for normalizing variation names
+ */
+const SIZE_ABBREVIATIONS: Record<string, string> = {
+  'lg': 'Large',
+  'sm': 'Small',
+  'med': 'Medium',
+  'xl': 'XL',
+  'xxl': 'XXL',
+};
+
+/**
  * Extract variation info from a product name.
  * e.g., "Churros 12pcs" → { baseName: "Churros", variation: "12 pcs", variationType: "quantity" }
  * e.g., "Fries - Large" → { baseName: "Fries", variation: "Large", variationType: "size" }
@@ -34,6 +45,49 @@ export function extractVariation(name: string): VariationExtractionResult {
   }
 
   return { baseName: trimmed };
+}
+
+/**
+ * Normalize a variation name:
+ * - Extract any embedded variation info (e.g., "Buffalo Wings 12pc" → "12 pcs")
+ * - Normalize size abbreviations (lg → Large, sm → Small)
+ * - Clean up formatting
+ */
+export function normalizeVariationName(variationName: string): {
+  normalized: string;
+  variationType?: 'quantity' | 'size' | 'serving' | 'strength';
+} {
+  if (!variationName) return { normalized: variationName };
+
+  let name = variationName.trim();
+
+  // Try to extract variation info from the name itself
+  // e.g., "Buffalo Wings 12pc" → extract "12 pcs"
+  const extracted = extractVariation(name);
+  if (extracted.variation) {
+    return {
+      normalized: extracted.variation,
+      variationType: extracted.variationType
+    };
+  }
+
+  // Normalize standalone size abbreviations
+  const lowerName = name.toLowerCase();
+  if (SIZE_ABBREVIATIONS[lowerName]) {
+    return { normalized: SIZE_ABBREVIATIONS[lowerName], variationType: 'size' };
+  }
+
+  // Clean up names like "- Large" → "Large"
+  name = name.replace(/^[-–—]\s*/, '').trim();
+
+  // Capitalize first letter of each word for consistency
+  if (name && name === name.toLowerCase()) {
+    name = name.split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  }
+
+  return { normalized: name };
 }
 
 /**
