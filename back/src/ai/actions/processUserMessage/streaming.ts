@@ -48,7 +48,7 @@ export async function processUserMessageStream(
   };
 
   // Create cost accumulator to track costs across all LLM calls (including retries)
-  const costAccumulator = new CostAccumulator();
+  const costAccumulator = new CostAccumulator(processId);
 
   // Retry loop with escalation
   while (true) {
@@ -90,7 +90,7 @@ export async function processUserMessageStream(
 
     // Wait for classification first - it determines if we need schema linking
     const classificationResult = await classificationPromise;
-    costAccumulator.addUsage(classificationResult.model, classificationResult.usage);
+    costAccumulator.addUsage(classificationResult.model, classificationResult.usage, "Message Classification");
     const classification = classificationResult.result;
     const classificationTime = Date.now() - parallelStart;
 
@@ -113,6 +113,8 @@ export async function processUserMessageStream(
 
       log("\n✨ Conversational Response Complete (skipped C3 pipeline)!", undefined, processId);
       log(`⏱️  Total Request Time: ${totalTime}ms (${(totalTime / 1000).toFixed(2)}s)`, undefined, processId);
+
+      costAccumulator.logSummary();
       log("========================================\n", undefined, processId);
 
       sseWriter.sendCost(costAccumulator.getTotalCost());
@@ -126,7 +128,7 @@ export async function processUserMessageStream(
     log("   ⏳ Waiting for schema linking to complete...", undefined, processId);
 
     const schemaLinkingResult = await schemaLinkingPromise;
-    costAccumulator.addUsage(schemaLinkingResult.model, schemaLinkingResult.usage);
+    costAccumulator.addUsage(schemaLinkingResult.model, schemaLinkingResult.usage, "Schema Linking");
     const linkedSchema = schemaLinkingResult.result;
     const schemaLinkingTime = Date.now() - parallelStart;
 
@@ -249,6 +251,8 @@ export async function processUserMessageStream(
 
     log("\n✨ C3 Streaming Complete!", undefined, processId);
     log(`⏱️  Total Request Time: ${totalTime}ms (${(totalTime / 1000).toFixed(2)}s)`, undefined, processId);
+
+    costAccumulator.logSummary();
     log("========================================\n", undefined, processId);
 
     sseWriter.sendCost(costAccumulator.getTotalCost());
@@ -267,6 +271,8 @@ export async function processUserMessageStream(
         const totalTime = Date.now() - requestStartTime;
         logError("\n❌ Max escalation reached, all retry options exhausted", undefined, processId);
         log(`⏱️  Request failed after ${totalTime}ms (${(totalTime / 1000).toFixed(2)}s)`, undefined, processId);
+
+        costAccumulator.logSummary();
         log("========================================\n", undefined, processId);
 
         sseWriter.sendCost(costAccumulator.getTotalCost());
@@ -331,7 +337,7 @@ Use markdown for emphasis. Convert cents to dollars.`;
       sseWriter.sendContentDelta(token);
     }
   );
-  costAccumulator.addUsage(result.model, result.usage);
+  costAccumulator.addUsage(result.model, result.usage, "Natural Language Response");
 }
 
 function summarizeData(

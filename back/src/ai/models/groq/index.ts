@@ -20,7 +20,7 @@ const customFetch = async (
   if (options?.body) {
     const body = options.body.toString();
     const parsedBody = JSON.parse(body);
-    parsedBody["reasoning_effort"] = "high";
+    parsedBody["reasoning_effort"] = "low";
     options.body = JSON.stringify(parsedBody);
   }
   return await globalFetch(url, options);

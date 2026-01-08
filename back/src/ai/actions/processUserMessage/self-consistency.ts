@@ -40,7 +40,7 @@ export async function selfConsistencyVote(
       try {
         log(`      Candidate ${i + 1}: temperature=${temperature}`, undefined, processId);
         const result = await generateSQL(userQuestion, linkedSchema, temperature, conversationHistory, dataContext, model, processId);
-        costAccumulator.addUsage(result.model, result.usage);
+        costAccumulator.addUsage(result.model, result.usage, `SQL Generation (Candidate ${i + 1}, temp=${temperature})`);
         if (isReadOnlyQuery(result.sql)) {
           log(`      ✓ Candidate ${i + 1} valid`, undefined, processId);
           return result.sql;
@@ -111,7 +111,7 @@ export async function selfConsistencyVote(
           model,
           processId
         );
-        costAccumulator.addUsage(refinementResult.model, refinementResult.usage);
+        costAccumulator.addUsage(refinementResult.model, refinementResult.usage, `SQL Refinement (Query ${i + 1})`);
 
         // Validate refined SQL is read-only before executing
         if (!isReadOnlyQuery(refinementResult.sql)) {
@@ -187,7 +187,7 @@ export async function singleQuery(
   processId?: string
 ): Promise<{ sql: string; data: Record<string, unknown>[] }> {
   const result = await generateSQL(userQuestion, linkedSchema, 0.0, conversationHistory, dataContext, model, processId);
-  costAccumulator.addUsage(result.model, result.usage);
+  costAccumulator.addUsage(result.model, result.usage, "SQL Generation (Single Query)");
 
   if (!isReadOnlyQuery(result.sql)) {
     logError("❌ Generated SQL is not a read-only query:", undefined, processId);

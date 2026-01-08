@@ -149,7 +149,7 @@ export async function processUserMessage(
     log("   (Schema linking already completed in parallel above)", undefined, processId);
 
     // Create cost accumulator for tracking LLM costs (non-streaming doesn't send costs to frontend)
-    const costAccumulator = new CostAccumulator();
+    const costAccumulator = new CostAccumulator(processId);
 
     // Step 2 & 3: SQL Generation + Consistency (CP + CH + CO)
     log("\n🔧 Step 2-3: SQL Generation + Self-Consistency", undefined, processId);
@@ -269,6 +269,8 @@ export async function processUserMessage(
 
     log("\n✨ C3 Processing Complete!", undefined, processId);
     log(`⏱️  Total Request Time: ${totalTime}ms (${(totalTime / 1000).toFixed(2)}s)`, undefined, processId);
+
+    costAccumulator.logSummary();
     log("========================================\n", undefined, processId);
 
     return response;

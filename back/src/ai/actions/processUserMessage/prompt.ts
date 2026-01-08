@@ -62,25 +62,29 @@ Tip 2: For date/time filtering:
 - Silver tables: Use DATE(created_at), EXTRACT(HOUR FROM created_at)
 - ALWAYS use created_at (NEVER closed_at)
 
-CRITICAL - PIVOT DATA FOR MULTI-SERIES CHARTS:
-When user asks for trends "by location", "by category", "by payment type", etc., you MUST pivot the comparison dimension into separate columns using CASE statements. This is required for proper chart rendering.
+CRITICAL - PIVOT DATA FOR CHARTS (ALWAYS DO THIS):
+When a query involves TWO categorical/grouping dimensions, you MUST pivot the second dimension into separate columns using CASE statements. This applies to ANY two-dimensional grouping, not just time-series.
 
-WRONG (creates unusable long-format data):
-  SELECT payment_date, location_name, SUM(payment_count) AS orders
-  FROM gold_payments
-  GROUP BY payment_date, location_name  -- BAD: location as rows
+Rule: If you're about to write GROUP BY dim1, dim2 - STOP and pivot dim2 into columns instead.
 
-CORRECT (creates chart-ready wide-format data):
-  SELECT payment_date,
-    SUM(CASE WHEN location_name = 'Airport' THEN payment_count ELSE 0 END) AS Airport,
-    SUM(CASE WHEN location_name = 'Downtown' THEN payment_count ELSE 0 END) AS Downtown,
-    SUM(CASE WHEN location_name = 'Mall Location' THEN payment_count ELSE 0 END) AS "Mall Location",
-    SUM(CASE WHEN location_name = 'University' THEN payment_count ELSE 0 END) AS University
-  FROM gold_payments
-  GROUP BY payment_date  -- GOOD: location as columns
-  ORDER BY payment_date
+WRONG (two dimensions in GROUP BY - creates unusable data):
+  SELECT source, payment_type, COUNT(*) AS orders
+  FROM orders o JOIN payments p ON p.order_id = o.id
+  GROUP BY source, payment_type  -- BAD: payment_type as rows
+
+CORRECT (pivot second dimension into columns):
+  SELECT source,
+    SUM(CASE WHEN payment_type = 'credit' THEN 1 ELSE 0 END) AS credit,
+    SUM(CASE WHEN payment_type = 'cash' THEN 1 ELSE 0 END) AS cash,
+    SUM(CASE WHEN payment_type = 'doordash' THEN 1 ELSE 0 END) AS doordash,
+    SUM(CASE WHEN payment_type = 'wallet' THEN 1 ELSE 0 END) AS wallet,
+    SUM(CASE WHEN payment_type = 'other' THEN 1 ELSE 0 END) AS other
+  FROM orders o JOIN payments p ON p.order_id = o.id
+  GROUP BY source  -- GOOD: payment_type as columns
 
 More examples:
+- "orders by location over time" → pivot location into columns, GROUP BY date only
+- "sales by category and source" → pivot source into columns, GROUP BY category only
 - "hourly sales Friday vs Saturday":
   SELECT order_hour,
     SUM(CASE WHEN day_of_week = 5 THEN revenue ELSE 0 END) AS friday_sales,
@@ -88,14 +92,6 @@ More examples:
   FROM gold_hourly_trends
   GROUP BY order_hour
   ORDER BY order_hour
-
-- "revenue by category over time":
-  SELECT order_date,
-    SUM(CASE WHEN category_name = 'Burgers' THEN total_revenue ELSE 0 END) AS Burgers,
-    SUM(CASE WHEN category_name = 'Drinks' THEN total_revenue ELSE 0 END) AS Drinks
-  FROM gold_order_items
-  GROUP BY order_date
-  ORDER BY order_date
 
 Tip 3: For aggregations:
 - GROUP BY all non-aggregated columns in SELECT
@@ -130,6 +126,8 @@ Tip 4: Data context - Use EXACT values from database:
 - Payment types are: 'credit' (for card/credit card payments), 'cash', 'wallet', 'doordash', 'other'
 
 Tip 5: Output format:
+- Generate exactly ONE SQL query - never multiple statements separated by semicolons
+- If user asks for multiple things, combine them into ONE query using JOINs, UNIONs, or multiple columns
 - DO NOT INCLUDE ANY FORMAT TO YOUR OUTPUT, JUST RETURN A PLAIN SQL STRING WITH NO FORMAT WHATSOEVER, NO MARKDOWN, JUST A SIMPLE PLAIN TEXT SQL
 `;
 }
