@@ -10,4 +10,7 @@ export const OPENAI_MODEL = process.env.OPENAI_MODEL || "openai/gpt-oss-20b";
 export const HELICONE_KEY = process.env.HELICONE_KEY;
 
 // Debug mode: when true, conversations are not saved to the database
-export const DEBUG_MODE = process.env.DEBUG === 'true';
+// Accepts: 'true', 'TRUE', '1', 'yes' (case-insensitive)
+export const DEBUG_MODE = ['true', '1', 'yes'].includes(
+  (process.env.DEBUG || '').toLowerCase()
+);

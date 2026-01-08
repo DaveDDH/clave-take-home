@@ -4,7 +4,10 @@ import { generateText, generateObject, streamText, LanguageModel } from "ai";
 import { z } from "zod";
 import { log } from "#utils/logger.js";
 
-const fetch = async (
+// Save reference to global fetch before defining custom wrapper
+const globalFetch = fetch;
+
+const customFetch = async (
   url: string | URL | Request,
   options: RequestInit | undefined
 ) => {
@@ -14,7 +17,7 @@ const fetch = async (
     parsedBody["reasoning_effort"] = "high";
     options.body = JSON.stringify(parsedBody);
   }
-  return await fetch(url, options);
+  return await globalFetch(url, options);
 };
 
 export const getGroqProvider = () => {
@@ -25,11 +28,11 @@ export const getGroqProvider = () => {
       headers: {
         "Helicone-Auth": `Bearer ${process.env.HELICONE_API_KEY}`,
       },
-      fetch,
+      fetch: customFetch,
     });
   return createGroq({
     apiKey: GROQ_API_KEY,
-    fetch,
+    fetch: customFetch,
   });
 };
 
