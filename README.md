@@ -5,12 +5,14 @@ Cheapest config:
 1. $0.0006
 2. $0.0006
 3. $0.0007
+
 Total: $0.0018
 
 Most expensive config:
 1. $0.013
 2. $0.0105
 3. $0.0273
+
 Total: $0.051
 
 The most basic config is 28X cheaper than the most complex one (per query). Assuming our clients perform 50 queries per day, we would have 1500 queries per month. With the cheapest config, that would be $1/month/client, while for the most expensive one, that would be around $50/month. The beautiful part of this, is that the most basic config successfully replies to all the example queries you provided.
