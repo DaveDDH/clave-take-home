@@ -127,7 +127,7 @@ export function Sidebar() {
                       )}
                       title={pendingConversation.preview}
                     >
-                      <MessageCircle className="size-4 shrink-0 animate-pulse" />
+                      <MessageCircle className="size-3 shrink-0 animate-pulse" />
                       <span className="truncate">
                         {pendingConversation.preview}
                       </span>
@@ -152,7 +152,7 @@ export function Sidebar() {
                         )}
                         title={preview}
                       >
-                        <MessageCircle className="size-3 shrink-0" />
+                        <MessageCircle className="size-3 shrink-0" size={16} />
                         <span className="truncate">{preview}</span>
                       </button>
                     </li>

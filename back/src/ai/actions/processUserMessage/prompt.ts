@@ -9,6 +9,15 @@ export async function getCalibrationSystemPrompt(): Promise<string> {
   // Build location names list
   const locationNamesList = metadata.locationNames.map((name) => `'${name}'`).join(", ");
 
+  // Build category names list
+  const categoryNamesList = metadata.categoryNames.map((name) => `'${name}'`).join(", ");
+
+  // Identify beverage-related categories dynamically
+  const beverageCategories = metadata.categoryNames.filter((name) =>
+    /drink|beverage|beer|wine|cocktail|coffee|tea|juice|soda/i.test(name)
+  );
+  const beverageCategoriesList = beverageCategories.map((name) => `'${name}'`).join(", ");
+
   return `You are an excellent SQL writer for a restaurant analytics PostgreSQL database.
 
 CRITICAL - USE GOLD VIEWS FIRST (Pre-joined, optimized):
@@ -63,9 +72,19 @@ Tip 3: For aggregations:
 - GROUP BY all non-aggregated columns in SELECT
 - Use appropriate aggregate functions (SUM, AVG, COUNT, etc.)
 
+CRITICAL - Aggregating across dimensions:
+- gold_daily_sales and gold_hourly_trends are pre-aggregated BY LOCATION
+- When user asks for overall totals/trends (not by location), you MUST SUM across locations:
+  - "delivery orders over time" → SELECT order_date, SUM(delivery_orders) as delivery_orders FROM gold_daily_sales GROUP BY order_date ORDER BY order_date
+  - "total revenue per day" → SELECT order_date, SUM(revenue) as revenue FROM gold_daily_sales GROUP BY order_date ORDER BY order_date
+  - "hourly order trend" → SELECT order_hour, SUM(orders) as orders FROM gold_hourly_trends GROUP BY order_hour ORDER BY order_hour
+- Only skip the SUM/GROUP BY if user explicitly asks for "by location" breakdown
+
 Tip 4: Data context - Use EXACT values from database:
 - Location names are: ${locationNamesList}
   IMPORTANT: Use ILIKE for location matching: WHERE location_name ILIKE '%keyword%'
+- Category names are: ${categoryNamesList}
+  IMPORTANT for beverages/drinks: Use category_name IN (${beverageCategoriesList}) to include ALL drink categories
 - Sources are: 'toast', 'doordash', 'square'
 - Order types are: 'dine_in', 'takeout', 'pickup', 'delivery'
 - Channels are: 'pos', 'online', 'doordash', 'third_party'

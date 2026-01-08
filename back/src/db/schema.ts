@@ -76,3 +76,4 @@ export const COLUMN_INFO = {
   sources: ["toast", "doordash", "square"],
   paymentTypes: ["credit", "cash", "wallet", "doordash", "other"],
 };
+
