@@ -2,8 +2,8 @@ import { create } from 'zustand';
 import type { Message } from '@/types/chat';
 import { streamChatResponse, fetchConversation, ModelId, ReasoningLevel } from '@/lib/api';
 
-const DEFAULT_MODEL: ModelId = 'grok-4.1-fast';
-const DEFAULT_REASONING: ReasoningLevel = 'medium';
+const DEFAULT_MODEL: ModelId = 'gpt-5.2';
+const DEFAULT_REASONING: ReasoningLevel = 'high';
 
 interface ChatState {
   conversationId: string | null;

@@ -1,10 +1,21 @@
-import { OPENAI_API_KEY, OPENAI_MODEL } from "#constants/index.js";
+import {
+  HELICONE_KEY,
+  OPENAI_API_KEY,
+  OPENAI_MODEL,
+} from "#constants/index.js";
 import { createOpenAI } from "@ai-sdk/openai";
 import { generateText, generateObject, streamText, LanguageModel } from "ai";
 import { z } from "zod";
 import { log } from "#utils/logger.js";
 
 export const getOpenAIProvider = () => {
+  if (HELICONE_KEY)
+    return createOpenAI({
+      baseURL: "https://oai.helicone.ai/v1",
+      headers: {
+        "Helicone-Auth": `Bearer ${HELICONE_KEY}`,
+      },
+    });
   return createOpenAI({
     apiKey: OPENAI_API_KEY,
   });
@@ -24,7 +35,11 @@ export async function generateTextResponse(
   const processId = options?.processId;
 
   log(`   🤖 [${label}] Starting OpenAI LLM call...`, undefined, processId);
-  log(`      Temperature: ${options?.temperature ?? 0.0}`, undefined, processId);
+  log(
+    `      Temperature: ${options?.temperature ?? 0.0}`,
+    undefined,
+    processId
+  );
   log(`      Model: ${OPENAI_MODEL}`, undefined, processId);
 
   const startTime = Date.now();
@@ -38,7 +53,11 @@ export async function generateTextResponse(
   });
 
   const duration = Date.now() - startTime;
-  log(`   ✅ [${label}] OpenAI call completed in ${duration}ms`, undefined, processId);
+  log(
+    `   ✅ [${label}] OpenAI call completed in ${duration}ms`,
+    undefined,
+    processId
+  );
   log(`      Response length: ${text.length} characters`, undefined, processId);
 
   return text;
@@ -54,7 +73,11 @@ export async function generateObjectResponse<T>(
   const processId = options?.processId;
 
   log(`   🤖 [${label}] Starting OpenAI LLM call...`, undefined, processId);
-  log(`      Temperature: ${options?.temperature ?? 0.0}`, undefined, processId);
+  log(
+    `      Temperature: ${options?.temperature ?? 0.0}`,
+    undefined,
+    processId
+  );
   log(`      Model: ${OPENAI_MODEL}`, undefined, processId);
 
   const startTime = Date.now();
@@ -69,7 +92,11 @@ export async function generateObjectResponse<T>(
   });
 
   const duration = Date.now() - startTime;
-  log(`   ✅ [${label}] OpenAI call completed in ${duration}ms`, undefined, processId);
+  log(
+    `   ✅ [${label}] OpenAI call completed in ${duration}ms`,
+    undefined,
+    processId
+  );
   log(`      Response type: structured object`, undefined, processId);
 
   return object;
@@ -84,8 +111,16 @@ export async function streamTextResponse(
   const label = options?.label || "OpenAI Streaming Generation";
   const processId = options?.processId;
 
-  log(`   🤖 [${label}] Starting streaming OpenAI call...`, undefined, processId);
-  log(`      Temperature: ${options?.temperature ?? 0.0}`, undefined, processId);
+  log(
+    `   🤖 [${label}] Starting streaming OpenAI call...`,
+    undefined,
+    processId
+  );
+  log(
+    `      Temperature: ${options?.temperature ?? 0.0}`,
+    undefined,
+    processId
+  );
   log(`      Model: ${OPENAI_MODEL}`, undefined, processId);
 
   const startTime = Date.now();
@@ -105,8 +140,16 @@ export async function streamTextResponse(
   }
 
   const duration = Date.now() - startTime;
-  log(`   ✅ [${label}] OpenAI streaming completed in ${duration}ms`, undefined, processId);
-  log(`      Response length: ${fullText.length} characters`, undefined, processId);
+  log(
+    `   ✅ [${label}] OpenAI streaming completed in ${duration}ms`,
+    undefined,
+    processId
+  );
+  log(
+    `      Response length: ${fullText.length} characters`,
+    undefined,
+    processId
+  );
 
   return fullText;
 }

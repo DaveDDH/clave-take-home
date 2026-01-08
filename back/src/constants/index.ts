@@ -6,3 +6,5 @@ export const GROQ_MODEL = process.env.GROQ_MODEL || "openai/gpt-oss-20b";
 
 export const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 export const OPENAI_MODEL = process.env.OPENAI_MODEL || "openai/gpt-oss-20b";
+
+export const HELICONE_KEY = process.env.HELICONE_KEY;

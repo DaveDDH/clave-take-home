@@ -1,24 +1,35 @@
-import { GROQ_API_KEY, GROQ_MODEL } from "#constants/index.js";
+import { GROQ_API_KEY, GROQ_MODEL, HELICONE_KEY } from "#constants/index.js";
 import { createGroq } from "@ai-sdk/groq";
 import { generateText, generateObject, streamText, LanguageModel } from "ai";
 import { z } from "zod";
 import { log } from "#utils/logger.js";
 
+const fetch = async (
+  url: string | URL | Request,
+  options: RequestInit | undefined
+) => {
+  if (options?.body) {
+    const body = options.body.toString();
+    const parsedBody = JSON.parse(body);
+    parsedBody["reasoning_effort"] = "high";
+    options.body = JSON.stringify(parsedBody);
+  }
+  return await fetch(url, options);
+};
+
 export const getGroqProvider = () => {
+  if (HELICONE_KEY)
+    return createGroq({
+      apiKey: GROQ_API_KEY,
+      baseURL: "https://groq.helicone.ai/openai/v1",
+      headers: {
+        "Helicone-Auth": `Bearer ${process.env.HELICONE_API_KEY}`,
+      },
+      fetch,
+    });
   return createGroq({
     apiKey: GROQ_API_KEY,
-    fetch: async (
-      url: string | URL | Request,
-      options: RequestInit | undefined
-    ) => {
-      if (options?.body) {
-        const body = options.body.toString();
-        const parsedBody = JSON.parse(body);
-        parsedBody["reasoning_effort"] = "high";
-        options.body = JSON.stringify(parsedBody);
-      }
-      return await fetch(url, options);
-    },
+    fetch,
   });
 };
 
@@ -36,7 +47,11 @@ export async function generateTextResponse(
   const processId = options?.processId;
 
   log(`   🤖 [${label}] Starting Groq LLM call...`, undefined, processId);
-  log(`      Temperature: ${options?.temperature ?? 0.0}`, undefined, processId);
+  log(
+    `      Temperature: ${options?.temperature ?? 0.0}`,
+    undefined,
+    processId
+  );
   log(`      Model: ${GROQ_MODEL}`, undefined, processId);
 
   const startTime = Date.now();
@@ -50,7 +65,11 @@ export async function generateTextResponse(
   });
 
   const duration = Date.now() - startTime;
-  log(`   ✅ [${label}] Groq call completed in ${duration}ms`, undefined, processId);
+  log(
+    `   ✅ [${label}] Groq call completed in ${duration}ms`,
+    undefined,
+    processId
+  );
   log(`      Response length: ${text.length} characters`, undefined, processId);
 
   return text;
@@ -66,7 +85,11 @@ export async function generateObjectResponse<T>(
   const processId = options?.processId;
 
   log(`   🤖 [${label}] Starting Groq LLM call...`, undefined, processId);
-  log(`      Temperature: ${options?.temperature ?? 0.0}`, undefined, processId);
+  log(
+    `      Temperature: ${options?.temperature ?? 0.0}`,
+    undefined,
+    processId
+  );
   log(`      Model: ${GROQ_MODEL}`, undefined, processId);
 
   const startTime = Date.now();
@@ -81,7 +104,11 @@ export async function generateObjectResponse<T>(
   });
 
   const duration = Date.now() - startTime;
-  log(`   ✅ [${label}] Groq call completed in ${duration}ms`, undefined, processId);
+  log(
+    `   ✅ [${label}] Groq call completed in ${duration}ms`,
+    undefined,
+    processId
+  );
   log(`      Response type: structured object`, undefined, processId);
 
   return object;
@@ -97,7 +124,11 @@ export async function streamTextResponse(
   const processId = options?.processId;
 
   log(`   🤖 [${label}] Starting streaming Groq call...`, undefined, processId);
-  log(`      Temperature: ${options?.temperature ?? 0.0}`, undefined, processId);
+  log(
+    `      Temperature: ${options?.temperature ?? 0.0}`,
+    undefined,
+    processId
+  );
   log(`      Model: ${GROQ_MODEL}`, undefined, processId);
 
   const startTime = Date.now();
@@ -117,8 +148,16 @@ export async function streamTextResponse(
   }
 
   const duration = Date.now() - startTime;
-  log(`   ✅ [${label}] Groq streaming completed in ${duration}ms`, undefined, processId);
-  log(`      Response length: ${fullText.length} characters`, undefined, processId);
+  log(
+    `   ✅ [${label}] Groq streaming completed in ${duration}ms`,
+    undefined,
+    processId
+  );
+  log(
+    `      Response length: ${fullText.length} characters`,
+    undefined,
+    processId
+  );
 
   return fullText;
 }
