@@ -5,6 +5,8 @@ import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
+  ChartLegend,
+  ChartLegendContent,
   type ChartConfig,
 } from '@/components/ui/chart';
 import type { PieChartData } from '@/types/chart';
@@ -36,11 +38,16 @@ export function PieChart({ data, className }: PieChartProps) {
     <ChartContainer config={chartConfig} className={`min-h-[200px] h-[300px] w-full ${className}`}>
       <RechartsPieChart>
         <ChartTooltip content={<ChartTooltipContent />} />
-        <Pie data={data} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={60}>
+        <Pie data={data} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80}>
           {data.map((_, index) => (
             <Cell key={index} fill={COLORS[index % COLORS.length]} />
           ))}
         </Pie>
+        <ChartLegend
+          verticalAlign="bottom"
+          wrapperStyle={{ paddingTop: 0, marginTop: -20 }}
+          content={<ChartLegendContent nameKey="name" />}
+        />
       </RechartsPieChart>
     </ChartContainer>
   );

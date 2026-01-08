@@ -12,6 +12,8 @@ import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
+  ChartLegend,
+  ChartLegendContent,
   type ChartConfig,
 } from '@/components/ui/chart';
 import type { RadarChartData } from '@/types/chart';
@@ -37,7 +39,7 @@ export function RadarChart({ data, labelKey, valueKey, className }: RadarChartPr
 
   return (
     <ChartContainer config={chartConfig} className={`min-h-[200px] h-[300px] w-full ${className}`}>
-      <RechartsRadarChart data={data} cx="50%" cy="50%" outerRadius="60%">
+      <RechartsRadarChart data={data} cx="50%" cy="50%" outerRadius="65%">
         <PolarGrid />
         <PolarAngleAxis dataKey={labelKey} tick={{ fontSize: 10 }} />
         <PolarRadiusAxis tick={{ fontSize: 8 }} />
@@ -47,6 +49,11 @@ export function RadarChart({ data, labelKey, valueKey, className }: RadarChartPr
           stroke={`var(--color-${valueKey})`}
           fill={`var(--color-${valueKey})`}
           fillOpacity={0.6}
+        />
+        <ChartLegend
+          verticalAlign="bottom"
+          wrapperStyle={{ paddingTop: 0, marginTop: -20 }}
+          content={<ChartLegendContent />}
         />
       </RechartsRadarChart>
     </ChartContainer>
