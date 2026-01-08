@@ -131,6 +131,43 @@ The refinement prompt includes:
 
 This gives the LLM full context to understand what went wrong and how to fix it.
 
+## Automatic Retry with Escalation
+
+The system implements automatic retry with progressive escalation when LLM calls fail. This is a production best practice that maximizes reliability without manual intervention.
+
+### Why Escalation?
+
+1. **Graceful degradation**: Instead of failing immediately, the system tries increasingly powerful configurations before giving up.
+
+2. **Cost efficiency**: Starts with the user's chosen settings (often faster/cheaper), only escalating to more expensive options when needed.
+
+3. **Transparent to users**: Retries happen automatically—users see a successful response or a friendly error message, never raw failure details.
+
+### Escalation Order
+
+```
+Failure → Increase reasoning (if low) → Bigger model → Even bigger model → Max reasoning → Fail gracefully
+```
+
+| Step | Action |
+|------|--------|
+| 1 | If reasoning = low, increase to high (same model) |
+| 2 | Move to next bigger model |
+| 3 | Continue to biggest model |
+| 4 | If not at high reasoning, increase to high |
+| 5 | All options exhausted → friendly error message |
+
+Model hierarchy (smallest → biggest): `gpt-oss-20b` → `gpt-5.2` → `grok-4.1-fast`
+
+### When Escalation Triggers
+
+- SQL generation produced no valid candidates
+- All SQL executions failed
+- LLM API error (network, timeout, rate limit)
+- Empty or invalid model response
+
+This pattern is used by production systems at scale to ensure high availability even when individual model providers experience issues.
+
 ## Architecture Evolution
 
 This demo uses a normalized PostgreSQL schema populated with data from the JSON files you provided. For production scale (1000+ restaurants, real-time events), the architecture would evolve as follows:

@@ -47,6 +47,16 @@ export interface ProcessOptions {
 
 export { ModelId, DEFAULT_MODEL };
 
+// Re-export escalation utilities
+export {
+  MODEL_HIERARCHY,
+  getNextEscalation,
+  isMaxEscalation,
+  ESCALATION_EXHAUSTED_MESSAGE,
+  type EscalationState,
+  type EscalationResult,
+} from "./escalation.js";
+
 export interface ConversationMessage {
   role: "user" | "assistant";
   content: string;

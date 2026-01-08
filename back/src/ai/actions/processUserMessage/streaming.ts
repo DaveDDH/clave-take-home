@@ -8,10 +8,15 @@ import {
   ChartConfig,
 } from "./chart-inference.js";
 import { RESPONSE_GENERATION_SYSTEM_PROMPT } from "./prompt.js";
-import { log, logError } from "#utils/logger.js";
+import { log, logError, logWarn } from "#utils/logger.js";
 import { SSEWriter } from "#utils/sse.js";
-import type { ConversationMessage, ProcessOptions } from "./index.js";
+import type { ConversationMessage, ProcessOptions, ReasoningLevel } from "./index.js";
 import { REASONING_TO_CANDIDATES } from "./index.js";
+import {
+  getNextEscalation,
+  ESCALATION_EXHAUSTED_MESSAGE,
+  type EscalationState,
+} from "./escalation.js";
 
 export async function processUserMessageStream(
   userQuestion: string,
@@ -21,7 +26,6 @@ export async function processUserMessageStream(
   processId?: string
 ): Promise<void> {
   const { useConsistency = true, debug = false, model = DEFAULT_MODEL, reasoningLevel = 'medium' } = options;
-  const candidateCount = REASONING_TO_CANDIDATES[reasoningLevel];
 
   const requestStartTime = Date.now();
 
@@ -35,7 +39,24 @@ export async function processUserMessageStream(
     log("🆔 Process ID:", processId, processId);
   }
 
-  try {
+  // Initialize escalation state
+  let escalationState: EscalationState = {
+    model,
+    reasoningLevel,
+    attempt: 1,
+  };
+
+  // Retry loop with escalation
+  while (true) {
+    const currentModel = escalationState.model;
+    const currentReasoning = escalationState.reasoningLevel;
+    const candidateCount = REASONING_TO_CANDIDATES[currentReasoning];
+
+    if (escalationState.attempt > 1) {
+      log(`\n🔄 Retry attempt ${escalationState.attempt} with ${currentModel}/${currentReasoning}`, undefined, processId);
+    }
+
+    try {
     // Send start event
     sseWriter.sendStart();
     sseWriter.sendProgress("Starting analysis...", "init");
@@ -60,8 +81,8 @@ export async function processUserMessageStream(
     }
 
     // Start both tasks in parallel (don't wait for both)
-    const classificationPromise = classifyMessage(userQuestion, conversationHistory, dataContext, model, processId);
-    const schemaLinkingPromise = linkSchema(userQuestion, conversationHistory, model, processId);
+    const classificationPromise = classifyMessage(userQuestion, conversationHistory, dataContext, currentModel, processId);
+    const schemaLinkingPromise = linkSchema(userQuestion, conversationHistory, currentModel, processId);
 
     // Wait for classification first - it determines if we need schema linking
     const classification = await classificationPromise;
@@ -115,14 +136,14 @@ export async function processUserMessageStream(
 
     const startSQLGeneration = Date.now();
     if (useConsistency) {
-      log(`🔄 Using self-consistency voting (${candidateCount} candidates, reasoning: ${reasoningLevel})`, undefined, processId);
+      log(`🔄 Using self-consistency voting (${candidateCount} candidates, reasoning: ${currentReasoning})`, undefined, processId);
       const result = await selfConsistencyVote(
         userQuestion,
         linkedSchema,
         candidateCount,
         conversationHistory,
         dataContext,
-        model,
+        currentModel,
         processId
       );
       sql = result.sql;
@@ -139,7 +160,7 @@ export async function processUserMessageStream(
         linkedSchema,
         conversationHistory,
         dataContext,
-        model,
+        currentModel,
         processId
       );
       sql = result.sql;
@@ -205,7 +226,7 @@ export async function processUserMessageStream(
       data,
       chartConfig,
       conversationHistory,
-      model,
+      currentModel,
       sseWriter,
       processId
     );
@@ -220,16 +241,31 @@ export async function processUserMessageStream(
 
     sseWriter.sendComplete();
     sseWriter.close();
-  } catch (error) {
-    const totalTime = Date.now() - requestStartTime;
+    return; // Success - exit the retry loop
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      logWarn(`\n⚠️ Attempt ${escalationState.attempt} failed: ${errorMsg}`, undefined, processId);
 
-    logError("\n❌ Error processing user message:", error, processId);
-    log(`⏱️  Request failed after ${totalTime}ms (${(totalTime / 1000).toFixed(2)}s)`, undefined, processId);
-    log("========================================\n", undefined, processId);
+      // Check if we can escalate
+      const escalation = getNextEscalation(escalationState);
 
-    const errorMessage = generateErrorMessage(error);
-    sseWriter.sendError(errorMessage);
-    sseWriter.close();
+      if (!escalation.canEscalate) {
+        // Max escalation reached - send friendly error and exit
+        const totalTime = Date.now() - requestStartTime;
+        logError("\n❌ Max escalation reached, all retry options exhausted", undefined, processId);
+        log(`⏱️  Request failed after ${totalTime}ms (${(totalTime / 1000).toFixed(2)}s)`, undefined, processId);
+        log("========================================\n", undefined, processId);
+
+        sseWriter.sendError(ESCALATION_EXHAUSTED_MESSAGE);
+        sseWriter.close();
+        return;
+      }
+
+      // Escalate and retry
+      log(`\n⬆️ Escalating: ${escalationState.model}/${escalationState.reasoningLevel} → ${escalation.nextState!.model}/${escalation.nextState!.reasoningLevel}`, undefined, processId);
+      escalationState = escalation.nextState!;
+      // Continue to next iteration of while loop
+    }
   }
 }
 
