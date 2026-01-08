@@ -469,16 +469,10 @@ export async function loadToDatabase(
     await client.connect();
     log('Connected to database');
 
-    // Create tables if they don't exist
-    log('Creating tables if needed...');
-    const schemaSQL = getSchemaSQL();
-    await client.query(schemaSQL);
-    log('Schema ready');
-
-    // If cleanDb, drop views and truncate all tables
+    // If cleanDb, drop all tables and views to recreate schema from scratch
     if (cleanDb) {
-      log('Cleaning existing data...');
-      // Drop gold views first (they depend on base tables)
+      log('Dropping existing tables and views...');
+      // Drop everything in reverse dependency order
       await client.query(`
         DROP VIEW IF EXISTS gold_category_performance CASCADE;
         DROP VIEW IF EXISTS gold_hourly_trends CASCADE;
@@ -486,16 +480,25 @@ export async function loadToDatabase(
         DROP VIEW IF EXISTS gold_daily_sales CASCADE;
         DROP VIEW IF EXISTS gold_order_items CASCADE;
         DROP VIEW IF EXISTS gold_orders CASCADE;
-      `);
-      // Truncate tables in reverse order (respect foreign keys)
-      await client.query(`
-        TRUNCATE TABLE messages, conversations,
-                       payments, order_items, orders,
-                       product_aliases, product_variations, products,
-                       categories, locations CASCADE
+        DROP TABLE IF EXISTS messages CASCADE;
+        DROP TABLE IF EXISTS conversations CASCADE;
+        DROP TABLE IF EXISTS payments CASCADE;
+        DROP TABLE IF EXISTS order_items CASCADE;
+        DROP TABLE IF EXISTS orders CASCADE;
+        DROP TABLE IF EXISTS product_aliases CASCADE;
+        DROP TABLE IF EXISTS product_variations CASCADE;
+        DROP TABLE IF EXISTS products CASCADE;
+        DROP TABLE IF EXISTS categories CASCADE;
+        DROP TABLE IF EXISTS locations CASCADE;
       `);
       log('Database cleaned');
     }
+
+    // Create tables (will recreate if cleanDb dropped them)
+    log('Creating tables...');
+    const schemaSQL = getSchemaSQL();
+    await client.query(schemaSQL);
+    log('Schema ready');
 
     const { normalized } = data;
     const stats = {
@@ -513,16 +516,17 @@ export async function loadToDatabase(
     log(`Loading ${normalized.locations.length} locations...`);
     for (const loc of normalized.locations) {
       await client.query(
-        `INSERT INTO locations (id, name, address, timezone, toast_id, doordash_id, square_id)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
+        `INSERT INTO locations (id, name, address, timezone, toast_id, doordash_id, square_id, raw_data)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
          ON CONFLICT (id) DO UPDATE SET
            name = EXCLUDED.name,
            address = EXCLUDED.address,
            timezone = EXCLUDED.timezone,
            toast_id = EXCLUDED.toast_id,
            doordash_id = EXCLUDED.doordash_id,
-           square_id = EXCLUDED.square_id`,
-        [loc.id, loc.name, JSON.stringify(loc.address), loc.timezone, loc.toast_id, loc.doordash_id, loc.square_id]
+           square_id = EXCLUDED.square_id,
+           raw_data = EXCLUDED.raw_data`,
+        [loc.id, loc.name, JSON.stringify(loc.address), loc.timezone, loc.toast_id, loc.doordash_id, loc.square_id, loc.raw_data ? JSON.stringify(loc.raw_data) : null]
       );
       stats.locations++;
     }
@@ -531,10 +535,10 @@ export async function loadToDatabase(
     log(`Loading ${normalized.categories.length} categories...`);
     for (const cat of normalized.categories) {
       await client.query(
-        `INSERT INTO categories (id, name)
-         VALUES ($1, $2)
-         ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name`,
-        [cat.id, cat.name]
+        `INSERT INTO categories (id, name, raw_data)
+         VALUES ($1, $2, $3)
+         ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, raw_data = EXCLUDED.raw_data`,
+        [cat.id, cat.name, cat.raw_data ? JSON.stringify(cat.raw_data) : null]
       );
       stats.categories++;
     }
@@ -543,13 +547,14 @@ export async function loadToDatabase(
     log(`Loading ${normalized.products.length} products...`);
     for (const prod of normalized.products) {
       await client.query(
-        `INSERT INTO products (id, name, category_id, description)
-         VALUES ($1, $2, $3, $4)
+        `INSERT INTO products (id, name, category_id, description, raw_data)
+         VALUES ($1, $2, $3, $4, $5)
          ON CONFLICT (id) DO UPDATE SET
            name = EXCLUDED.name,
            category_id = EXCLUDED.category_id,
-           description = EXCLUDED.description`,
-        [prod.id, prod.name, prod.category_id, prod.description]
+           description = EXCLUDED.description,
+           raw_data = EXCLUDED.raw_data`,
+        [prod.id, prod.name, prod.category_id, prod.description, prod.raw_data ? JSON.stringify(prod.raw_data) : null]
       );
       stats.products++;
     }
@@ -558,14 +563,15 @@ export async function loadToDatabase(
     log(`Loading ${normalized.product_variations.length} product variations...`);
     for (const variation of normalized.product_variations) {
       await client.query(
-        `INSERT INTO product_variations (id, product_id, name, variation_type, source_raw_name)
-         VALUES ($1, $2, $3, $4, $5)
+        `INSERT INTO product_variations (id, product_id, name, variation_type, source_raw_name, raw_data)
+         VALUES ($1, $2, $3, $4, $5, $6)
          ON CONFLICT (id) DO UPDATE SET
            product_id = EXCLUDED.product_id,
            name = EXCLUDED.name,
            variation_type = EXCLUDED.variation_type,
-           source_raw_name = EXCLUDED.source_raw_name`,
-        [variation.id, variation.product_id, variation.name, variation.variation_type, variation.source_raw_name]
+           source_raw_name = EXCLUDED.source_raw_name,
+           raw_data = EXCLUDED.raw_data`,
+        [variation.id, variation.product_id, variation.name, variation.variation_type, variation.source_raw_name, variation.raw_data ? JSON.stringify(variation.raw_data) : null]
       );
       stats.product_variations++;
     }
@@ -591,8 +597,8 @@ export async function loadToDatabase(
       await client.query(
         `INSERT INTO orders (id, source, source_order_id, location_id, order_type, channel, status,
                             created_at, closed_at, subtotal_cents, tax_cents, tip_cents, total_cents,
-                            delivery_fee_cents, service_fee_cents, commission_cents, contains_alcohol, is_catering)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+                            delivery_fee_cents, service_fee_cents, commission_cents, contains_alcohol, is_catering, raw_data)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
          ON CONFLICT (id) DO UPDATE SET
            source = EXCLUDED.source,
            source_order_id = EXCLUDED.source_order_id,
@@ -610,7 +616,8 @@ export async function loadToDatabase(
            service_fee_cents = EXCLUDED.service_fee_cents,
            commission_cents = EXCLUDED.commission_cents,
            contains_alcohol = EXCLUDED.contains_alcohol,
-           is_catering = EXCLUDED.is_catering`,
+           is_catering = EXCLUDED.is_catering,
+           raw_data = EXCLUDED.raw_data`,
         [
           order.id, order.source, order.source_order_id, order.location_id,
           order.order_type, order.channel, order.status,
@@ -618,6 +625,7 @@ export async function loadToDatabase(
           order.subtotal_cents, order.tax_cents, order.tip_cents, order.total_cents,
           order.delivery_fee_cents, order.service_fee_cents, order.commission_cents,
           order.contains_alcohol, order.is_catering,
+          order.raw_data ? JSON.stringify(order.raw_data) : null,
         ]
       );
       stats.orders++;
@@ -628,8 +636,8 @@ export async function loadToDatabase(
     for (const item of normalized.order_items) {
       await client.query(
         `INSERT INTO order_items (id, order_id, product_id, variation_id, original_name, quantity,
-                                  unit_price_cents, total_price_cents, tax_cents, modifiers, special_instructions)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+                                  unit_price_cents, total_price_cents, tax_cents, modifiers, special_instructions, raw_data)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
          ON CONFLICT (id) DO UPDATE SET
            order_id = EXCLUDED.order_id,
            product_id = EXCLUDED.product_id,
@@ -640,12 +648,14 @@ export async function loadToDatabase(
            total_price_cents = EXCLUDED.total_price_cents,
            tax_cents = EXCLUDED.tax_cents,
            modifiers = EXCLUDED.modifiers,
-           special_instructions = EXCLUDED.special_instructions`,
+           special_instructions = EXCLUDED.special_instructions,
+           raw_data = EXCLUDED.raw_data`,
         [
           item.id, item.order_id, item.product_id, item.variation_id,
           item.original_name, item.quantity,
           item.unit_price_cents, item.total_price_cents, item.tax_cents,
           JSON.stringify(item.modifiers), item.special_instructions,
+          item.raw_data ? JSON.stringify(item.raw_data) : null,
         ]
       );
       stats.order_items++;
@@ -656,8 +666,8 @@ export async function loadToDatabase(
     for (const payment of normalized.payments) {
       await client.query(
         `INSERT INTO payments (id, order_id, source_payment_id, payment_type, card_brand, last_four,
-                              amount_cents, tip_cents, processing_fee_cents, created_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+                              amount_cents, tip_cents, processing_fee_cents, created_at, raw_data)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
          ON CONFLICT (id) DO UPDATE SET
            order_id = EXCLUDED.order_id,
            source_payment_id = EXCLUDED.source_payment_id,
@@ -667,12 +677,14 @@ export async function loadToDatabase(
            amount_cents = EXCLUDED.amount_cents,
            tip_cents = EXCLUDED.tip_cents,
            processing_fee_cents = EXCLUDED.processing_fee_cents,
-           created_at = EXCLUDED.created_at`,
+           created_at = EXCLUDED.created_at,
+           raw_data = EXCLUDED.raw_data`,
         [
           payment.id, payment.order_id, payment.source_payment_id,
           payment.payment_type, payment.card_brand, payment.last_four,
           payment.amount_cents, payment.tip_cents, payment.processing_fee_cents,
           payment.created_at,
+          payment.raw_data ? JSON.stringify(payment.raw_data) : null,
         ]
       );
       stats.payments++;

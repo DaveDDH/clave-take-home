@@ -2,7 +2,7 @@ import { createXai } from "@ai-sdk/xai";
 import { generateText, generateObject, streamText } from "ai";
 import { z } from "zod";
 
-import { XAI_API_KEY, MODEL } from "#constants/index.js";
+import { XAI_API_KEY, XAI_MODEL } from "#constants/index.js";
 import { log } from "#utils/logger.js";
 
 export const getXAIProvider = () => {
@@ -13,7 +13,7 @@ export const getXAIProvider = () => {
 
 export const getGrokModel = () => {
   const provider = getXAIProvider();
-  return provider(MODEL);
+  return provider(XAI_MODEL);
 };
 
 export async function generateTextResponse(
@@ -25,8 +25,12 @@ export async function generateTextResponse(
   const processId = options?.processId;
 
   log(`   🤖 [${label}] Starting LLM call...`, undefined, processId);
-  log(`      Temperature: ${options?.temperature ?? 0.0}`, undefined, processId);
-  log(`      Model: ${MODEL}`, undefined, processId);
+  log(
+    `      Temperature: ${options?.temperature ?? 0.0}`,
+    undefined,
+    processId
+  );
+  log(`      Model: ${XAI_MODEL}`, undefined, processId);
 
   const startTime = Date.now();
 
@@ -39,7 +43,13 @@ export async function generateTextResponse(
   });
 
   const duration = Date.now() - startTime;
-  log(`   ✅ [${label}] LLM call completed in ${duration}ms (${(duration / 1000).toFixed(2)}s)`, undefined, processId);
+  log(
+    `   ✅ [${label}] LLM call completed in ${duration}ms (${(
+      duration / 1000
+    ).toFixed(2)}s)`,
+    undefined,
+    processId
+  );
   log(`      Response length: ${text.length} characters`, undefined, processId);
 
   return text;
@@ -55,8 +65,12 @@ export async function generateObjectResponse<T>(
   const processId = options?.processId;
 
   log(`   🤖 [${label}] Starting LLM call...`, undefined, processId);
-  log(`      Temperature: ${options?.temperature ?? 0.0}`, undefined, processId);
-  log(`      Model: ${MODEL}`, undefined, processId);
+  log(
+    `      Temperature: ${options?.temperature ?? 0.0}`,
+    undefined,
+    processId
+  );
+  log(`      Model: ${XAI_MODEL}`, undefined, processId);
 
   const startTime = Date.now();
 
@@ -70,7 +84,13 @@ export async function generateObjectResponse<T>(
   });
 
   const duration = Date.now() - startTime;
-  log(`   ✅ [${label}] LLM call completed in ${duration}ms (${(duration / 1000).toFixed(2)}s)`, undefined, processId);
+  log(
+    `   ✅ [${label}] LLM call completed in ${duration}ms (${(
+      duration / 1000
+    ).toFixed(2)}s)`,
+    undefined,
+    processId
+  );
   log(`      Response type: structured object`, undefined, processId);
 
   return object;
@@ -86,8 +106,12 @@ export async function streamTextResponse(
   const processId = options?.processId;
 
   log(`   🤖 [${label}] Starting streaming LLM call...`, undefined, processId);
-  log(`      Temperature: ${options?.temperature ?? 0.0}`, undefined, processId);
-  log(`      Model: ${MODEL}`, undefined, processId);
+  log(
+    `      Temperature: ${options?.temperature ?? 0.0}`,
+    undefined,
+    processId
+  );
+  log(`      Model: ${XAI_MODEL}`, undefined, processId);
 
   const startTime = Date.now();
 
@@ -99,15 +123,25 @@ export async function streamTextResponse(
     temperature: options?.temperature ?? 0.0,
   });
 
-  let fullText = '';
+  let fullText = "";
   for await (const chunk of result.textStream) {
     fullText += chunk;
     onToken(chunk);
   }
 
   const duration = Date.now() - startTime;
-  log(`   ✅ [${label}] Streaming LLM call completed in ${duration}ms (${(duration / 1000).toFixed(2)}s)`, undefined, processId);
-  log(`      Response length: ${fullText.length} characters`, undefined, processId);
+  log(
+    `   ✅ [${label}] Streaming LLM call completed in ${duration}ms (${(
+      duration / 1000
+    ).toFixed(2)}s)`,
+    undefined,
+    processId
+  );
+  log(
+    `      Response length: ${fullText.length} characters`,
+    undefined,
+    processId
+  );
 
   return fullText;
 }

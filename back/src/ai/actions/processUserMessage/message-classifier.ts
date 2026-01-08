@@ -1,4 +1,5 @@
-import { generateObjectResponse } from "#ai/models/xai/index.js";
+import { generateObjectResponse } from "#ai/models/index.js";
+import type { ModelId } from "#ai/models/index.js";
 import { z } from "zod";
 import type { DataContext } from "./data-context.js";
 
@@ -79,7 +80,8 @@ Chart Type Selection (REQUIRED for ALL messages):
 export async function classifyMessage(
   userMessage: string,
   conversationHistory: Array<{ role: string; content: string }>,
-  dataContext?: DataContext,
+  dataContext: DataContext | undefined,
+  model: ModelId,
   processId?: string
 ): Promise<MessageClassification> {
   let conversationContext = "";
@@ -98,6 +100,7 @@ Current date: ${new Date().toISOString().split("T")[0]}
 Classify this message and provide a conversational response.`;
 
   return generateObjectResponse(
+    model,
     buildClassificationPrompt(dataContext),
     prompt,
     MessageClassificationSchema,

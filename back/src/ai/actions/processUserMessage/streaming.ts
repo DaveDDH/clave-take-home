@@ -1,4 +1,5 @@
-import { streamTextResponse } from "#ai/models/xai/index.js";
+import { streamTextResponse, DEFAULT_MODEL } from "#ai/models/index.js";
+import type { ModelId } from "#ai/models/index.js";
 import { linkSchema } from "./schema-linking.js";
 import { selfConsistencyVote, singleQuery } from "./self-consistency.js";
 import {
@@ -18,7 +19,7 @@ export async function processUserMessageStream(
   sseWriter: SSEWriter,
   processId?: string
 ): Promise<void> {
-  const { useConsistency = true, debug = false } = options;
+  const { useConsistency = true, debug = false, model = DEFAULT_MODEL } = options;
 
   const requestStartTime = Date.now();
 
@@ -57,8 +58,8 @@ export async function processUserMessageStream(
     }
 
     // Start both tasks in parallel (don't wait for both)
-    const classificationPromise = classifyMessage(userQuestion, conversationHistory, dataContext, processId);
-    const schemaLinkingPromise = linkSchema(userQuestion, conversationHistory, processId);
+    const classificationPromise = classifyMessage(userQuestion, conversationHistory, dataContext, model, processId);
+    const schemaLinkingPromise = linkSchema(userQuestion, conversationHistory, model, processId);
 
     // Wait for classification first - it determines if we need schema linking
     const classification = await classificationPromise;
@@ -119,6 +120,7 @@ export async function processUserMessageStream(
         3,
         conversationHistory,
         dataContext,
+        model,
         processId
       );
       sql = result.sql;
@@ -135,6 +137,7 @@ export async function processUserMessageStream(
         linkedSchema,
         conversationHistory,
         dataContext,
+        model,
         processId
       );
       sql = result.sql;
@@ -200,6 +203,7 @@ export async function processUserMessageStream(
       data,
       chartConfig,
       conversationHistory,
+      model,
       sseWriter,
       processId
     );
@@ -232,6 +236,7 @@ async function generateNaturalResponseStream(
   data: Record<string, unknown>[],
   chartConfig: ChartConfig,
   conversationHistory: ConversationMessage[],
+  model: ModelId,
   sseWriter: SSEWriter,
   processId?: string
 ): Promise<void> {
@@ -265,6 +270,7 @@ Instead, provide a concise high-level analysis with insights about what this dat
 Use markdown for emphasis. Convert cents to dollars.`;
 
   await streamTextResponse(
+    model,
     RESPONSE_GENERATION_SYSTEM_PROMPT,
     prompt,
     { temperature: 0.3, label: "Streaming Natural Language Response", processId },

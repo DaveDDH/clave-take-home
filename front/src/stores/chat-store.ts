@@ -1,12 +1,16 @@
 import { create } from 'zustand';
 import type { Message } from '@/types/chat';
-import { streamChatResponse, fetchConversation } from '@/lib/api';
+import { streamChatResponse, fetchConversation, ModelId } from '@/lib/api';
+
+const DEFAULT_MODEL: ModelId = 'grok-4.1-fast';
 
 interface ChatState {
   conversationId: string | null;
   pendingConversation: { tempId: string; preview: string } | null;
   messages: Message[];
   isLoading: boolean;
+  selectedModel: ModelId;
+  setSelectedModel: (model: ModelId) => void;
   sendMessage: (content: string) => Promise<void>;
   regenerateFrom: (messageId: string) => Promise<void>;
   loadConversation: (id: string) => Promise<void>;
@@ -22,6 +26,7 @@ type SetState = (
 async function processStreamingMessage(
   message: string,
   conversationId: string | null,
+  model: ModelId,
   assistantMessageId: string,
   set: SetState
 ): Promise<void> {
@@ -49,6 +54,7 @@ async function processStreamingMessage(
     await streamChatResponse(
       message,
       conversationId,
+      model,
       { useConsistency: true, debug: false },
       {
         onClassification: (data) => {
@@ -157,12 +163,16 @@ export const useChatStore = create<ChatState>((set, get) => ({
   pendingConversation: null,
   messages: [],
   isLoading: false,
+  selectedModel: DEFAULT_MODEL,
+
+  setSelectedModel: (model: ModelId) => set({ selectedModel: model }),
 
   sendMessage: async (content: string) => {
     if (!content.trim() || get().isLoading) return;
 
     const trimmedContent = content.trim();
     const currentConversationId = get().conversationId;
+    const model = get().selectedModel;
 
     // Create pending conversation optimistically if this is a new conversation
     const pendingConversation = !currentConversationId
@@ -192,6 +202,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     await processStreamingMessage(
       trimmedContent,
       currentConversationId,
+      model,
       assistantId,
       set
     );
@@ -220,6 +231,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     const messagesUpToUser = messages.slice(0, lastUserMessageIndex + 1);
     const userMessage = messages[lastUserMessageIndex];
+    const model = get().selectedModel;
 
     const assistantId = crypto.randomUUID();
     const assistantMessage: Message = {
@@ -237,6 +249,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     await processStreamingMessage(
       userMessage.content,
       get().conversationId,
+      model,
       assistantId,
       set
     );

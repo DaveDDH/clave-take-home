@@ -3,47 +3,51 @@
 import { LayoutGrid } from 'lucide-react';
 import {
   DndContext,
-  closestCenter,
-  KeyboardSensor,
   PointerSensor,
   useSensor,
   useSensors,
   type DragEndEvent,
 } from '@dnd-kit/core';
-import {
-  SortableContext,
-  sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
 import { useWidgetStore } from '@/stores/widget-store';
 import { useDashboardStore } from '@/stores/dashboard-store';
 import { AddWidgetPopover, WidgetCard } from '@/components/dashboard';
 
 export default function DashboardPage() {
   const widgets = useWidgetStore((state) => state.widgets);
-  const activeWidgetIds = useDashboardStore((state) => state.activeWidgetIds);
-  const reorderWidgets = useDashboardStore((state) => state.reorderWidgets);
+  const widgetPositions = useDashboardStore((state) => state.widgetPositions);
+  const updateWidgetPosition = useDashboardStore((state) => state.updateWidgetPosition);
 
   const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 3, // 3px movement before drag starts
+      },
     })
   );
 
-  const activeWidgets = activeWidgetIds
-    .map((id) => widgets.find((w) => w.id === id))
-    .filter(Boolean);
+  const activeWidgets = widgetPositions
+    .map((pos) => {
+      const widget = widgets.find((w) => w.id === pos.id);
+      return widget ? { widget, x: pos.x, y: pos.y } : null;
+    })
+    .filter(Boolean) as { widget: (typeof widgets)[0]; x: number; y: number }[];
 
   const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (over && active.id !== over.id) {
-      reorderWidgets(active.id as string, over.id as string);
-    }
+    const { active, delta } = event;
+    const widgetId = active.id as string;
+
+    const currentPos = widgetPositions.find((w) => w.id === widgetId);
+    if (!currentPos) return;
+
+    // Calculate new position, ensuring it stays within bounds
+    const newX = Math.max(0, currentPos.x + delta.x);
+    const newY = Math.max(0, currentPos.y + delta.y);
+
+    updateWidgetPosition(widgetId, newX, newY);
   };
 
   return (
-    <div className="relative h-full overflow-auto p-6">
+    <div className="relative h-full overflow-auto">
       {activeWidgets.length === 0 ? (
         <div className="flex h-full flex-col items-center justify-center gap-4">
           <div className="rounded-full bg-muted p-4">
@@ -55,21 +59,12 @@ export default function DashboardPage() {
           </div>
         </div>
       ) : (
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-        >
-          <SortableContext
-            items={activeWidgetIds}
-            strategy={verticalListSortingStrategy}
-          >
-            <div className="flex flex-col gap-4">
-              {activeWidgets.map((widget) => (
-                <WidgetCard key={widget!.id} widget={widget!} />
-              ))}
-            </div>
-          </SortableContext>
+        <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+          <div className="relative min-h-full min-w-full p-4" style={{ minHeight: '2000px', minWidth: '2000px' }}>
+            {activeWidgets.map(({ widget, x, y }) => (
+              <WidgetCard key={widget.id} widget={widget} x={x} y={y} />
+            ))}
+          </div>
         </DndContext>
       )}
       <AddWidgetPopover />

@@ -1,59 +1,51 @@
 'use client';
 
-import { Plus, Package, CheckCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Plus } from 'lucide-react';
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from '@/components/ui/select';
 import { useWidgetStore } from '@/stores/widget-store';
 import { useDashboardStore } from '@/stores/dashboard-store';
 
 export function AddWidgetPopover() {
   const widgets = useWidgetStore((state) => state.widgets);
-  const activeWidgetIds = useDashboardStore((state) => state.activeWidgetIds);
+  const widgetPositions = useDashboardStore((state) => state.widgetPositions);
   const addWidget = useDashboardStore((state) => state.addWidget);
 
+  const activeWidgetIds = widgetPositions.map((w) => w.id);
   const availableWidgets = widgets.filter(
     (w) => !activeWidgetIds.includes(w.id)
   );
 
+  const hasNoWidgets = widgets.length === 0;
+  const allWidgetsOnDashboard = availableWidgets.length === 0;
+  const isDisabled = hasNoWidgets || allWidgetsOnDashboard;
+
+  const handleWidgetSelect = (widgetId: string) => {
+    addWidget(widgetId);
+  };
+
   return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button size="icon" className="fixed bottom-6 right-6">
-          <Plus className="h-6 w-6" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent align="end">
-        <div className="space-y-3">
-          <h4 className="font-medium">Add Widget</h4>
-          {widgets.length === 0 ? (
-            <div className="flex items-start gap-3 text-sm text-muted-foreground">
-              <Package className="mt-0.5 size-4 shrink-0" />
-              <span>No saved widgets yet. Save widgets from the Copilot.</span>
-            </div>
-          ) : availableWidgets.length === 0 ? (
-            <div className="flex items-start gap-3 text-sm text-muted-foreground">
-              <CheckCircle className="mt-0.5 size-4 shrink-0" />
-              <span>All widgets are on the dashboard.</span>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-1">
-              {availableWidgets.map((widget) => (
-                <Button
-                  key={widget.id}
-                  variant="ghost"
-                  onClick={() => addWidget(widget.id)}
-                >
-                  {widget.name}
-                </Button>
-              ))}
-            </div>
-          )}
-        </div>
-      </PopoverContent>
-    </Popover>
+    <div className="fixed bottom-6 right-6">
+      <Select onValueChange={handleWidgetSelect} value="">
+        <SelectTrigger
+          className="size-9 p-0 justify-center"
+          disabled={isDisabled}
+          hideIcon
+        >
+          <Plus className="h-5 w-5" />
+        </SelectTrigger>
+        <SelectContent position="popper" side="top" align="end">
+          {availableWidgets.map((widget) => (
+            <SelectItem key={widget.id} value={widget.id}>
+              {widget.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
   );
 }

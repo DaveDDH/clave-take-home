@@ -3,6 +3,7 @@ import { generateSQL } from "./sql-generation.js";
 import { LinkedSchema } from "./schema-linking.js";
 import type { DataContext } from "./data-context.js";
 import { log, logError, logWarn } from "#utils/logger.js";
+import type { ModelId } from "#ai/models/index.js";
 
 export interface ConsistencyResult {
   sql: string;
@@ -19,7 +20,8 @@ export async function selfConsistencyVote(
   linkedSchema: LinkedSchema,
   candidateCount: number = 3,
   conversationHistory: Array<{ role: string; content: string }> = [],
-  dataContext?: DataContext,
+  dataContext: DataContext | undefined,
+  model: ModelId,
   processId?: string
 ): Promise<ConsistencyResult> {
   const votingStartTime = Date.now();
@@ -34,7 +36,7 @@ export async function selfConsistencyVote(
     async (temperature, i) => {
       try {
         log(`      Candidate ${i + 1}: temperature=${temperature}`, undefined, processId);
-        const sql = await generateSQL(userQuestion, linkedSchema, temperature, conversationHistory, dataContext, processId);
+        const sql = await generateSQL(userQuestion, linkedSchema, temperature, conversationHistory, dataContext, model, processId);
         if (isReadOnlyQuery(sql)) {
           log(`      ✓ Candidate ${i + 1} valid`, undefined, processId);
           return sql;
@@ -140,10 +142,11 @@ export async function singleQuery(
   userQuestion: string,
   linkedSchema: LinkedSchema,
   conversationHistory: Array<{ role: string; content: string }> = [],
-  dataContext?: DataContext,
+  dataContext: DataContext | undefined,
+  model: ModelId,
   processId?: string
 ): Promise<{ sql: string; data: Record<string, unknown>[] }> {
-  const sql = await generateSQL(userQuestion, linkedSchema, 0.0, conversationHistory, dataContext, processId);
+  const sql = await generateSQL(userQuestion, linkedSchema, 0.0, conversationHistory, dataContext, model, processId);
 
   if (!isReadOnlyQuery(sql)) {
     logError("❌ Generated SQL is not a read-only query:", undefined, processId);

@@ -19,11 +19,13 @@ export interface DbLocation {
   toast_id?: string;
   doordash_id?: string;
   square_id?: string;
+  raw_data?: unknown;
 }
 
 export interface DbCategory {
   id?: string;
   name: string;
+  raw_data?: unknown;
 }
 
 export interface DbProduct {
@@ -31,6 +33,7 @@ export interface DbProduct {
   name: string;
   category_id?: string;
   description?: string;
+  raw_data?: unknown;
 }
 
 export interface DbProductVariation {
@@ -39,6 +42,7 @@ export interface DbProductVariation {
   name: string;
   variation_type?: 'quantity' | 'size' | 'serving' | 'strength' | 'semantic';
   source_raw_name?: string;
+  raw_data?: unknown;
 }
 
 export interface DbProductAlias {
@@ -67,6 +71,7 @@ export interface DbOrder {
   commission_cents?: number;
   contains_alcohol?: boolean;
   is_catering?: boolean;
+  raw_data?: unknown; // Original source data for auditing
 }
 
 export interface DbOrderItem {
@@ -81,6 +86,7 @@ export interface DbOrderItem {
   tax_cents?: number;
   modifiers?: unknown[];
   special_instructions?: string;
+  raw_data?: unknown;
 }
 
 export interface DbPayment {
@@ -94,6 +100,7 @@ export interface DbPayment {
   tip_cents?: number;
   processing_fee_cents?: number;
   created_at?: string;
+  raw_data?: unknown;
 }
 
 // Toast POS types

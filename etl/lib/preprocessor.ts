@@ -178,6 +178,7 @@ function buildLocations(
       toast_id: config.toast_id,
       doordash_id: config.doordash_id,
       square_id: config.square_id,
+      raw_data: { config, square_location: squareLoc },
     });
 
     // Map all source IDs to unified ID
@@ -346,7 +347,7 @@ function buildUnifiedCatalog(sources: SourceData): {
 
   for (const [name, info] of rawCategories) {
     const id = randomUUID();
-    categories.push({ id, name });
+    categories.push({ id, name, raw_data: info });
     categoryMap.set(name, id);
     if (info.squareId) {
       categoryMap.set(info.squareId, id);
@@ -514,11 +515,19 @@ function buildUnifiedCatalog(sources: SourceData): {
       ? categoryMap.get(group.categoryId)
       : undefined;
 
+    // Collect raw data from all items that formed this product
+    const rawItems = group.items.map(item => ({
+      source: item.source,
+      sourceId: item.sourceId,
+      originalName: item.originalName,
+    }));
+
     products.push({
       id: productId,
       name: group.canonicalName,
       category_id: categoryId,
       description: group.description,
+      raw_data: { items: rawItems },
     });
 
     // Map all item IDs and names to this product
@@ -549,6 +558,7 @@ function buildUnifiedCatalog(sources: SourceData): {
             name: canonicalName,
             variation_type: finalType,
             source_raw_name: item.originalName,
+            raw_data: { source: item.source, sourceId: item.sourceId, originalName: item.originalName, extractedVariation: item.extractedVariation },
           });
           variationMap.set(variationKey, variationId);
         }
@@ -582,6 +592,7 @@ function buildUnifiedCatalog(sources: SourceData): {
               name: canonicalName,
               variation_type: finalType,
               source_raw_name: `${item.originalName} - ${sqVariation.name}`,
+              raw_data: { source: 'square', squareVariationId: sqVariation.id, squareVariationName: sqVariation.name, parentItemName: item.originalName },
             });
             variationMap.set(variationKey, variationId);
           }
@@ -666,6 +677,7 @@ function processToastOrders(
             name: m.displayName,
             price: m.price,
           })),
+          raw_data: selection,
         });
       }
 
@@ -684,6 +696,7 @@ function processToastOrders(
           tip_cents: payment.tipAmount,
           processing_fee_cents: payment.originalProcessingFee,
           created_at: payment.paidDate,
+          raw_data: payment,
         });
       }
     }
@@ -706,6 +719,7 @@ function processToastOrders(
       tax_cents: tax,
       tip_cents: tip,
       total_cents: total,
+      raw_data: order, // Store original Toast order for auditing
     });
   }
 
@@ -766,6 +780,7 @@ function processDoorDashOrders(
         total_price_cents: item.total_price,
         modifiers: item.options,
         special_instructions: item.special_instructions || undefined,
+        raw_data: item,
       });
     }
 
@@ -792,6 +807,7 @@ function processDoorDashOrders(
       commission_cents: order.commission,
       contains_alcohol: order.contains_alcohol,
       is_catering: order.is_catering,
+      raw_data: order, // Store original DoorDash order for auditing
     });
 
     // Create payment for DoorDash order (payment handled by DoorDash platform)
@@ -804,6 +820,7 @@ function processDoorDashOrders(
       tip_cents: order.dasher_tip,
       processing_fee_cents: order.commission,
       created_at: order.delivery_time || order.pickup_time || order.created_at,
+      raw_data: { source: 'doordash', order_id: order.external_delivery_id, merchant_payout: order.merchant_payout, commission: order.commission },
     });
   }
 
@@ -891,6 +908,7 @@ function processSquareOrders(
         unit_price_cents: unitPrice,
         total_price_cents: totalPrice,
         modifiers: lineItem.applied_modifiers?.map(m => ({ modifier_id: m.modifier_id })) || [],
+        raw_data: lineItem,
       });
     }
 
@@ -917,6 +935,7 @@ function processSquareOrders(
       tax_cents: tax,
       tip_cents: tip,
       total_cents: total,
+      raw_data: order, // Store original Square order for auditing
     });
 
     // Process payments
@@ -947,6 +966,7 @@ function processSquareOrders(
         amount_cents: payment.amount_money.amount,
         tip_cents: payment.tip_money.amount,
         created_at: payment.created_at,
+        raw_data: payment,
       });
     }
   }

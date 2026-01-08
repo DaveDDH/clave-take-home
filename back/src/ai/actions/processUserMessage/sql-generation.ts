@@ -1,4 +1,5 @@
-import { generateTextResponse } from "#ai/models/xai/index.js";
+import { generateTextResponse } from "#ai/models/index.js";
+import type { ModelId } from "#ai/models/index.js";
 import { LinkedSchema, formatLinkedSchema } from "./schema-linking.js";
 import { getCalibrationSystemPrompt } from "./prompt.js";
 import type { DataContext } from "./data-context.js";
@@ -8,7 +9,8 @@ export async function generateSQL(
   linkedSchema: LinkedSchema,
   temperature: number = 0.0,
   conversationHistory: Array<{ role: string; content: string }> = [],
-  dataContext?: DataContext,
+  dataContext: DataContext | undefined,
+  model: ModelId,
   processId?: string
 ): Promise<string> {
   const schemaSection = formatLinkedSchema(linkedSchema);
@@ -71,6 +73,7 @@ Current date and time: ${dateAndTime}
 `;
 
   const response = await generateTextResponse(
+    model,
     await getCalibrationSystemPrompt(),
     userPrompt,
     { temperature, label: "SQL Generation", processId }

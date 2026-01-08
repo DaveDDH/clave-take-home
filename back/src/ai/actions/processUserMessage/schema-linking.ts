@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { generateObjectResponse } from "#ai/models/xai/index.js";
+import { generateObjectResponse } from "#ai/models/index.js";
+import type { ModelId } from "#ai/models/index.js";
 import { FULL_SCHEMA } from "#db/schema.js";
 import { SCHEMA_LINKING_SYSTEM_PROMPT } from "./prompt.js";
 
@@ -19,6 +20,7 @@ export type LinkedSchema = z.infer<typeof LinkedSchemaSchema>;
 export async function linkSchema(
   userQuestion: string,
   conversationHistory: Array<{ role: string; content: string }> = [],
+  model: ModelId,
   processId?: string
 ): Promise<LinkedSchema> {
   // Include conversation context if there's history
@@ -48,6 +50,7 @@ Think about:
 Output the tables and their relevant columns, plus any foreign keys needed for JOINs.`;
 
   return generateObjectResponse(
+    model,
     SCHEMA_LINKING_SYSTEM_PROMPT,
     prompt,
     LinkedSchemaSchema,

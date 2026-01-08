@@ -1,32 +1,56 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
-interface DashboardState {
-  activeWidgetIds: string[];
-  addWidget: (id: string) => void;
-  removeWidget: (id: string) => void;
-  reorderWidgets: (activeId: string, overId: string) => void;
+export interface WidgetPosition {
+  id: string;
+  x: number;
+  y: number;
 }
 
-export const useDashboardStore = create<DashboardState>((set) => ({
-  activeWidgetIds: [],
-  addWidget: (id) =>
-    set((state) => {
-      if (state.activeWidgetIds.includes(id)) return state;
-      return { activeWidgetIds: [...state.activeWidgetIds, id] };
-    }),
-  removeWidget: (id) =>
-    set((state) => ({
-      activeWidgetIds: state.activeWidgetIds.filter((wId) => wId !== id),
-    })),
-  reorderWidgets: (activeId, overId) =>
-    set((state) => {
-      const oldIndex = state.activeWidgetIds.indexOf(activeId);
-      const newIndex = state.activeWidgetIds.indexOf(overId);
-      if (oldIndex === -1 || newIndex === -1) return state;
+interface DashboardState {
+  widgetPositions: WidgetPosition[];
+  addWidget: (id: string, x?: number, y?: number) => void;
+  removeWidget: (id: string) => void;
+  updateWidgetPosition: (id: string, x: number, y: number) => void;
+  getWidgetPosition: (id: string) => WidgetPosition | undefined;
+}
 
-      const newIds = [...state.activeWidgetIds];
-      newIds.splice(oldIndex, 1);
-      newIds.splice(newIndex, 0, activeId);
-      return { activeWidgetIds: newIds };
+export const useDashboardStore = create<DashboardState>()(
+  persist(
+    (set, get) => ({
+      widgetPositions: [],
+
+      addWidget: (id, x = 20, y = 20) =>
+        set((state) => {
+          if (state.widgetPositions.some((w) => w.id === id)) return state;
+          // Stack new widgets with offset if there are existing ones
+          const offset = state.widgetPositions.length * 30;
+          return {
+            widgetPositions: [
+              ...state.widgetPositions,
+              { id, x: x + offset, y: y + offset },
+            ],
+          };
+        }),
+
+      removeWidget: (id) =>
+        set((state) => ({
+          widgetPositions: state.widgetPositions.filter((w) => w.id !== id),
+        })),
+
+      updateWidgetPosition: (id, x, y) =>
+        set((state) => ({
+          widgetPositions: state.widgetPositions.map((w) =>
+            w.id === id ? { ...w, x, y } : w
+          ),
+        })),
+
+      getWidgetPosition: (id) => {
+        return get().widgetPositions.find((w) => w.id === id);
+      },
     }),
-}));
+    {
+      name: 'dashboard-positions',
+    }
+  )
+);

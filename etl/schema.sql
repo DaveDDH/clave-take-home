@@ -10,13 +10,15 @@ CREATE TABLE IF NOT EXISTS locations (
   toast_id TEXT,
   doordash_id TEXT,
   square_id TEXT,
-  created_at TIMESTAMPTZ DEFAULT now()
+  created_at TIMESTAMPTZ DEFAULT now(),
+  raw_data JSONB -- Original source data for auditing
 );
 
 -- 2. Categories (normalized)
 CREATE TABLE IF NOT EXISTS categories (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  name TEXT NOT NULL UNIQUE
+  name TEXT NOT NULL UNIQUE,
+  raw_data JSONB -- Original source data for auditing
 );
 
 -- 3. Products (canonical product catalog)
@@ -25,7 +27,8 @@ CREATE TABLE IF NOT EXISTS products (
   name TEXT NOT NULL,
   category_id UUID REFERENCES categories(id),
   description TEXT,
-  created_at TIMESTAMPTZ DEFAULT now()
+  created_at TIMESTAMPTZ DEFAULT now(),
+  raw_data JSONB -- Original source data for auditing
 );
 
 -- 4. Product Variations (sizes, quantities, flavors)
@@ -35,6 +38,7 @@ CREATE TABLE IF NOT EXISTS product_variations (
   name TEXT NOT NULL,
   variation_type TEXT CHECK (variation_type IN ('quantity', 'size', 'serving', 'strength', 'semantic')),
   source_raw_name TEXT,
+  raw_data JSONB, -- Original source data for auditing
   UNIQUE(product_id, name)
 );
 
@@ -68,6 +72,8 @@ CREATE TABLE IF NOT EXISTS orders (
   commission_cents INT DEFAULT 0,
   contains_alcohol BOOLEAN DEFAULT false,
   is_catering BOOLEAN DEFAULT false,
+  -- Raw source data for auditing (not queried, just stored)
+  raw_data JSONB,
   UNIQUE(source, source_order_id)
 );
 
@@ -83,7 +89,8 @@ CREATE TABLE IF NOT EXISTS order_items (
   total_price_cents INT NOT NULL,
   tax_cents INT DEFAULT 0,
   modifiers JSONB DEFAULT '[]',
-  special_instructions TEXT
+  special_instructions TEXT,
+  raw_data JSONB -- Original source data for auditing
 );
 
 -- 8. Payments
@@ -97,7 +104,8 @@ CREATE TABLE IF NOT EXISTS payments (
   amount_cents INT NOT NULL,
   tip_cents INT DEFAULT 0,
   processing_fee_cents INT DEFAULT 0,
-  created_at TIMESTAMPTZ
+  created_at TIMESTAMPTZ,
+  raw_data JSONB -- Original source data for auditing
 );
 
 -- ============================================================================

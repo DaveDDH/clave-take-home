@@ -2,8 +2,7 @@
 
 import { useState } from 'react';
 import { X, GripVertical } from 'lucide-react';
-import { useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
+import { useDraggable } from '@dnd-kit/core';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -29,9 +28,11 @@ import type {
 
 interface WidgetCardProps {
   widget: Widget;
+  x: number;
+  y: number;
 }
 
-export function WidgetCard({ widget }: WidgetCardProps) {
+export function WidgetCard({ widget, x, y }: WidgetCardProps) {
   const [removeModalOpen, setRemoveModalOpen] = useState(false);
 
   const {
@@ -39,45 +40,50 @@ export function WidgetCard({ widget }: WidgetCardProps) {
     listeners,
     setNodeRef,
     transform,
-    transition,
     isDragging,
-  } = useSortable({ id: widget.id });
+  } = useDraggable({ id: widget.id });
 
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-    scale: isDragging ? 1.02 : 1,
+  const style: React.CSSProperties = {
+    position: 'absolute',
+    left: x,
+    top: y,
+    transform: transform
+      ? `translate(${transform.x}px, ${transform.y}px)`
+      : undefined,
+    zIndex: isDragging ? 1000 : 1,
+    opacity: isDragging ? 0.9 : 1,
+    cursor: isDragging ? 'grabbing' : 'default',
   };
 
   return (
     <>
-      <Card ref={setNodeRef} style={style} className="touch-none transition-shadow hover:shadow-md">
-        <CardHeader>
-          <div className="flex items-center justify-between">
+      <Card ref={setNodeRef} style={style} className="touch-none shadow-md hover:shadow-lg transition-shadow w-fit">
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-2">
               <button
                 {...attributes}
                 {...listeners}
-                className="cursor-grab text-muted-foreground transition-colors hover:text-foreground"
+                className="cursor-grab active:cursor-grabbing text-muted-foreground transition-colors hover:text-foreground"
               >
                 <GripVertical className="h-5 w-5" />
               </button>
-              <CardTitle>{widget.name}</CardTitle>
+              <CardTitle className="text-base">{widget.name}</CardTitle>
             </div>
             <Button
-              variant="destructive"
+              variant="ghost"
               size="icon"
+              className="h-7 w-7 text-muted-foreground hover:text-destructive"
               onClick={() => setRemoveModalOpen(true)}
             >
               <X className="h-4 w-4" />
             </Button>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-0">
           <div className="flex flex-wrap gap-4">
             {widget.charts.map((chart, index) => (
-              <div key={index} className="w-[220px]">
+              <div key={index} className="w-[280px]">
                 {renderChart(chart)}
               </div>
             ))}

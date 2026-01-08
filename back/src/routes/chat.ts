@@ -1,5 +1,6 @@
 import { Router, Request, Response } from "express";
-import { ProcessOptions, ChartData } from "#ai/actions/processUserMessage/index.js";
+import { ProcessOptions, ChartData, DEFAULT_MODEL } from "#ai/actions/processUserMessage/index.js";
+import type { ModelId } from "#ai/actions/processUserMessage/index.js";
 import { processUserMessageStream } from "#ai/actions/processUserMessage/streaming.js";
 import { SSEWriter } from "#utils/sse.js";
 import {
@@ -43,7 +44,8 @@ router.get("/conversations/:id", async (req: Request, res: Response) => {
 
 router.post("/chat/stream", async (req: Request, res: Response) => {
   try {
-    const { message, conversationId: existingConversationId, options } = req.body;
+    const { message, conversationId: existingConversationId, options, model: requestModel } = req.body;
+    const model: ModelId = requestModel || DEFAULT_MODEL;
 
     if (!message || typeof message !== "string") {
       return res.status(400).json({
@@ -147,6 +149,7 @@ router.post("/chat/stream", async (req: Request, res: Response) => {
     const processOptions: ProcessOptions = {
       useConsistency: options?.useConsistency ?? true,
       debug: options?.debug ?? false,
+      model,
     };
 
     // Process with streaming

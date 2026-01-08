@@ -1,4 +1,5 @@
-import { generateTextResponse } from "#ai/models/xai/index.js";
+import { generateTextResponse, DEFAULT_MODEL } from "#ai/models/index.js";
+import type { ModelId } from "#ai/models/index.js";
 import { linkSchema } from "./schema-linking.js";
 import { selfConsistencyVote, singleQuery } from "./self-consistency.js";
 import {
@@ -31,7 +32,10 @@ export interface ProcessedMessage {
 export interface ProcessOptions {
   useConsistency?: boolean;
   debug?: boolean;
+  model?: ModelId;
 }
+
+export { ModelId, DEFAULT_MODEL };
 
 export interface ConversationMessage {
   role: "user" | "assistant";
@@ -44,7 +48,7 @@ export async function processUserMessage(
   options: ProcessOptions = {},
   processId?: string
 ): Promise<ProcessedMessage> {
-  const { useConsistency = true, debug = false } = options;
+  const { useConsistency = true, debug = false, model = DEFAULT_MODEL } = options;
 
   const requestStartTime = Date.now();
 
@@ -80,8 +84,8 @@ export async function processUserMessage(
 
     // Run classification and schema linking in parallel
     const [classification, linkedSchema] = await Promise.all([
-      classifyMessage(userQuestion, conversationHistory, dataContext, processId),
-      linkSchema(userQuestion, conversationHistory, processId),
+      classifyMessage(userQuestion, conversationHistory, dataContext, model, processId),
+      linkSchema(userQuestion, conversationHistory, model, processId),
     ]);
 
     const parallelTime = Date.now() - parallelStart;
@@ -131,7 +135,7 @@ export async function processUserMessage(
     const startSQLGeneration = Date.now();
     if (useConsistency) {
       log("🔄 Using self-consistency voting (3 candidates)", undefined, processId);
-      const result = await selfConsistencyVote(userQuestion, linkedSchema, 3, conversationHistory, dataContext, processId);
+      const result = await selfConsistencyVote(userQuestion, linkedSchema, 3, conversationHistory, dataContext, model, processId);
       sql = result.sql;
       data = result.data;
       confidence = result.confidence;
@@ -144,7 +148,7 @@ export async function processUserMessage(
       log(`   Candidates: ${candidateCount}, Successful: ${successfulExecutions}`, undefined, processId);
     } else {
       log("⚡ Using single query (fast mode)", undefined, processId);
-      const result = await singleQuery(userQuestion, linkedSchema, conversationHistory, dataContext, processId);
+      const result = await singleQuery(userQuestion, linkedSchema, conversationHistory, dataContext, model, processId);
       sql = result.sql;
       data = result.data;
 
@@ -176,6 +180,7 @@ export async function processUserMessage(
       data,
       chartConfig,
       conversationHistory,
+      model,
       processId
     );
     const responseTime = Date.now() - startResponse;
@@ -257,6 +262,7 @@ async function generateNaturalResponse(
   data: Record<string, unknown>[],
   chartConfig: ChartConfig,
   conversationHistory: ConversationMessage[],
+  model: ModelId,
   processId?: string
 ): Promise<string> {
   if (data.length === 0) {
@@ -286,7 +292,7 @@ The user can see all the data points in the visualization. DO NOT repeat or list
 Instead, provide a concise high-level analysis with insights about what this data means, any patterns or observations, and end with a follow-up question.
 Use markdown for emphasis. Convert cents to dollars.`;
 
-  return generateTextResponse(RESPONSE_GENERATION_SYSTEM_PROMPT, prompt, {
+  return generateTextResponse(model, RESPONSE_GENERATION_SYSTEM_PROMPT, prompt, {
     temperature: 0.3,
     label: "Natural Language Response",
     processId,

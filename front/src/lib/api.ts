@@ -15,6 +15,8 @@ export interface ApiMessage {
   charts?: ChartData[] | null;
 }
 
+export type ModelId = 'grok-4.1-fast' | 'gpt-5.2' | 'gpt-oss-20b';
+
 export interface ChatRequestOptions {
   useConsistency?: boolean;
   debug?: boolean;
@@ -72,6 +74,7 @@ export interface StreamHandlers {
 export async function streamChatResponse(
   message: string,
   conversationId: string | null,
+  model: ModelId,
   options: ChatRequestOptions,
   handlers: StreamHandlers
 ): Promise<() => void> {
@@ -84,6 +87,7 @@ export async function streamChatResponse(
     body: JSON.stringify({
       message,
       conversationId,
+      model,
       options,
     }),
   });

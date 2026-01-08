@@ -9,21 +9,25 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { useChatStore } from "@/stores/chat-store";
+import type { ModelId } from "@/lib/api";
 
 interface ChatInputProps {
   onSend: (message: string) => void;
   disabled?: boolean;
 }
 
-const MODELS = [
-  { id: "grok-4.1", name: "Grok 4.1" },
-  { id: "grok-4.0", name: "Grok 4.0" },
-  { id: "grok-3.5", name: "Grok 3.5" },
+const MODELS: { id: ModelId; name: string }[] = [
+  { id: "grok-4.1-fast", name: "Grok 4.1 Fast" },
+  { id: "gpt-5.2", name: "GPT 5.2" },
+  { id: "gpt-oss-20b", name: "GPT-OSS 20B" },
 ];
 
 export function ChatInput({ onSend, disabled }: ChatInputProps) {
   const [input, setInput] = useState("");
-  const [selectedModel, setSelectedModel] = useState(MODELS[0]);
+  const selectedModelId = useChatStore((state) => state.selectedModel);
+  const setSelectedModel = useChatStore((state) => state.setSelectedModel);
+  const selectedModel = MODELS.find((m) => m.id === selectedModelId) || MODELS[0];
   const [modelPopoverOpen, setModelPopoverOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -84,7 +88,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
                         size="sm"
                         className="justify-start"
                         onClick={() => {
-                          setSelectedModel(model);
+                          setSelectedModel(model.id);
                           setModelPopoverOpen(false);
                         }}
                       >
