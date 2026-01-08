@@ -20,4 +20,5 @@ export interface Message {
   isStreaming?: boolean;
   partialTimestamp?: number;
   finalTimestamp?: number;
+  cost?: number;
 }

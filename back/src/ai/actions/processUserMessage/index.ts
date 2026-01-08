@@ -10,6 +10,7 @@ import {
 } from "./chart-inference.js";
 import { RESPONSE_GENERATION_SYSTEM_PROMPT } from "./prompt.js";
 import { log, logError } from "#utils/logger.js";
+import { CostAccumulator } from "#utils/cost.js";
 
 export interface ChartData {
   type: ChartType;
@@ -104,10 +105,12 @@ export async function processUserMessage(
     }
 
     // Run classification and schema linking in parallel
-    const [classification, linkedSchema] = await Promise.all([
+    const [classificationResult, linkedSchemaResult] = await Promise.all([
       classifyMessage(userQuestion, conversationHistory, dataContext, model, processId),
       linkSchema(userQuestion, conversationHistory, model, processId),
     ]);
+    const classification = classificationResult.result;
+    const linkedSchema = linkedSchemaResult.result;
 
     const parallelTime = Date.now() - parallelStart;
     log(`✅ Parallel tasks complete (${parallelTime}ms)`, undefined, processId);
@@ -145,6 +148,9 @@ export async function processUserMessage(
     log("\n🔄 Proceeding with C3 pipeline for data query", undefined, processId);
     log("   (Schema linking already completed in parallel above)", undefined, processId);
 
+    // Create cost accumulator for tracking LLM costs (non-streaming doesn't send costs to frontend)
+    const costAccumulator = new CostAccumulator();
+
     // Step 2 & 3: SQL Generation + Consistency (CP + CH + CO)
     log("\n🔧 Step 2-3: SQL Generation + Self-Consistency", undefined, processId);
     let sql: string;
@@ -156,7 +162,7 @@ export async function processUserMessage(
     const startSQLGeneration = Date.now();
     if (useConsistency) {
       log(`🔄 Using self-consistency voting (${candidateCount} candidates, reasoning: ${reasoningLevel})`, undefined, processId);
-      const result = await selfConsistencyVote(userQuestion, linkedSchema, candidateCount, conversationHistory, dataContext, model, processId);
+      const result = await selfConsistencyVote(userQuestion, linkedSchema, candidateCount, conversationHistory, dataContext, model, costAccumulator, processId);
       sql = result.sql;
       data = result.data;
       confidence = result.confidence;
@@ -169,7 +175,7 @@ export async function processUserMessage(
       log(`   Candidates: ${resultCandidateCount}, Successful: ${successfulExecutions}`, undefined, processId);
     } else {
       log("⚡ Using single query (fast mode)", undefined, processId);
-      const result = await singleQuery(userQuestion, linkedSchema, conversationHistory, dataContext, model, processId);
+      const result = await singleQuery(userQuestion, linkedSchema, conversationHistory, dataContext, model, costAccumulator, processId);
       sql = result.sql;
       data = result.data;
 
@@ -313,11 +319,12 @@ The user can see all the data points in the visualization. DO NOT repeat or list
 Instead, provide a concise high-level analysis with insights about what this data means, any patterns or observations, and end with a follow-up question.
 Use markdown for emphasis. Convert cents to dollars.`;
 
-  return generateTextResponse(model, RESPONSE_GENERATION_SYSTEM_PROMPT, prompt, {
+  const response = await generateTextResponse(model, RESPONSE_GENERATION_SYSTEM_PROMPT, prompt, {
     temperature: 0.3,
     label: "Natural Language Response",
     processId,
   });
+  return response.result;
 }
 
 function summarizeData(

@@ -70,6 +70,7 @@ export interface StreamHandlers {
   onContentDelta?: (token: string) => void;
   onContent?: (content: string) => void;
   onConversationId?: (id: string) => void;
+  onCost?: (totalCost: number) => void;
   onComplete?: () => void;
   onError?: (error: string) => void;
 }
@@ -148,6 +149,9 @@ export async function streamChatResponse(
                   break;
                 case 'conversationId':
                   handlers.onConversationId?.(event.id);
+                  break;
+                case 'cost':
+                  handlers.onCost?.(event.totalCost);
                   break;
                 case 'complete':
                   receivedComplete = true;

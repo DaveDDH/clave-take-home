@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useMemo } from "react";
 import Image from "next/image";
 import type { Message } from "@/types/chat";
 import { Badge } from "@/components/ui/badge";
@@ -45,6 +45,11 @@ export function MessageList({
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const isEmpty = messages.length === 0 && !isLoading;
+
+  // Calculate total conversation cost
+  const totalConversationCost = useMemo(() => {
+    return messages.reduce((sum, msg) => sum + (msg.cost ?? 0), 0);
+  }, [messages]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -138,6 +143,7 @@ export function MessageList({
               blockContent={blockContent}
               isLoading={isLoading}
               nextMessage={nextMessage}
+              totalConversationCost={totalConversationCost > 0 ? totalConversationCost : undefined}
             />
           );
         })}

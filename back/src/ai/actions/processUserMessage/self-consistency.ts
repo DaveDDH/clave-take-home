@@ -5,6 +5,7 @@ import { LinkedSchema } from "./schema-linking.js";
 import type { DataContext } from "./data-context.js";
 import { log, logError, logWarn } from "#utils/logger.js";
 import type { ModelId } from "#ai/models/index.js";
+import { CostAccumulator } from "#utils/cost.js";
 
 export interface ConsistencyResult {
   sql: string;
@@ -23,6 +24,7 @@ export async function selfConsistencyVote(
   conversationHistory: Array<{ role: string; content: string }> = [],
   dataContext: DataContext | undefined,
   model: ModelId,
+  costAccumulator: CostAccumulator,
   processId?: string
 ): Promise<ConsistencyResult> {
   const votingStartTime = Date.now();
@@ -37,13 +39,14 @@ export async function selfConsistencyVote(
     async (temperature, i) => {
       try {
         log(`      Candidate ${i + 1}: temperature=${temperature}`, undefined, processId);
-        const sql = await generateSQL(userQuestion, linkedSchema, temperature, conversationHistory, dataContext, model, processId);
-        if (isReadOnlyQuery(sql)) {
+        const result = await generateSQL(userQuestion, linkedSchema, temperature, conversationHistory, dataContext, model, processId);
+        costAccumulator.addUsage(result.model, result.usage);
+        if (isReadOnlyQuery(result.sql)) {
           log(`      ✓ Candidate ${i + 1} valid`, undefined, processId);
-          return sql;
+          return result.sql;
         } else {
           log(`      ✗ Candidate ${i + 1} rejected (not read-only)`, undefined, processId);
-          log(`         SQL: ${sql}`, undefined, processId);
+          log(`         SQL: ${result.sql}`, undefined, processId);
           return null;
         }
       } catch (error) {
@@ -100,7 +103,7 @@ export async function selfConsistencyVote(
 
       // Iterative refinement: attempt to fix the SQL using error feedback
       try {
-        const refinedSQL = await refineSQLWithError(
+        const refinementResult = await refineSQLWithError(
           sql,
           errorMsg,
           userQuestion,
@@ -108,14 +111,15 @@ export async function selfConsistencyVote(
           model,
           processId
         );
+        costAccumulator.addUsage(refinementResult.model, refinementResult.usage);
 
         // Validate refined SQL is read-only before executing
-        if (!isReadOnlyQuery(refinedSQL)) {
+        if (!isReadOnlyQuery(refinementResult.sql)) {
           logWarn(`      ✗ Refined SQL rejected (not read-only)`, undefined, processId);
           continue;
         }
 
-        const refinedResult = await executeQuery<Record<string, unknown>>(refinedSQL);
+        const refinedResult = await executeQuery<Record<string, unknown>>(refinementResult.sql);
         successfulExecutions++;
 
         const resultKey = JSON.stringify(refinedResult);
@@ -125,7 +129,7 @@ export async function selfConsistencyVote(
         } else {
           log(`      ✓ Refinement succeeded: matched existing group (${refinedResult.length} rows)`, undefined, processId);
         }
-        resultGroups.get(resultKey)!.push({ sql: refinedSQL, result: refinedResult });
+        resultGroups.get(resultKey)!.push({ sql: refinementResult.sql, result: refinedResult });
       } catch (refinementError) {
         const refineErrorMsg = refinementError instanceof Error ? refinementError.message : String(refinementError);
         logWarn(`      ✗ Refinement also failed:`, refineErrorMsg, processId);
@@ -179,16 +183,18 @@ export async function singleQuery(
   conversationHistory: Array<{ role: string; content: string }> = [],
   dataContext: DataContext | undefined,
   model: ModelId,
+  costAccumulator: CostAccumulator,
   processId?: string
 ): Promise<{ sql: string; data: Record<string, unknown>[] }> {
-  const sql = await generateSQL(userQuestion, linkedSchema, 0.0, conversationHistory, dataContext, model, processId);
+  const result = await generateSQL(userQuestion, linkedSchema, 0.0, conversationHistory, dataContext, model, processId);
+  costAccumulator.addUsage(result.model, result.usage);
 
-  if (!isReadOnlyQuery(sql)) {
+  if (!isReadOnlyQuery(result.sql)) {
     logError("❌ Generated SQL is not a read-only query:", undefined, processId);
-    logError(`   SQL: ${sql}`, undefined, processId);
+    logError(`   SQL: ${result.sql}`, undefined, processId);
     throw new Error("Generated SQL is not a read-only query");
   }
 
-  const data = await executeQuery<Record<string, unknown>>(sql);
-  return { sql, data };
+  const data = await executeQuery<Record<string, unknown>>(result.sql);
+  return { sql: result.sql, data };
 }

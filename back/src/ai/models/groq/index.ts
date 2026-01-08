@@ -3,6 +3,12 @@ import { createGroq } from "@ai-sdk/groq";
 import { generateText, generateObject, streamText, LanguageModel } from "ai";
 import { z } from "zod";
 import { log } from "#utils/logger.js";
+import type { TokenUsage } from "#utils/cost.js";
+
+export interface LLMResultWithUsage<T> {
+  result: T;
+  usage: TokenUsage;
+}
 
 // Save reference to global fetch before defining custom wrapper
 const globalFetch = fetch;
@@ -45,7 +51,7 @@ export async function generateTextResponse(
   systemPrompt: string,
   userPrompt: string,
   options?: { temperature?: number; label?: string; processId?: string }
-): Promise<string> {
+): Promise<LLMResultWithUsage<string>> {
   const label = options?.label || "Groq Text Generation";
   const processId = options?.processId;
 
@@ -60,7 +66,7 @@ export async function generateTextResponse(
   const startTime = Date.now();
 
   const model = getGroqModel();
-  const { text } = await generateText({
+  const response = await generateText({
     model,
     system: systemPrompt,
     prompt: userPrompt,
@@ -73,9 +79,15 @@ export async function generateTextResponse(
     undefined,
     processId
   );
-  log(`      Response length: ${text.length} characters`, undefined, processId);
+  log(`      Response length: ${response.text.length} characters`, undefined, processId);
 
-  return text;
+  const usage: TokenUsage = {
+    promptTokens: response.usage.inputTokens ?? 0,
+    completionTokens: response.usage.outputTokens ?? 0,
+    cachedTokens: response.usage.inputTokenDetails?.cacheReadTokens ?? 0,
+  };
+
+  return { result: response.text, usage };
 }
 
 export async function generateObjectResponse<T>(
@@ -83,7 +95,7 @@ export async function generateObjectResponse<T>(
   userPrompt: string,
   schema: z.ZodSchema<T>,
   options?: { temperature?: number; label?: string; processId?: string }
-): Promise<T> {
+): Promise<LLMResultWithUsage<T>> {
   const label = options?.label || "Groq Object Generation";
   const processId = options?.processId;
 
@@ -98,7 +110,7 @@ export async function generateObjectResponse<T>(
   const startTime = Date.now();
 
   const model = getGroqModel();
-  const { object } = await generateObject({
+  const response = await generateObject({
     model,
     system: systemPrompt,
     prompt: userPrompt,
@@ -114,7 +126,13 @@ export async function generateObjectResponse<T>(
   );
   log(`      Response type: structured object`, undefined, processId);
 
-  return object;
+  const usage: TokenUsage = {
+    promptTokens: response.usage.inputTokens ?? 0,
+    completionTokens: response.usage.outputTokens ?? 0,
+    cachedTokens: response.usage.inputTokenDetails?.cacheReadTokens ?? 0,
+  };
+
+  return { result: response.object, usage };
 }
 
 export async function streamTextResponse(
@@ -122,7 +140,7 @@ export async function streamTextResponse(
   userPrompt: string,
   options: { temperature?: number; label?: string; processId?: string },
   onToken: (token: string) => void
-): Promise<string> {
+): Promise<LLMResultWithUsage<string>> {
   const label = options?.label || "Groq Streaming Generation";
   const processId = options?.processId;
 
@@ -150,6 +168,9 @@ export async function streamTextResponse(
     onToken(chunk);
   }
 
+  // Usage is available after streaming completes
+  const finalUsage = await result.usage;
+
   const duration = Date.now() - startTime;
   log(
     `   ✅ [${label}] Groq streaming completed in ${duration}ms`,
@@ -162,5 +183,11 @@ export async function streamTextResponse(
     processId
   );
 
-  return fullText;
+  const usage: TokenUsage = {
+    promptTokens: finalUsage.inputTokens ?? 0,
+    completionTokens: finalUsage.outputTokens ?? 0,
+    cachedTokens: finalUsage.inputTokenDetails?.cacheReadTokens ?? 0,
+  };
+
+  return { result: fullText, usage };
 }

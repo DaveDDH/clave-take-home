@@ -124,6 +124,15 @@ async function processStreamingMessage(
         onConversationId: (id) => {
           set(() => ({ conversationId: id, pendingConversation: null }));
         },
+        onCost: (totalCost) => {
+          // Attach cost to the most recent assistant message
+          const targetId = secondMessageId || assistantMessageId;
+          set((state) => ({
+            messages: state.messages.map((msg) =>
+              msg.id === targetId ? { ...msg, cost: totalCost } : msg
+            ),
+          }));
+        },
         onComplete: () => {
           receivedComplete = true;
           clearTimeout(timeout);

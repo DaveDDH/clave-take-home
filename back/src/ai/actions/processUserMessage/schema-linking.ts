@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { generateObjectResponse } from "#ai/models/index.js";
-import type { ModelId } from "#ai/models/index.js";
+import type { ModelId, LLMResult } from "#ai/models/index.js";
 import { FULL_SCHEMA } from "#db/schema.js";
 import { SCHEMA_LINKING_SYSTEM_PROMPT } from "./prompt.js";
 
@@ -22,7 +22,7 @@ export async function linkSchema(
   conversationHistory: Array<{ role: string; content: string }> = [],
   model: ModelId,
   processId?: string
-): Promise<LinkedSchema> {
+): Promise<LLMResult<LinkedSchema>> {
   // Include conversation context if there's history
   let conversationContext = "";
   if (conversationHistory.length > 1) {

@@ -3,6 +3,13 @@ import type { ModelId } from "#ai/models/index.js";
 import { LinkedSchema, formatLinkedSchema } from "./schema-linking.js";
 import { getCalibrationSystemPrompt } from "./prompt.js";
 import type { DataContext } from "./data-context.js";
+import type { TokenUsage } from "#utils/cost.js";
+
+export interface SQLGenerationResult {
+  sql: string;
+  usage: TokenUsage;
+  model: ModelId;
+}
 
 export async function generateSQL(
   userQuestion: string,
@@ -12,7 +19,7 @@ export async function generateSQL(
   dataContext: DataContext | undefined,
   model: ModelId,
   processId?: string
-): Promise<string> {
+): Promise<SQLGenerationResult> {
   const schemaSection = formatLinkedSchema(linkedSchema);
 
   const dateAndTime = new Date().toISOString().replace(
@@ -79,7 +86,11 @@ Current date and time: ${dateAndTime}
     { temperature, label: "SQL Generation", processId }
   );
 
-  return cleanSQL(response);
+  return {
+    sql: cleanSQL(response.result),
+    usage: response.usage,
+    model: response.model,
+  };
 }
 
 function cleanSQL(raw: string): string {

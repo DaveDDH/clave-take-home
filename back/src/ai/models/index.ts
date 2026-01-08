@@ -2,6 +2,7 @@ import { z } from "zod";
 import * as xai from "./xai/index.js";
 import * as groq from "./groq/index.js";
 import * as openai from "./openai/index.js";
+import type { TokenUsage } from "#utils/cost.js";
 
 // Using a const array + typeof for runtime + type export
 export const MODEL_IDS = ["grok-4.1-fast", "gpt-5.2", "gpt-oss-20b"] as const;
@@ -14,6 +15,12 @@ export const AVAILABLE_MODELS: { id: ModelId; name: string; provider: string }[]
   { id: "gpt-5.2", name: "GPT 5.2", provider: "OpenAI" },
   { id: "gpt-oss-20b", name: "GPT-OSS 20B", provider: "Groq" },
 ];
+
+export interface LLMResult<T> {
+  result: T;
+  usage: TokenUsage;
+  model: ModelId;
+}
 
 function getProviderForModel(modelId: ModelId) {
   switch (modelId) {
@@ -33,11 +40,12 @@ export async function generateTextResponse(
   systemPrompt: string,
   userPrompt: string,
   options?: { temperature?: number; label?: string; processId?: string }
-): Promise<string> {
+): Promise<LLMResult<string>> {
   const label = options?.label ?? "Text Generation";
   console.log(`[LLM] ${label} using model: ${modelId}`);
   const provider = getProviderForModel(modelId);
-  return provider.generateTextResponse(systemPrompt, userPrompt, options);
+  const { result, usage } = await provider.generateTextResponse(systemPrompt, userPrompt, options);
+  return { result, usage, model: modelId };
 }
 
 export async function generateObjectResponse<T>(
@@ -46,11 +54,12 @@ export async function generateObjectResponse<T>(
   userPrompt: string,
   schema: z.ZodSchema<T>,
   options?: { temperature?: number; label?: string; processId?: string }
-): Promise<T> {
+): Promise<LLMResult<T>> {
   const label = options?.label ?? "Object Generation";
   console.log(`[LLM] ${label} using model: ${modelId}`);
   const provider = getProviderForModel(modelId);
-  return provider.generateObjectResponse(systemPrompt, userPrompt, schema, options);
+  const { result, usage } = await provider.generateObjectResponse(systemPrompt, userPrompt, schema, options);
+  return { result, usage, model: modelId };
 }
 
 export async function streamTextResponse(
@@ -59,9 +68,10 @@ export async function streamTextResponse(
   userPrompt: string,
   options: { temperature?: number; label?: string; processId?: string },
   onToken: (token: string) => void
-): Promise<string> {
+): Promise<LLMResult<string>> {
   const label = options?.label ?? "Stream Generation";
   console.log(`[LLM] ${label} using model: ${modelId}`);
   const provider = getProviderForModel(modelId);
-  return provider.streamTextResponse(systemPrompt, userPrompt, options, onToken);
+  const { result, usage } = await provider.streamTextResponse(systemPrompt, userPrompt, options, onToken);
+  return { result, usage, model: modelId };
 }

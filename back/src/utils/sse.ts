@@ -84,6 +84,10 @@ export class SSEWriter {
     this.sendEvent('error', { error });
   }
 
+  sendCost(totalCost: number): void {
+    this.sendEvent('cost', { totalCost });
+  }
+
   sendComplete(): void {
     this.sendEvent('complete', {});
   }

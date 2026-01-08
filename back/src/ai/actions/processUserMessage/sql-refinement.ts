@@ -1,7 +1,8 @@
 import { generateTextResponse } from "#ai/models/index.js";
 import type { ModelId } from "#ai/models/index.js";
 import { LinkedSchema, formatLinkedSchema } from "./schema-linking.js";
-import { log, logError } from "#utils/logger.js";
+import { log } from "#utils/logger.js";
+import type { TokenUsage } from "#utils/cost.js";
 
 const REFINEMENT_SYSTEM_PROMPT = `You are an expert PostgreSQL query debugger.
 Your task is to fix SQL queries that failed execution.
@@ -12,6 +13,12 @@ IMPORTANT RULES:
 3. Preserve the original query intent
 4. Use exact column and table names from the provided schema
 5. Ensure the query is read-only (SELECT/WITH only)`;
+
+export interface SQLRefinementResult {
+  sql: string;
+  usage: TokenUsage;
+  model: ModelId;
+}
 
 /**
  * Attempts to refine a failed SQL query using error feedback.
@@ -25,7 +32,7 @@ export async function refineSQLWithError(
   linkedSchema: LinkedSchema,
   model: ModelId,
   processId?: string
-): Promise<string> {
+): Promise<SQLRefinementResult> {
   const schemaSection = formatLinkedSchema(linkedSchema);
 
   const refinementPrompt = `The following PostgreSQL query failed with an error.
@@ -61,11 +68,15 @@ Fix the SQL query to resolve this error. Return ONLY the corrected SQL:`;
     { temperature: 0.0, label: "SQL Refinement", processId }
   );
 
-  const refinedSQL = cleanRefinedSQL(response);
+  const refinedSQL = cleanRefinedSQL(response.result);
 
   log(`   ✓ Refinement generated`, undefined, processId);
 
-  return refinedSQL;
+  return {
+    sql: refinedSQL,
+    usage: response.usage,
+    model: response.model,
+  };
 }
 
 /**

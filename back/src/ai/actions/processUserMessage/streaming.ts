@@ -10,13 +10,14 @@ import {
 import { RESPONSE_GENERATION_SYSTEM_PROMPT } from "./prompt.js";
 import { log, logError, logWarn } from "#utils/logger.js";
 import { SSEWriter } from "#utils/sse.js";
-import type { ConversationMessage, ProcessOptions, ReasoningLevel } from "./index.js";
+import type { ConversationMessage, ProcessOptions } from "./index.js";
 import { REASONING_TO_CANDIDATES } from "./index.js";
 import {
   getNextEscalation,
   ESCALATION_EXHAUSTED_MESSAGE,
   type EscalationState,
 } from "./escalation.js";
+import { CostAccumulator } from "#utils/cost.js";
 
 export async function processUserMessageStream(
   userQuestion: string,
@@ -45,6 +46,9 @@ export async function processUserMessageStream(
     reasoningLevel,
     attempt: 1,
   };
+
+  // Create cost accumulator to track costs across all LLM calls (including retries)
+  const costAccumulator = new CostAccumulator();
 
   // Retry loop with escalation
   while (true) {
@@ -85,7 +89,9 @@ export async function processUserMessageStream(
     const schemaLinkingPromise = linkSchema(userQuestion, conversationHistory, currentModel, processId);
 
     // Wait for classification first - it determines if we need schema linking
-    const classification = await classificationPromise;
+    const classificationResult = await classificationPromise;
+    costAccumulator.addUsage(classificationResult.model, classificationResult.usage);
+    const classification = classificationResult.result;
     const classificationTime = Date.now() - parallelStart;
 
     log(`✅ Classification complete (${classificationTime}ms)`, undefined, processId);
@@ -109,6 +115,7 @@ export async function processUserMessageStream(
       log(`⏱️  Total Request Time: ${totalTime}ms (${(totalTime / 1000).toFixed(2)}s)`, undefined, processId);
       log("========================================\n", undefined, processId);
 
+      sseWriter.sendCost(costAccumulator.getTotalCost());
       sseWriter.sendComplete();
       sseWriter.close();
       return;
@@ -118,7 +125,9 @@ export async function processUserMessageStream(
     log("\n🔄 Proceeding with C3 pipeline for data query", undefined, processId);
     log("   ⏳ Waiting for schema linking to complete...", undefined, processId);
 
-    const linkedSchema = await schemaLinkingPromise;
+    const schemaLinkingResult = await schemaLinkingPromise;
+    costAccumulator.addUsage(schemaLinkingResult.model, schemaLinkingResult.usage);
+    const linkedSchema = schemaLinkingResult.result;
     const schemaLinkingTime = Date.now() - parallelStart;
 
     log(`✅ Schema linking complete (${schemaLinkingTime}ms total, started ${classificationTime}ms ago)`, undefined, processId);
@@ -144,6 +153,7 @@ export async function processUserMessageStream(
         conversationHistory,
         dataContext,
         currentModel,
+        costAccumulator,
         processId
       );
       sql = result.sql;
@@ -161,6 +171,7 @@ export async function processUserMessageStream(
         conversationHistory,
         dataContext,
         currentModel,
+        costAccumulator,
         processId
       );
       sql = result.sql;
@@ -227,6 +238,7 @@ export async function processUserMessageStream(
       chartConfig,
       conversationHistory,
       currentModel,
+      costAccumulator,
       sseWriter,
       processId
     );
@@ -239,6 +251,7 @@ export async function processUserMessageStream(
     log(`⏱️  Total Request Time: ${totalTime}ms (${(totalTime / 1000).toFixed(2)}s)`, undefined, processId);
     log("========================================\n", undefined, processId);
 
+    sseWriter.sendCost(costAccumulator.getTotalCost());
     sseWriter.sendComplete();
     sseWriter.close();
     return; // Success - exit the retry loop
@@ -256,6 +269,7 @@ export async function processUserMessageStream(
         log(`⏱️  Request failed after ${totalTime}ms (${(totalTime / 1000).toFixed(2)}s)`, undefined, processId);
         log("========================================\n", undefined, processId);
 
+        sseWriter.sendCost(costAccumulator.getTotalCost());
         sseWriter.sendError(ESCALATION_EXHAUSTED_MESSAGE);
         sseWriter.close();
         return;
@@ -275,6 +289,7 @@ async function generateNaturalResponseStream(
   chartConfig: ChartConfig,
   conversationHistory: ConversationMessage[],
   model: ModelId,
+  costAccumulator: CostAccumulator,
   sseWriter: SSEWriter,
   processId?: string
 ): Promise<void> {
@@ -307,7 +322,7 @@ The user can see all the data points in the visualization. DO NOT repeat or list
 Instead, provide a concise high-level analysis with insights about what this data means, any patterns or observations, and end with a follow-up question.
 Use markdown for emphasis. Convert cents to dollars.`;
 
-  await streamTextResponse(
+  const result = await streamTextResponse(
     model,
     RESPONSE_GENERATION_SYSTEM_PROMPT,
     prompt,
@@ -316,6 +331,7 @@ Use markdown for emphasis. Convert cents to dollars.`;
       sseWriter.sendContentDelta(token);
     }
   );
+  costAccumulator.addUsage(result.model, result.usage);
 }
 
 function summarizeData(
@@ -329,19 +345,4 @@ function summarizeData(
   summary += `Data:\n${JSON.stringify(data.slice(0, 10), null, 2)}`;
 
   return summary;
-}
-
-function generateErrorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    if (error.message.includes("not a read-only query")) {
-      return "I can only answer questions that read data. I cannot modify the database.";
-    }
-    if (error.message.includes("Failed to generate")) {
-      return "I had trouble understanding your question. Could you please rephrase it?";
-    }
-    if (error.message.includes("All SQL candidates failed")) {
-      return "I couldn't find a way to answer that question with the available data. Please try a different question.";
-    }
-  }
-  return "Sorry, something went wrong while processing your request. Please try again.";
 }

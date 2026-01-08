@@ -21,6 +21,7 @@ interface MessageBubbleProps {
   blockContent?: string;
   isLoading?: boolean;
   nextMessage?: Message;
+  totalConversationCost?: number;
 }
 
 export function MessageBubble({
@@ -31,6 +32,7 @@ export function MessageBubble({
   blockContent = "",
   isLoading = false,
   nextMessage,
+  totalConversationCost,
 }: MessageBubbleProps) {
   const isUser = message.role === "user";
 
@@ -141,6 +143,16 @@ export function MessageBubble({
             {chatQuickAction(Copy, onCopyClick)}
             {chatQuickAction(RotateCw, onRegenerateClick)}
             {hasChartsInBlock && chatQuickAction(Save, onSaveClick)}
+            {message.cost !== undefined && (
+              <span className="ml-auto text-xs text-muted-foreground">
+                ${message.cost.toFixed(4)}
+                {totalConversationCost !== undefined && (
+                  <span className="ml-2">
+                    (Total: ${totalConversationCost.toFixed(4)})
+                  </span>
+                )}
+              </span>
+            )}
           </div>
         )}
         <SaveWidgetModal
@@ -174,10 +186,20 @@ export function MessageBubble({
         </div>
       </div>
       {!isUser && isLastInBlock && !isLoading && (
-        <div className="flex items-center gap-0 pl-4">
+        <div className="flex items-center gap-1 pl-4">
           {chatQuickAction(Copy, onCopyClick)}
           {chatQuickAction(RotateCw, onRegenerateClick)}
           {hasChartsInBlock && chatQuickAction(Save, onSaveClick)}
+          {message.cost !== undefined && (
+            <span className="ml-auto text-xs text-muted-foreground">
+              ${message.cost.toFixed(4)}
+              {totalConversationCost !== undefined && (
+                <span className="ml-2">
+                  (Total: ${totalConversationCost.toFixed(4)})
+                </span>
+              )}
+            </span>
+          )}
         </div>
       )}
       <SaveWidgetModal

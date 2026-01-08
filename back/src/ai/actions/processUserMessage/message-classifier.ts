@@ -1,5 +1,5 @@
 import { generateObjectResponse } from "#ai/models/index.js";
-import type { ModelId } from "#ai/models/index.js";
+import type { ModelId, LLMResult } from "#ai/models/index.js";
 import { z } from "zod";
 import type { DataContext } from "./data-context.js";
 
@@ -86,7 +86,7 @@ export async function classifyMessage(
   dataContext: DataContext | undefined,
   model: ModelId,
   processId?: string
-): Promise<MessageClassification> {
+): Promise<LLMResult<MessageClassification>> {
   let conversationContext = "";
   if (conversationHistory.length > 1) {
     const previousMessages = conversationHistory.slice(0, -1);
