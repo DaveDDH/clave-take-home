@@ -18,6 +18,11 @@ export async function executeQuery<T = Record<string, unknown>>(
   try {
     await client.connect();
     const result = await client.query(sql);
+    // Safety check: ensure result.rows exists (can be undefined with malformed queries)
+    if (!result || !result.rows) {
+      console.error('[executeQuery] Unexpected result format:', { result, sql: sql.slice(0, 200) });
+      return [];
+    }
     return result.rows as T[];
   } finally {
     await client.end();

@@ -36,6 +36,12 @@ Gold views have:
 - Pre-joined tables: location_name included, product_name included, category_name included
 - Pre-filtered: Only completed orders (no status filter needed)
 
+IMPORTANT - Column naming differs between views:
+- gold_orders: revenue column is "total"
+- gold_payments: revenue column is "total_amount"
+- gold_daily_sales, gold_hourly_trends: revenue column is "revenue"
+Do NOT mix these up - use the exact column name for each view.
+
 Example Gold view queries:
 - "Revenue by location" → SELECT location_name, SUM(total) AS revenue FROM gold_orders GROUP BY location_name
 - "Top 5 products" → SELECT product_name, total_revenue FROM gold_product_performance ORDER BY total_revenue DESC LIMIT 5
@@ -56,17 +62,40 @@ Tip 2: For date/time filtering:
 - Silver tables: Use DATE(created_at), EXTRACT(HOUR FROM created_at)
 - ALWAYS use created_at (NEVER closed_at)
 
-CRITICAL - For comparing multiple groups (days, locations, etc.) in time-series:
-- ALWAYS use CASE statements to create separate columns for each group
-- NEVER use GROUP BY with the comparison dimension - pivot it into columns instead
-- Example for "hourly sales Friday vs Saturday" using Gold view:
-  SELECT
-    order_hour,
+CRITICAL - PIVOT DATA FOR MULTI-SERIES CHARTS:
+When user asks for trends "by location", "by category", "by payment type", etc., you MUST pivot the comparison dimension into separate columns using CASE statements. This is required for proper chart rendering.
+
+WRONG (creates unusable long-format data):
+  SELECT payment_date, location_name, SUM(payment_count) AS orders
+  FROM gold_payments
+  GROUP BY payment_date, location_name  -- BAD: location as rows
+
+CORRECT (creates chart-ready wide-format data):
+  SELECT payment_date,
+    SUM(CASE WHEN location_name = 'Airport' THEN payment_count ELSE 0 END) AS Airport,
+    SUM(CASE WHEN location_name = 'Downtown' THEN payment_count ELSE 0 END) AS Downtown,
+    SUM(CASE WHEN location_name = 'Mall Location' THEN payment_count ELSE 0 END) AS "Mall Location",
+    SUM(CASE WHEN location_name = 'University' THEN payment_count ELSE 0 END) AS University
+  FROM gold_payments
+  GROUP BY payment_date  -- GOOD: location as columns
+  ORDER BY payment_date
+
+More examples:
+- "hourly sales Friday vs Saturday":
+  SELECT order_hour,
     SUM(CASE WHEN day_of_week = 5 THEN revenue ELSE 0 END) AS friday_sales,
     SUM(CASE WHEN day_of_week = 6 THEN revenue ELSE 0 END) AS saturday_sales
   FROM gold_hourly_trends
   GROUP BY order_hour
   ORDER BY order_hour
+
+- "revenue by category over time":
+  SELECT order_date,
+    SUM(CASE WHEN category_name = 'Burgers' THEN total_revenue ELSE 0 END) AS Burgers,
+    SUM(CASE WHEN category_name = 'Drinks' THEN total_revenue ELSE 0 END) AS Drinks
+  FROM gold_order_items
+  GROUP BY order_date
+  ORDER BY order_date
 
 Tip 3: For aggregations:
 - GROUP BY all non-aggregated columns in SELECT
