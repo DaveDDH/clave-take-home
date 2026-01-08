@@ -11,7 +11,7 @@ import {
   SelectTrigger,
 } from "@/components/ui/select";
 import { useChatStore } from "@/stores/chat-store";
-import type { ModelId } from "@/lib/api";
+import type { ModelId, ReasoningLevel } from "@/lib/api";
 
 interface ChatInputProps {
   onSend: (message: string) => void;
@@ -24,12 +24,21 @@ const MODELS: { id: ModelId; name: string; description: string }[] = [
   { id: "gpt-oss-20b", name: "GPT-OSS 20B", description: "Open source alternative" },
 ];
 
+const REASONING_LEVELS: { id: ReasoningLevel; name: string; description: string }[] = [
+  { id: "low", name: "Low", description: "Faster, single query" },
+  { id: "medium", name: "Medium", description: "Balanced accuracy" },
+  { id: "high", name: "High", description: "Most accurate, slower" },
+];
+
 export function ChatInput({ onSend, disabled }: ChatInputProps) {
   const [input, setInput] = useState("");
   const [mounted, setMounted] = useState(false);
   const selectedModelId = useChatStore((state) => state.selectedModel);
   const setSelectedModel = useChatStore((state) => state.setSelectedModel);
   const selectedModel = MODELS.find((m) => m.id === selectedModelId) || MODELS[0];
+  const selectedReasoningId = useChatStore((state) => state.reasoningLevel);
+  const setReasoningLevel = useChatStore((state) => state.setReasoningLevel);
+  const selectedReasoning = REASONING_LEVELS.find((r) => r.id === selectedReasoningId) || REASONING_LEVELS[1];
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -68,30 +77,54 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
           />
           <div className="flex items-center gap-2">
             {mounted ? (
-              <Select
-                value={selectedModelId}
-                onValueChange={(value) => setSelectedModel(value as ModelId)}
-              >
-                <SelectTrigger
-                  size="sm"
-                  className="border-0 bg-transparent shadow-none text-muted-foreground hover:text-foreground"
+              <>
+                <Select
+                  value={selectedReasoningId}
+                  onValueChange={(value) => setReasoningLevel(value as ReasoningLevel)}
                 >
-                  <span>{selectedModel.name}</span>
-                </SelectTrigger>
-                <SelectContent position="popper" align="end" side="top" sideOffset={4}>
-                  {MODELS.map((model) => (
-                    <SelectItem key={model.id} value={model.id} className="py-2">
-                      <div className="flex flex-col items-start">
-                        <span>{model.name}</span>
-                        <span className="text-xs text-muted-foreground">{model.description}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                  <SelectTrigger
+                    size="sm"
+                    className="border-0 bg-transparent shadow-none text-muted-foreground hover:text-foreground"
+                  >
+                    <span>{selectedReasoning.name}</span>
+                  </SelectTrigger>
+                  <SelectContent position="popper" align="end" side="top" sideOffset={4}>
+                    <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">Reasoning</div>
+                    {REASONING_LEVELS.map((level) => (
+                      <SelectItem key={level.id} value={level.id} className="py-2">
+                        <div className="flex flex-col items-start">
+                          <span>{level.name}</span>
+                          <span className="text-xs text-muted-foreground">{level.description}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select
+                  value={selectedModelId}
+                  onValueChange={(value) => setSelectedModel(value as ModelId)}
+                >
+                  <SelectTrigger
+                    size="sm"
+                    className="border-0 bg-transparent shadow-none text-muted-foreground hover:text-foreground"
+                  >
+                    <span>{selectedModel.name}</span>
+                  </SelectTrigger>
+                  <SelectContent position="popper" align="end" side="top" sideOffset={4}>
+                    {MODELS.map((model) => (
+                      <SelectItem key={model.id} value={model.id} className="py-2">
+                        <div className="flex flex-col items-start">
+                          <span>{model.name}</span>
+                          <span className="text-xs text-muted-foreground">{model.description}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </>
             ) : (
               <div className="flex h-8 items-center gap-2 px-3 text-sm text-muted-foreground">
-                {selectedModel.name}
+                {selectedReasoning.name} | {selectedModel.name}
                 <ChevronDown className="size-4 opacity-50" />
               </div>
             )}

@@ -11,6 +11,7 @@ import { RESPONSE_GENERATION_SYSTEM_PROMPT } from "./prompt.js";
 import { log, logError } from "#utils/logger.js";
 import { SSEWriter } from "#utils/sse.js";
 import type { ConversationMessage, ProcessOptions } from "./index.js";
+import { REASONING_TO_CANDIDATES } from "./index.js";
 
 export async function processUserMessageStream(
   userQuestion: string,
@@ -19,7 +20,8 @@ export async function processUserMessageStream(
   sseWriter: SSEWriter,
   processId?: string
 ): Promise<void> {
-  const { useConsistency = true, debug = false, model = DEFAULT_MODEL } = options;
+  const { useConsistency = true, debug = false, model = DEFAULT_MODEL, reasoningLevel = 'medium' } = options;
+  const candidateCount = REASONING_TO_CANDIDATES[reasoningLevel];
 
   const requestStartTime = Date.now();
 
@@ -113,11 +115,11 @@ export async function processUserMessageStream(
 
     const startSQLGeneration = Date.now();
     if (useConsistency) {
-      log("🔄 Using self-consistency voting (3 candidates)", undefined, processId);
+      log(`🔄 Using self-consistency voting (${candidateCount} candidates, reasoning: ${reasoningLevel})`, undefined, processId);
       const result = await selfConsistencyVote(
         userQuestion,
         linkedSchema,
-        3,
+        candidateCount,
         conversationHistory,
         dataContext,
         model,

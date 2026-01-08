@@ -150,6 +150,7 @@ router.post("/chat/stream", async (req: Request, res: Response) => {
       useConsistency: options?.useConsistency ?? true,
       debug: options?.debug ?? false,
       model,
+      reasoningLevel: options?.reasoningLevel ?? 'medium',
     };
 
     // Process with streaming

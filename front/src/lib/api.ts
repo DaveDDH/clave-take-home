@@ -17,9 +17,12 @@ export interface ApiMessage {
 
 export type ModelId = 'grok-4.1-fast' | 'gpt-5.2' | 'gpt-oss-20b';
 
+export type ReasoningLevel = 'low' | 'medium' | 'high';
+
 export interface ChatRequestOptions {
   useConsistency?: boolean;
   debug?: boolean;
+  reasoningLevel?: ReasoningLevel;
 }
 
 export interface ConversationPreview {

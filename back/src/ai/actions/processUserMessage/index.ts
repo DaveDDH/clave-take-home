@@ -29,10 +29,20 @@ export interface ProcessedMessage {
   };
 }
 
+export type ReasoningLevel = 'low' | 'medium' | 'high';
+
+// Maps reasoning level to number of SQL candidates for self-consistency voting
+export const REASONING_TO_CANDIDATES: Record<ReasoningLevel, number> = {
+  low: 1,
+  medium: 2,
+  high: 3,
+};
+
 export interface ProcessOptions {
   useConsistency?: boolean;
   debug?: boolean;
   model?: ModelId;
+  reasoningLevel?: ReasoningLevel;
 }
 
 export { ModelId, DEFAULT_MODEL };
@@ -48,7 +58,8 @@ export async function processUserMessage(
   options: ProcessOptions = {},
   processId?: string
 ): Promise<ProcessedMessage> {
-  const { useConsistency = true, debug = false, model = DEFAULT_MODEL } = options;
+  const { useConsistency = true, debug = false, model = DEFAULT_MODEL, reasoningLevel = 'medium' } = options;
+  const candidateCount = REASONING_TO_CANDIDATES[reasoningLevel];
 
   const requestStartTime = Date.now();
 
@@ -129,23 +140,23 @@ export async function processUserMessage(
     let sql: string;
     let data: Record<string, unknown>[];
     let confidence: number | undefined;
-    let candidateCount: number | undefined;
+    let resultCandidateCount: number | undefined;
     let successfulExecutions: number | undefined;
 
     const startSQLGeneration = Date.now();
     if (useConsistency) {
-      log("🔄 Using self-consistency voting (3 candidates)", undefined, processId);
-      const result = await selfConsistencyVote(userQuestion, linkedSchema, 3, conversationHistory, dataContext, model, processId);
+      log(`🔄 Using self-consistency voting (${candidateCount} candidates, reasoning: ${reasoningLevel})`, undefined, processId);
+      const result = await selfConsistencyVote(userQuestion, linkedSchema, candidateCount, conversationHistory, dataContext, model, processId);
       sql = result.sql;
       data = result.data;
       confidence = result.confidence;
-      candidateCount = result.candidateCount;
+      resultCandidateCount = result.candidateCount;
       successfulExecutions = result.successfulExecutions;
 
       const sqlGenerationTime = Date.now() - startSQLGeneration;
       log(`✅ Self-Consistency Vote Complete (${sqlGenerationTime}ms)`, undefined, processId);
       log(`   Confidence: ${(confidence * 100).toFixed(1)}%`, undefined, processId);
-      log(`   Candidates: ${candidateCount}, Successful: ${successfulExecutions}`, undefined, processId);
+      log(`   Candidates: ${resultCandidateCount}, Successful: ${successfulExecutions}`, undefined, processId);
     } else {
       log("⚡ Using single query (fast mode)", undefined, processId);
       const result = await singleQuery(userQuestion, linkedSchema, conversationHistory, dataContext, model, processId);
@@ -233,7 +244,7 @@ export async function processUserMessage(
       response.debug = {
         linkedSchema,
         confidence,
-        candidateCount,
+        candidateCount: resultCandidateCount,
         successfulExecutions,
       };
     }

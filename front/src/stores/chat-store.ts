@@ -1,8 +1,9 @@
 import { create } from 'zustand';
 import type { Message } from '@/types/chat';
-import { streamChatResponse, fetchConversation, ModelId } from '@/lib/api';
+import { streamChatResponse, fetchConversation, ModelId, ReasoningLevel } from '@/lib/api';
 
 const DEFAULT_MODEL: ModelId = 'grok-4.1-fast';
+const DEFAULT_REASONING: ReasoningLevel = 'medium';
 
 interface ChatState {
   conversationId: string | null;
@@ -10,7 +11,9 @@ interface ChatState {
   messages: Message[];
   isLoading: boolean;
   selectedModel: ModelId;
+  reasoningLevel: ReasoningLevel;
   setSelectedModel: (model: ModelId) => void;
+  setReasoningLevel: (level: ReasoningLevel) => void;
   sendMessage: (content: string) => Promise<void>;
   regenerateFrom: (messageId: string) => Promise<void>;
   loadConversation: (id: string) => Promise<void>;
@@ -27,6 +30,7 @@ async function processStreamingMessage(
   message: string,
   conversationId: string | null,
   model: ModelId,
+  reasoningLevel: ReasoningLevel,
   assistantMessageId: string,
   set: SetState
 ): Promise<void> {
@@ -55,7 +59,7 @@ async function processStreamingMessage(
       message,
       conversationId,
       model,
-      { useConsistency: true, debug: false },
+      { useConsistency: true, debug: false, reasoningLevel },
       {
         onClassification: (data) => {
           const timestamp = Date.now();
@@ -164,8 +168,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
   messages: [],
   isLoading: false,
   selectedModel: DEFAULT_MODEL,
+  reasoningLevel: DEFAULT_REASONING,
 
   setSelectedModel: (model: ModelId) => set({ selectedModel: model }),
+  setReasoningLevel: (level: ReasoningLevel) => set({ reasoningLevel: level }),
 
   sendMessage: async (content: string) => {
     if (!content.trim() || get().isLoading) return;
@@ -173,6 +179,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     const trimmedContent = content.trim();
     const currentConversationId = get().conversationId;
     const model = get().selectedModel;
+    const reasoningLevel = get().reasoningLevel;
 
     // Create pending conversation optimistically if this is a new conversation
     const pendingConversation = !currentConversationId
@@ -203,6 +210,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       trimmedContent,
       currentConversationId,
       model,
+      reasoningLevel,
       assistantId,
       set
     );
@@ -232,6 +240,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     const messagesUpToUser = messages.slice(0, lastUserMessageIndex + 1);
     const userMessage = messages[lastUserMessageIndex];
     const model = get().selectedModel;
+    const reasoningLevel = get().reasoningLevel;
 
     const assistantId = crypto.randomUUID();
     const assistantMessage: Message = {
@@ -250,6 +259,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       userMessage.content,
       get().conversationId,
       model,
+      reasoningLevel,
       assistantId,
       set
     );
