@@ -5,10 +5,11 @@ import { ArrowUp, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@/components/ui/select";
 import { useChatStore } from "@/stores/chat-store";
 import type { ModelId } from "@/lib/api";
 
@@ -17,19 +18,18 @@ interface ChatInputProps {
   disabled?: boolean;
 }
 
-const MODELS: { id: ModelId; name: string }[] = [
-  { id: "grok-4.1-fast", name: "Grok 4.1 Fast" },
-  { id: "gpt-5.2", name: "GPT 5.2" },
-  { id: "gpt-oss-20b", name: "GPT-OSS 20B" },
+const MODELS: { id: ModelId; name: string; description: string }[] = [
+  { id: "gpt-5.2", name: "GPT 5.2", description: "Powerful, for complex queries" },
+  { id: "grok-4.1-fast", name: "Grok 4.1 Fast", description: "Fast and efficient" },
+  { id: "gpt-oss-20b", name: "GPT-OSS 20B", description: "Open source alternative" },
 ];
 
 export function ChatInput({ onSend, disabled }: ChatInputProps) {
   const [input, setInput] = useState("");
+  const [mounted, setMounted] = useState(false);
   const selectedModelId = useChatStore((state) => state.selectedModel);
   const setSelectedModel = useChatStore((state) => state.setSelectedModel);
   const selectedModel = MODELS.find((m) => m.id === selectedModelId) || MODELS[0];
-  const [modelPopoverOpen, setModelPopoverOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -68,46 +68,32 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
           />
           <div className="flex items-center gap-2">
             {mounted ? (
-              <Popover open={modelPopoverOpen} onOpenChange={setModelPopoverOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="gap-1 text-sm text-muted-foreground hover:text-foreground"
-                  >
-                    {selectedModel.name}
-                    <ChevronDown className="size-4" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-48 p-2" align="end">
-                  <div className="flex flex-col gap-1">
-                    {MODELS.map((model) => (
-                      <Button
-                        key={model.id}
-                        variant="ghost"
-                        size="sm"
-                        className="justify-start"
-                        onClick={() => {
-                          setSelectedModel(model.id);
-                          setModelPopoverOpen(false);
-                        }}
-                      >
-                        {model.name}
-                      </Button>
-                    ))}
-                  </div>
-                </PopoverContent>
-              </Popover>
-            ) : (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="gap-1 text-sm text-muted-foreground"
-                disabled
+              <Select
+                value={selectedModelId}
+                onValueChange={(value) => setSelectedModel(value as ModelId)}
               >
+                <SelectTrigger
+                  size="sm"
+                  className="border-0 bg-transparent shadow-none text-muted-foreground hover:text-foreground"
+                >
+                  <span>{selectedModel.name}</span>
+                </SelectTrigger>
+                <SelectContent position="popper" align="end" side="top" sideOffset={4}>
+                  {MODELS.map((model) => (
+                    <SelectItem key={model.id} value={model.id} className="py-2">
+                      <div className="flex flex-col items-start">
+                        <span>{model.name}</span>
+                        <span className="text-xs text-muted-foreground">{model.description}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <div className="flex h-8 items-center gap-2 px-3 text-sm text-muted-foreground">
                 {selectedModel.name}
-                <ChevronDown className="size-4" />
-              </Button>
+                <ChevronDown className="size-4 opacity-50" />
+              </div>
             )}
             <Button
               type="submit"

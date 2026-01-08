@@ -34,6 +34,8 @@ export async function generateTextResponse(
   userPrompt: string,
   options?: { temperature?: number; label?: string; processId?: string }
 ): Promise<string> {
+  const label = options?.label ?? "Text Generation";
+  console.log(`[LLM] ${label} using model: ${modelId}`);
   const provider = getProviderForModel(modelId);
   return provider.generateTextResponse(systemPrompt, userPrompt, options);
 }
@@ -45,6 +47,8 @@ export async function generateObjectResponse<T>(
   schema: z.ZodSchema<T>,
   options?: { temperature?: number; label?: string; processId?: string }
 ): Promise<T> {
+  const label = options?.label ?? "Object Generation";
+  console.log(`[LLM] ${label} using model: ${modelId}`);
   const provider = getProviderForModel(modelId);
   return provider.generateObjectResponse(systemPrompt, userPrompt, schema, options);
 }
@@ -56,6 +60,8 @@ export async function streamTextResponse(
   options: { temperature?: number; label?: string; processId?: string },
   onToken: (token: string) => void
 ): Promise<string> {
+  const label = options?.label ?? "Stream Generation";
+  console.log(`[LLM] ${label} using model: ${modelId}`);
   const provider = getProviderForModel(modelId);
   return provider.streamTextResponse(systemPrompt, userPrompt, options, onToken);
 }
