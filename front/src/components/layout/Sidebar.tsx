@@ -71,8 +71,13 @@ export function Sidebar() {
     router.push("/copilot");
   };
 
-  const isCopilotActive = pathname === "/copilot";
-  const isDashboardActive = pathname === "/dashboard";
+  const isCopilotRoute = pathname === "/copilot";
+  const isDashboardRoute = pathname === "/dashboard";
+
+  // Determine which single item should be active (mutually exclusive)
+  const isNewChatActive = isCopilotRoute && !conversationId && !pendingConversation;
+  const isDashboardActive = isDashboardRoute;
+  const isPendingActive = isCopilotRoute && !!pendingConversation;
 
   return (
     <div className="flex h-full w-56 flex-col border-r border-border bg-card dark:bg-background shrink-0">
@@ -84,7 +89,7 @@ export function Sidebar() {
               onClick={handleNewConversation}
               className={cn(
                 "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all duration-200",
-                isCopilotActive && !conversationId && !pendingConversation
+                isNewChatActive
                   ? "bg-primary/10 text-primary"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
               )}
@@ -123,7 +128,9 @@ export function Sidebar() {
                     <div
                       className={cn(
                         "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-left",
-                        "bg-primary/10 text-primary"
+                        isPendingActive
+                          ? "bg-primary/10 text-primary"
+                          : "text-muted-foreground"
                       )}
                       title={pendingConversation.preview}
                     >
@@ -137,7 +144,7 @@ export function Sidebar() {
                 {/* Existing conversations */}
                 {conversations.map((conv) => {
                   const isActive =
-                    conversationId === conv.id && isCopilotActive;
+                    conversationId === conv.id && isCopilotRoute;
                   const preview = conv.preview || "New conversation";
 
                   return (
