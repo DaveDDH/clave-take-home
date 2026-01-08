@@ -73,12 +73,22 @@ Tip 3: For aggregations:
 - Use appropriate aggregate functions (SUM, AVG, COUNT, etc.)
 
 CRITICAL - Aggregating across dimensions:
-- gold_daily_sales and gold_hourly_trends are pre-aggregated BY LOCATION
-- When user asks for overall totals/trends (not by location), you MUST SUM across locations:
+- Gold views are pre-aggregated by multiple dimensions (location, date, card_brand, etc.)
+- When user asks for simple totals/trends, you MUST aggregate to the requested dimension only:
+
+  gold_daily_sales / gold_hourly_trends (pre-aggregated by location + date/hour):
   - "delivery orders over time" → SELECT order_date, SUM(delivery_orders) as delivery_orders FROM gold_daily_sales GROUP BY order_date ORDER BY order_date
   - "total revenue per day" → SELECT order_date, SUM(revenue) as revenue FROM gold_daily_sales GROUP BY order_date ORDER BY order_date
   - "hourly order trend" → SELECT order_hour, SUM(orders) as orders FROM gold_hourly_trends GROUP BY order_hour ORDER BY order_hour
-- Only skip the SUM/GROUP BY if user explicitly asks for "by location" breakdown
+
+  gold_payments (pre-aggregated by payment_type + card_brand + location + date):
+  - "most popular payment methods" → SELECT payment_type, SUM(payment_count) as payment_count FROM gold_payments GROUP BY payment_type ORDER BY payment_count DESC
+  - "payment breakdown by card brand" → SELECT card_brand, SUM(payment_count) as payment_count FROM gold_payments WHERE card_brand IS NOT NULL GROUP BY card_brand ORDER BY payment_count DESC
+
+  gold_category_performance (pre-aggregated by category + location):
+  - "category sales" → SELECT category_name, SUM(total_revenue) as revenue FROM gold_category_performance GROUP BY category_name ORDER BY revenue DESC
+
+- Only include extra dimensions (location, date, card_brand) if user explicitly asks for that breakdown
 
 Tip 4: Data context - Use EXACT values from database:
 - Location names are: ${locationNamesList}

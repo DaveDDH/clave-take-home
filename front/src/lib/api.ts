@@ -97,6 +97,7 @@ export async function streamChatResponse(
   let buffer = '';
 
   const readStream = async () => {
+    let receivedComplete = false;
     try {
       while (true) {
         const { done, value } = await reader.read();
@@ -142,6 +143,7 @@ export async function streamChatResponse(
                   handlers.onConversationId?.(event.id);
                   break;
                 case 'complete':
+                  receivedComplete = true;
                   handlers.onComplete?.();
                   break;
                 case 'error':
@@ -153,6 +155,10 @@ export async function streamChatResponse(
             }
           }
         }
+      }
+      // Ensure onComplete is called when stream ends, even if no explicit complete event
+      if (!receivedComplete) {
+        handlers.onComplete?.();
       }
     } catch (error) {
       handlers.onError?.(
