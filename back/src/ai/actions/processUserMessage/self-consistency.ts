@@ -1,5 +1,6 @@
 import { executeQuery, isReadOnlyQuery } from "#db/index.js";
 import { generateSQL } from "./sql-generation.js";
+import { refineSQLWithError } from "./sql-refinement.js";
 import { LinkedSchema } from "./schema-linking.js";
 import type { DataContext } from "./data-context.js";
 import { log, logError, logWarn } from "#utils/logger.js";
@@ -94,7 +95,41 @@ export async function selfConsistencyVote(
       }
       resultGroups.get(resultKey)!.push({ sql, result });
     } catch (error) {
-      logWarn(`      ✗ SQL execution failed:`, error, processId);
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      logWarn(`      ✗ SQL execution failed:`, errorMsg, processId);
+
+      // Iterative refinement: attempt to fix the SQL using error feedback
+      try {
+        const refinedSQL = await refineSQLWithError(
+          sql,
+          errorMsg,
+          userQuestion,
+          linkedSchema,
+          model,
+          processId
+        );
+
+        // Validate refined SQL is read-only before executing
+        if (!isReadOnlyQuery(refinedSQL)) {
+          logWarn(`      ✗ Refined SQL rejected (not read-only)`, undefined, processId);
+          continue;
+        }
+
+        const refinedResult = await executeQuery<Record<string, unknown>>(refinedSQL);
+        successfulExecutions++;
+
+        const resultKey = JSON.stringify(refinedResult);
+        if (!resultGroups.has(resultKey)) {
+          resultGroups.set(resultKey, []);
+          log(`      ✓ Refinement succeeded: new result group (${refinedResult.length} rows)`, undefined, processId);
+        } else {
+          log(`      ✓ Refinement succeeded: matched existing group (${refinedResult.length} rows)`, undefined, processId);
+        }
+        resultGroups.get(resultKey)!.push({ sql: refinedSQL, result: refinedResult });
+      } catch (refinementError) {
+        const refineErrorMsg = refinementError instanceof Error ? refinementError.message : String(refinementError);
+        logWarn(`      ✗ Refinement also failed:`, refineErrorMsg, processId);
+      }
     }
   }
 

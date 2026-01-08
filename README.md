@@ -99,6 +99,38 @@ This is the generated product grouping:
 | Wrap                | Buffalo Chicken      | Sandwiches         | Buffalo Chicken Wrap         | semantic       |
 | Wrap                | Veggie               | Sandwiches         | Veggie Wrap                  | semantic       |
 
+## Iterative Refinement
+
+The Text-to-SQL pipeline uses **iterative refinement** to improve query accuracy. When a generated SQL query fails execution, the system feeds the error message back to the LLM to generate a corrected query.
+
+### Why Iterative Refinement?
+
+1. **Higher success rate**: LLMs occasionally generate SQL with minor errors (wrong column names, syntax issues). Rather than failing immediately, refinement gives the system a second chance to correct these mistakes.
+
+2. **Error-aware correction**: PostgreSQL error messages are highly informative (e.g., `column "sales" does not exist, did you mean "total_cents"?`). Feeding this context back to the LLM enables targeted fixes.
+
+3. **No additional latency on success**: Refinement only triggers when the initial query fails, so successful queries run at full speed.
+
+### How It Works
+
+```
+Generate SQL → Execute → Success? → Return results
+                  ↓
+               Failed
+                  ↓
+         Feed error to LLM → Generate corrected SQL → Re-execute
+                                                          ↓
+                                                    Return or fail gracefully
+```
+
+The refinement prompt includes:
+- The original failed SQL
+- The PostgreSQL error message
+- The user's question
+- The database schema
+
+This gives the LLM full context to understand what went wrong and how to fix it.
+
 ## Architecture Evolution
 
 This demo uses a normalized PostgreSQL schema populated with data from the JSON files you provided. For production scale (1000+ restaurants, real-time events), the architecture would evolve as follows:
