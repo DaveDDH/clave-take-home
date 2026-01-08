@@ -5,6 +5,8 @@ export interface WidgetPosition {
   id: string;
   x: number;
   y: number;
+  width?: number;
+  height?: number;
 }
 
 interface DashboardState {
@@ -12,6 +14,7 @@ interface DashboardState {
   addWidget: (id: string, x?: number, y?: number) => void;
   removeWidget: (id: string) => void;
   updateWidgetPosition: (id: string, x: number, y: number) => void;
+  updateWidgetSize: (id: string, width: number, height: number) => void;
   getWidgetPosition: (id: string) => WidgetPosition | undefined;
 }
 
@@ -42,6 +45,13 @@ export const useDashboardStore = create<DashboardState>()(
         set((state) => ({
           widgetPositions: state.widgetPositions.map((w) =>
             w.id === id ? { ...w, x, y } : w
+          ),
+        })),
+
+      updateWidgetSize: (id, width, height) =>
+        set((state) => ({
+          widgetPositions: state.widgetPositions.map((w) =>
+            w.id === id ? { ...w, width, height } : w
           ),
         })),
 

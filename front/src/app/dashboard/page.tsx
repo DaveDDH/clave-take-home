@@ -28,9 +28,9 @@ export default function DashboardPage() {
   const activeWidgets = widgetPositions
     .map((pos) => {
       const widget = widgets.find((w) => w.id === pos.id);
-      return widget ? { widget, x: pos.x, y: pos.y } : null;
+      return widget ? { widget, x: pos.x, y: pos.y, width: pos.width, height: pos.height } : null;
     })
-    .filter(Boolean) as { widget: (typeof widgets)[0]; x: number; y: number }[];
+    .filter(Boolean) as { widget: (typeof widgets)[0]; x: number; y: number; width?: number; height?: number }[];
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, delta } = event;
@@ -61,8 +61,8 @@ export default function DashboardPage() {
       ) : (
         <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
           <div className="relative min-h-full min-w-full p-4" style={{ minHeight: '2000px', minWidth: '2000px' }}>
-            {activeWidgets.map(({ widget, x, y }) => (
-              <WidgetCard key={widget.id} widget={widget} x={x} y={y} />
+            {activeWidgets.map(({ widget, x, y, width, height }) => (
+              <WidgetCard key={widget.id} widget={widget} x={x} y={y} width={width} height={height} />
             ))}
           </div>
         </DndContext>

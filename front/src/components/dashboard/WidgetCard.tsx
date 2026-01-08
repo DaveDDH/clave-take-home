@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { X, GripVertical } from 'lucide-react';
 import { useDraggable } from '@dnd-kit/core';
+import { Resizable } from 're-resizable';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -15,6 +16,7 @@ import {
   RadialChart,
 } from '@/components/charts';
 import { RemoveWidgetModal } from './RemoveWidgetModal';
+import { useDashboardStore } from '@/stores/dashboard-store';
 import type { Widget, WidgetChart, AxisChartConfig, RadarChartConfig, TableChartConfig } from '@/types/widget';
 import type {
   AreaChartData,
@@ -30,10 +32,18 @@ interface WidgetCardProps {
   widget: Widget;
   x: number;
   y: number;
+  width?: number;
+  height?: number;
 }
 
-export function WidgetCard({ widget, x, y }: WidgetCardProps) {
+const DEFAULT_WIDTH = 320;
+const DEFAULT_HEIGHT = 400;
+const MIN_WIDTH = 280;
+const MIN_HEIGHT = 300;
+
+export function WidgetCard({ widget, x, y, width, height }: WidgetCardProps) {
   const [removeModalOpen, setRemoveModalOpen] = useState(false);
+  const updateWidgetSize = useDashboardStore((state) => state.updateWidgetSize);
 
   const {
     attributes,
@@ -55,41 +65,81 @@ export function WidgetCard({ widget, x, y }: WidgetCardProps) {
     cursor: isDragging ? 'grabbing' : 'default',
   };
 
+  const handleResizeStop = (
+    _e: MouseEvent | TouchEvent,
+    _direction: string,
+    ref: HTMLElement
+  ) => {
+    updateWidgetSize(widget.id, ref.offsetWidth, ref.offsetHeight);
+  };
+
   return (
     <>
-      <Card ref={setNodeRef} style={style} className="touch-none shadow-md hover:shadow-lg transition-shadow w-fit">
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <button
-                {...attributes}
-                {...listeners}
-                className="cursor-grab active:cursor-grabbing text-muted-foreground transition-colors hover:text-foreground"
-              >
-                <GripVertical className="h-5 w-5" />
-              </button>
-              <CardTitle className="text-base">{widget.name}</CardTitle>
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 text-muted-foreground hover:text-destructive"
-              onClick={() => setRemoveModalOpen(true)}
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="pt-0">
-          <div className="flex flex-wrap gap-4">
-            {widget.charts.map((chart, index) => (
-              <div key={index} className="w-[280px]">
-                {renderChart(chart)}
+      <div ref={setNodeRef} style={style}>
+        <Resizable
+          size={{
+            width: width ?? DEFAULT_WIDTH,
+            height: height ?? DEFAULT_HEIGHT,
+          }}
+          minWidth={MIN_WIDTH}
+          minHeight={MIN_HEIGHT}
+          onResizeStop={handleResizeStop}
+          handleStyles={{
+            bottomRight: {
+              bottom: 4,
+              right: 4,
+              cursor: 'se-resize',
+            },
+          }}
+          handleClasses={{
+            bottomRight: 'resize-handle',
+          }}
+          enable={{
+            top: false,
+            right: true,
+            bottom: true,
+            left: false,
+            topRight: false,
+            bottomRight: true,
+            bottomLeft: false,
+            topLeft: false,
+          }}
+        >
+          <Card className="touch-none shadow-md hover:shadow-lg transition-shadow h-full w-full flex flex-col">
+            <CardHeader className="pb-2 flex-shrink-0">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-2">
+                  <button
+                    {...attributes}
+                    {...listeners}
+                    className="cursor-grab active:cursor-grabbing text-muted-foreground transition-colors hover:text-foreground"
+                  >
+                    <GripVertical className="h-5 w-5" />
+                  </button>
+                  <CardTitle className="text-base">{widget.name}</CardTitle>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                  onClick={() => setRemoveModalOpen(true)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+            </CardHeader>
+            <CardContent className="pt-0 flex-1 overflow-auto">
+              <div className="flex flex-wrap gap-4 h-full">
+                {widget.charts.map((chart, index) => (
+                  <div key={index} className="flex-1 min-w-[200px]">
+                    {renderChart(chart)}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </Resizable>
+      </div>
       <RemoveWidgetModal
         open={removeModalOpen}
         onOpenChange={setRemoveModalOpen}
