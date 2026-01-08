@@ -98,6 +98,7 @@ Tip 4: Data context - Use EXACT values from database:
 - Sources are: 'toast', 'doordash', 'square'
 - Order types are: 'dine_in', 'takeout', 'pickup', 'delivery'
 - Channels are: 'pos', 'online', 'doordash', 'third_party'
+- Payment types are: 'credit' (for card/credit card payments), 'cash', 'wallet', 'doordash', 'other'
 
 Tip 5: Output format:
 - DO NOT INCLUDE ANY FORMAT TO YOUR OUTPUT, JUST RETURN A PLAIN SQL STRING WITH NO FORMAT WHATSOEVER, NO MARKDOWN, JUST A SIMPLE PLAIN TEXT SQL
