@@ -7,6 +7,8 @@ import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
+  ChartLegend,
+  ChartLegendContent,
   ChartStyle,
   type ChartConfig,
 } from '@/components/ui/chart';
@@ -117,11 +119,11 @@ export function PieChart({ data, className }: PieChartProps) {
             activeIndex={activeIndex}
             activeShape={({ outerRadius = 0, ...props }: PieSectorDataItem) => (
               <g>
-                <Sector {...props} outerRadius={outerRadius + 10} />
+                <Sector {...props} outerRadius={outerRadius + 5} />
                 <Sector
                   {...props}
-                  outerRadius={outerRadius + 25}
-                  innerRadius={outerRadius + 12}
+                  outerRadius={outerRadius + 14}
+                  innerRadius={outerRadius + 8}
                 />
               </g>
             )}
@@ -156,6 +158,10 @@ export function PieChart({ data, className }: PieChartProps) {
               }}
             />
           </Pie>
+          <ChartLegend
+            content={<ChartLegendContent nameKey="name" />}
+            className="-translate-y-2 flex-wrap gap-2 [&>*]:basis-1/4 [&>*]:justify-center"
+          />
         </RechartsPieChart>
       </ChartContainer>
     </div>
