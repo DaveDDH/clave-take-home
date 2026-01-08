@@ -3,6 +3,9 @@ import type { ModelId } from "#ai/models/index.js";
 import { z } from "zod";
 import type { DataContext } from "./data-context.js";
 
+// Classification always uses gpt-oss-20b for fast initial responses
+const CLASSIFICATION_MODEL: ModelId = "gpt-oss-20b";
+
 const MessageClassificationSchema = z.object({
   isDataQuery: z.boolean(),
   reasoning: z.string(),
@@ -100,7 +103,7 @@ Current date: ${new Date().toISOString().split("T")[0]}
 Classify this message and provide a conversational response.`;
 
   return generateObjectResponse(
-    model,
+    CLASSIFICATION_MODEL,
     buildClassificationPrompt(dataContext),
     prompt,
     MessageClassificationSchema,
