@@ -10,6 +10,7 @@ import {
   conversationExists,
   listConversations,
 } from "#db/conversations.js";
+import { DEBUG_MODE } from "#constants/index.js";
 
 const router = Router();
 
@@ -57,7 +58,11 @@ router.post("/chat/stream", async (req: Request, res: Response) => {
     let conversationId: string;
     let conversationHistory: Array<{ role: "user" | "assistant"; content: string }> = [];
 
-    if (existingConversationId) {
+    if (DEBUG_MODE) {
+      // Debug mode: don't persist to database
+      conversationId = existingConversationId || `debug-${Date.now()}`;
+      conversationHistory.push({ role: "user", content: message });
+    } else if (existingConversationId) {
       // Validate conversation exists
       const exists = await conversationExists(existingConversationId);
       if (!exists) {
@@ -73,14 +78,14 @@ router.post("/chat/stream", async (req: Request, res: Response) => {
         role: m.role as "user" | "assistant",
         content: m.content,
       }));
+      conversationHistory.push({ role: "user", content: message });
+      await addMessage(conversationId, "user", message);
     } else {
       // Create new conversation
       conversationId = await createConversation();
+      conversationHistory.push({ role: "user", content: message });
+      await addMessage(conversationId, "user", message);
     }
-
-    // Add user message to conversation history and DB
-    conversationHistory.push({ role: "user", content: message });
-    await addMessage(conversationId, "user", message);
 
     // Generate a unique process ID for tracking
     const processId = `chat-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
@@ -126,20 +131,22 @@ router.post("/chat/stream", async (req: Request, res: Response) => {
     // Wrap sendComplete to save assistant response after streaming completes
     const originalSendComplete = sseWriter.sendComplete.bind(sseWriter);
     sseWriter.sendComplete = async () => {
-      // Save messages based on what we captured
-      if (capturedCharts && capturedCharts.length > 0) {
-        // Data query with charts: save partial response first, then chart response
-        if (partialResponse.trim()) {
+      // Save messages based on what we captured (skip in debug mode)
+      if (!DEBUG_MODE) {
+        if (capturedCharts && capturedCharts.length > 0) {
+          // Data query with charts: save partial response first, then chart response
+          if (partialResponse.trim()) {
+            await addMessage(conversationId, "assistant", partialResponse);
+          }
+          // Save chart response (even if empty content, charts are important)
+          await addMessage(conversationId, "assistant", assistantResponse, capturedCharts);
+        } else if (assistantResponse.trim()) {
+          // Has streamed response but no charts
+          await addMessage(conversationId, "assistant", assistantResponse);
+        } else if (partialResponse.trim()) {
+          // Non-data query: only partial response (no charts, no streamed response)
           await addMessage(conversationId, "assistant", partialResponse);
         }
-        // Save chart response (even if empty content, charts are important)
-        await addMessage(conversationId, "assistant", assistantResponse, capturedCharts);
-      } else if (assistantResponse.trim()) {
-        // Has streamed response but no charts
-        await addMessage(conversationId, "assistant", assistantResponse);
-      } else if (partialResponse.trim()) {
-        // Non-data query: only partial response (no charts, no streamed response)
-        await addMessage(conversationId, "assistant", partialResponse);
       }
       // Send conversation ID with completion
       sseWriter.sendEvent("conversationId", { id: conversationId });

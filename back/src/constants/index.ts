@@ -8,3 +8,6 @@ export const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 export const OPENAI_MODEL = process.env.OPENAI_MODEL || "openai/gpt-oss-20b";
 
 export const HELICONE_KEY = process.env.HELICONE_KEY;
+
+// Debug mode: when true, conversations are not saved to the database
+export const DEBUG_MODE = process.env.DEBUG === 'true';
