@@ -7,7 +7,7 @@
     "#*": "./src/*"
   },
   "scripts": {
-    "start": "tsx src/index.ts",
+    "start": "node dist/index.js",
     "dev": "tsx watch --env-file=.env src/index.ts",
     "check": "tsc --noEmit && eslint .",
     "typecheck": "npm run check",

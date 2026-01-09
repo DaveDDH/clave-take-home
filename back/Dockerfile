@@ -27,9 +27,6 @@ RUN npm ci --include=dev
 # Copy application code
 COPY . .
 
-# Install TS
-RUN npm install -g typescript
-RUN npm install -g tsx
 # Build application
 RUN npm run build
 
