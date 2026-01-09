@@ -122,8 +122,8 @@ Tip 4: Data context - Use EXACT values from database:
   IMPORTANT for beverages/drinks: Use category_name IN (${beverageCategoriesList}) to include ALL drink categories
 - Sources are: 'toast', 'doordash', 'square'
 - Order types are: 'dine_in', 'takeout', 'pickup', 'delivery'
-- Channels are: 'pos', 'online', 'doordash', 'third_party'
-- Payment types are: 'credit' (for card/credit card payments), 'cash', 'wallet', 'doordash', 'other'
+- Channels are: 'pos', 'online', 'delivery_app', 'third_party'
+- Payment types are: 'credit' (for card/credit card payments), 'cash', 'wallet', 'platform', 'other'
 
 Tip 5: Output format:
 - Generate exactly ONE SQL query - never multiple statements separated by semicolons

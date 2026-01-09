@@ -72,8 +72,8 @@ export const COLUMN_INFO = {
     "processing_fee_cents",
   ],
   orderTypes: ["dine_in", "takeout", "pickup", "delivery"],
-  channels: ["pos", "online", "doordash", "third_party"],
+  channels: ["pos", "online", "delivery_app", "third_party"],
   sources: ["toast", "doordash", "square"],
-  paymentTypes: ["credit", "cash", "wallet", "doordash", "other"],
+  paymentTypes: ["credit", "cash", "wallet", "platform", "other"],
 };
 

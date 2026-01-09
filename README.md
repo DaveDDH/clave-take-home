@@ -164,7 +164,7 @@ See `/temp/overview.md` for complete evaluation synthesis and all 24 analysis fi
 
 ## AI Pipeline (C3 Methodology)
 
-The Text-to-SQL pipeline implements the **C3 (Clear Prompting, Calibration, Consistency)** research methodology:
+The Text-to-SQL pipeline implements the **[C3 (Clear Prompting, Calibration, Consistency)](https://arxiv.org/abs/2307.07306)** research methodology:
 
 ### 1. Clear Prompting
 - **Schema Linking**: Only relevant tables/columns sent to LLM
@@ -282,6 +282,8 @@ AI coding assistants follow documented standards:
 ### Testing
 
 All three projects have comprehensive Jest test suites with 80%+ coverage requirements.
+
+![SonarCloud Analysis](docs/sonar.png)
 
 ```bash
 # Run all tests
