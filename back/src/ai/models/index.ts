@@ -5,15 +5,16 @@ import * as openai from "./openai/index.js";
 import type { TokenUsage } from "#utils/cost.js";
 
 // Using a const array + typeof for runtime + type export
-export const MODEL_IDS = ["grok-4.1-fast", "gpt-5.2", "gpt-oss-20b"] as const;
+// Order: smallest/cheapest to biggest/most expensive
+export const MODEL_IDS = ["gpt-oss-20b", "grok-4.1-fast", "gpt-5.2"] as const;
 export type ModelId = (typeof MODEL_IDS)[number];
 
-export const DEFAULT_MODEL: ModelId = "grok-4.1-fast";
+export const DEFAULT_MODEL: ModelId = "gpt-oss-20b";
 
 export const AVAILABLE_MODELS: { id: ModelId; name: string; provider: string }[] = [
+  { id: "gpt-oss-20b", name: "GPT-OSS 20B", provider: "Groq" },
   { id: "grok-4.1-fast", name: "Grok 4.1 Fast", provider: "xAI" },
   { id: "gpt-5.2", name: "GPT 5.2", provider: "OpenAI" },
-  { id: "gpt-oss-20b", name: "GPT-OSS 20B", provider: "Groq" },
 ];
 
 export interface LLMResult<T> {

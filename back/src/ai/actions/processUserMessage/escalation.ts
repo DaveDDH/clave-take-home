@@ -1,8 +1,8 @@
 import type { ModelId } from "#ai/models/index.js";
 import type { ReasoningLevel } from "./index.js";
 
-// Model hierarchy from smallest to biggest
-export const MODEL_HIERARCHY: ModelId[] = ['gpt-oss-20b', 'gpt-5.2', 'grok-4.1-fast'];
+// Model hierarchy from smallest/cheapest to biggest/most expensive
+export const MODEL_HIERARCHY: ModelId[] = ['gpt-oss-20b', 'grok-4.1-fast', 'gpt-5.2'];
 
 export interface EscalationState {
   model: ModelId;

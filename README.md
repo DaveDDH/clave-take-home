@@ -130,7 +130,7 @@ product_variations, product_aliases, categories, payments
 
 ```typescript
 // Model abstraction enables seamless switching
-const MODEL_HIERARCHY = ['gpt-oss-20b', 'gpt-5.2', 'grok-4.1-fast'];
+const MODEL_HIERARCHY = ['gpt-oss-20b', 'grok-4.1-fast', 'gpt-5.2'];
 
 // Adding a new provider: ~50 lines, ~30 minutes
 export function createModel(provider: 'xai' | 'openai' | 'groq' | 'anthropic') {
@@ -399,7 +399,7 @@ Failure → Increase reasoning (if low) → Bigger model → Even bigger model �
 | 4 | If not at high reasoning, increase to high |
 | 5 | All options exhausted → friendly error message |
 
-Model hierarchy (smallest → biggest): `gpt-oss-20b` → `gpt-5.2` → `grok-4.1-fast`
+Model hierarchy (smallest → biggest): `gpt-oss-20b` → `grok-4.1-fast` → `gpt-5.2`
 
 ### When Escalation Triggers
 

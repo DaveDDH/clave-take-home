@@ -19,9 +19,9 @@ interface ChatInputProps {
 }
 
 const MODELS: { id: ModelId; name: string; description: string }[] = [
-  { id: "gpt-5.2", name: "GPT 5.2", description: "Powerful, for complex queries" },
-  { id: "grok-4.1-fast", name: "Grok 4.1 Fast", description: "Fast and efficient" },
-  { id: "gpt-oss-20b", name: "GPT-OSS 20B", description: "Open source alternative" },
+  { id: "gpt-oss-20b", name: "GPT-OSS 20B", description: "Fast and cost-effective" },
+  { id: "grok-4.1-fast", name: "Grok 4.1 Fast", description: "Balanced performance" },
+  { id: "gpt-5.2", name: "GPT 5.2", description: "Most powerful, for complex queries" },
 ];
 
 const REASONING_LEVELS: { id: ReasoningLevel; name: string; description: string }[] = [
