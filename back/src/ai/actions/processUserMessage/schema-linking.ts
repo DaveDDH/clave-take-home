@@ -19,14 +19,15 @@ export type LinkedSchema = z.infer<typeof LinkedSchemaSchema>;
 
 export async function linkSchema(
   userQuestion: string,
-  conversationHistory: Array<{ role: string; content: string }> = [],
+  conversationHistory: Array<{ role: string; content: string }> | undefined,
   model: ModelId,
   processId?: string
 ): Promise<LLMResult<LinkedSchema>> {
+  const history = conversationHistory ?? [];
   // Include conversation context if there's history
   let conversationContext = "";
-  if (conversationHistory.length > 1) {
-    const previousMessages = conversationHistory.slice(0, -1);
+  if (history.length > 1) {
+    const previousMessages = history.slice(0, -1);
     conversationContext = `Previous conversation:\n${previousMessages
       .map((msg) => `${msg.role === "user" ? "User" : "Assistant"}: ${msg.content}`)
       .join("\n")}\n\n`;
@@ -54,7 +55,7 @@ Output the tables and their relevant columns, plus any foreign keys needed for J
     SCHEMA_LINKING_SYSTEM_PROMPT,
     prompt,
     LinkedSchemaSchema,
-    { temperature: 0.0, label: "Schema Linking", processId }
+    { temperature: 0, label: "Schema Linking", processId }
   );
 }
 

@@ -12,4 +12,11 @@ export default {
     '^.+\\.tsx?$': ['ts-jest', { useESM: true }],
   },
   testMatch: ['**/*.test.ts'],
+  collectCoverageFrom: [
+    'src/**/*.ts',
+    '!src/**/*.test.ts',
+    '!src/index.ts',
+  ],
+  coverageDirectory: 'coverage',
+  coverageReporters: ['text', 'lcov'],
 };

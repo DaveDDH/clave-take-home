@@ -1,6 +1,6 @@
-import { readFileSync } from 'fs';
-import { resolve, dirname, join } from 'path';
-import { fileURLToPath } from 'url';
+import { readFileSync } from 'node:fs';
+import { resolve, dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import pg from 'pg';
 import type { LoadResult, LoadProgressCallback, PreprocessedData } from './types.js';
 

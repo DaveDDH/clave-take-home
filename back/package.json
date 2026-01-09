@@ -15,7 +15,7 @@
     "lint:fix": "eslint . --fix",
     "build": "tsc",
     "test:queries": "node test-queries.js",
-    "test": "NODE_OPTIONS='--experimental-vm-modules' jest"
+    "test": "NODE_OPTIONS='--experimental-vm-modules' jest --coverage"
   },
   "dependencies": {
     "@ai-sdk/xai": "^3.0.3",

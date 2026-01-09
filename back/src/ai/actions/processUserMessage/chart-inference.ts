@@ -71,12 +71,8 @@ export function determineChartAxes(
     xKey = categoryColumns[0] || columns[0];
     // For Y-axis, pick a numeric column that's NOT the X-axis
     yKey = numericColumns.find((c) => c !== xKey) || numericColumns[0] || columns[1];
-  } else if (chartType === "radar") {
-    // Radar charts use label and value
-    xKey = categoryColumns[0];
-    yKey = numericColumns[0];
-  } else if (chartType === "radial") {
-    // Radial charts typically show single metrics
+  } else if (chartType === "radar" || chartType === "radial") {
+    // Radar and radial charts use label and value / single metrics
     xKey = categoryColumns[0];
     yKey = numericColumns[0];
   }

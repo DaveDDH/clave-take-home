@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 dotenv.config();
 
@@ -160,15 +160,15 @@ function compareCharts(actual, expected) {
 
     // Check config
     if (expectedChart.config) {
-      if (!actualChart.config) {
-        errors.push(`Chart ${i}: missing config`);
-      } else {
+      if (actualChart.config) {
         if (actualChart.config.xKey !== expectedChart.config.xKey) {
           errors.push(`Chart ${i}: config.xKey mismatch - expected "${expectedChart.config.xKey}", got "${actualChart.config.xKey}"`);
         }
         if (actualChart.config.yKey !== expectedChart.config.yKey) {
           errors.push(`Chart ${i}: config.yKey mismatch - expected "${expectedChart.config.yKey}", got "${actualChart.config.yKey}"`);
         }
+      } else {
+        errors.push(`Chart ${i}: missing config`);
       }
     }
 
@@ -306,7 +306,9 @@ async function runTests() {
   process.exit(failed.length > 0 ? 1 : 0);
 }
 
-runTests().catch((error) => {
+try {
+  await runTests();
+} catch (error) {
   console.error('Test suite failed:', error);
   process.exit(1);
-});
+}

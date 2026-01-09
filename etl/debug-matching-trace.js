@@ -4,9 +4,9 @@
  * Shows WHY each raw item name gets matched to a specific product.
  */
 
-import { readFileSync } from 'fs';
-import { resolve, dirname } from 'path';
-import { fileURLToPath } from 'url';
+import { readFileSync } from 'node:fs';
+import { resolve, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -16,9 +16,7 @@ const productGroupsPath = resolve(__dirname, '../data/product_groups.json');
 const productGroups = JSON.parse(readFileSync(productGroupsPath, 'utf-8'));
 
 // Levenshtein implementation (same as in the ETL)
-function levenshtein(a, b, options = {}) {
-  const maxDistance = options.maxDistance || Infinity;
-
+function levenshtein(a, b) {
   if (a === b) return 0;
   if (a.length === 0) return b.length;
   if (b.length === 0) return a.length;

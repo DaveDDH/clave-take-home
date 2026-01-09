@@ -18,8 +18,8 @@ export interface CostBreakdown {
 
 // Pricing per 1M tokens (in dollars)
 const MODEL_PRICING: Record<ModelId, { input: number; cached: number; output: number }> = {
-  "grok-4.1-fast": { input: 0.20, cached: 0.05, output: 0.5 },
-  "gpt-5.2": { input: 1.75, cached: 0.175, output: 14.0 },
+  "grok-4.1-fast": { input: 0.2, cached: 0.05, output: 0.5 },
+  "gpt-5.2": { input: 1.75, cached: 0.175, output: 14 },
   "gpt-oss-20b": { input: 0.075, cached: 0.075, output: 0.3 },
 };
 
@@ -61,8 +61,8 @@ interface CostEntry {
 
 // Cost accumulator class for tracking across multiple calls
 export class CostAccumulator {
-  private costs: CostEntry[] = [];
-  private processId?: string;
+  private readonly costs: CostEntry[] = [];
+  private readonly processId?: string;
 
   constructor(processId?: string) {
     this.processId = processId;

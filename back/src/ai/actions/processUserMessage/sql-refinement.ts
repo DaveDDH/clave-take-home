@@ -65,7 +65,7 @@ Fix the SQL query to resolve this error. Return ONLY the corrected SQL:`;
     model,
     REFINEMENT_SYSTEM_PROMPT,
     refinementPrompt,
-    { temperature: 0.0, label: "SQL Refinement", processId }
+    { temperature: 0, label: "SQL Refinement", processId }
   );
 
   const refinedSQL = cleanRefinedSQL(response.result);

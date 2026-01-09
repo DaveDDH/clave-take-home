@@ -1,4 +1,4 @@
-import { readFileSync } from 'fs';
+import { readFileSync } from 'node:fs';
 import {
   ToastDataSchema,
   DoorDashDataSchema,
@@ -50,18 +50,18 @@ function validateFile(
 export async function runValidation(config: EnvConfig): Promise<ValidationResult> {
   const results: FileValidation[] = [];
 
-  // Validate config files
-  results.push(validateFile(config.LOCATIONS_PATH, LocationsConfigSchema, 'Locations Config'));
-  results.push(validateFile(config.VARIATION_PATTERNS_PATH, VariationPatternsConfigSchema, 'Variation Patterns'));
-  results.push(validateFile(config.PRODUCT_GROUPS_PATH, ProductGroupsConfigSchema, 'Product Groups'));
-
-  // Validate source data files
-  results.push(validateFile(config.TOAST_POS_PATH, ToastDataSchema, 'Toast POS'));
-  results.push(validateFile(config.DOORDASH_ORDERS_PATH, DoorDashDataSchema, 'DoorDash Orders'));
-  results.push(validateFile(config.SQUARE_LOCATIONS_PATH, SquareLocationsDataSchema, 'Square Locations'));
-  results.push(validateFile(config.SQUARE_CATALOG_PATH, SquareCatalogDataSchema, 'Square Catalog'));
-  results.push(validateFile(config.SQUARE_ORDERS_PATH, SquareOrdersDataSchema, 'Square Orders'));
-  results.push(validateFile(config.SQUARE_PAYMENTS_PATH, SquarePaymentsDataSchema, 'Square Payments'));
+  // Validate config files and source data files
+  results.push(
+    validateFile(config.LOCATIONS_PATH, LocationsConfigSchema, 'Locations Config'),
+    validateFile(config.VARIATION_PATTERNS_PATH, VariationPatternsConfigSchema, 'Variation Patterns'),
+    validateFile(config.PRODUCT_GROUPS_PATH, ProductGroupsConfigSchema, 'Product Groups'),
+    validateFile(config.TOAST_POS_PATH, ToastDataSchema, 'Toast POS'),
+    validateFile(config.DOORDASH_ORDERS_PATH, DoorDashDataSchema, 'DoorDash Orders'),
+    validateFile(config.SQUARE_LOCATIONS_PATH, SquareLocationsDataSchema, 'Square Locations'),
+    validateFile(config.SQUARE_CATALOG_PATH, SquareCatalogDataSchema, 'Square Catalog'),
+    validateFile(config.SQUARE_ORDERS_PATH, SquareOrdersDataSchema, 'Square Orders'),
+    validateFile(config.SQUARE_PAYMENTS_PATH, SquarePaymentsDataSchema, 'Square Payments'),
+  );
 
   const failed = results.filter(r => !r.success);
 

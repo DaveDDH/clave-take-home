@@ -75,7 +75,7 @@ router.post("/chat/stream", async (req: Request, res: Response) => {
       // Load existing messages
       const messages = await getConversationMessages(conversationId);
       conversationHistory = messages.map((m) => ({
-        role: m.role as "user" | "assistant",
+        role: m.role,
         content: m.content,
       }));
       conversationHistory.push({ role: "user", content: message });

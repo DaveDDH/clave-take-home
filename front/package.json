@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint . && tsc --noEmit",
     "typecheck": "tsc --noEmit && eslint .",
-    "test": "NODE_OPTIONS='--experimental-vm-modules' jest"
+    "test": "NODE_OPTIONS='--experimental-vm-modules' jest --coverage"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

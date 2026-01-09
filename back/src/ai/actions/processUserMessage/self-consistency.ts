@@ -15,22 +15,24 @@ export interface ConsistencyResult {
   successfulExecutions: number;
 }
 
-const TEMPERATURES = [0.0, 0.3, 0.5]; // 3 candidates: deterministic, medium, creative
+const TEMPERATURES = [0, 0.3, 0.5]; // 3 candidates: deterministic, medium, creative
 
 export async function selfConsistencyVote(
   userQuestion: string,
   linkedSchema: LinkedSchema,
-  candidateCount: number = 3,
-  conversationHistory: Array<{ role: string; content: string }> = [],
+  candidateCount: number | undefined,
+  conversationHistory: Array<{ role: string; content: string }> | undefined,
   dataContext: DataContext | undefined,
   model: ModelId,
   costAccumulator: CostAccumulator,
   processId?: string
 ): Promise<ConsistencyResult> {
+  const count = candidateCount ?? 3;
+  const history = conversationHistory ?? [];
   const votingStartTime = Date.now();
   const candidates: string[] = [];
 
-  const numCandidates = Math.min(candidateCount, TEMPERATURES.length);
+  const numCandidates = Math.min(count, TEMPERATURES.length);
   log(`   🔄 Generating ${numCandidates} SQL candidates in parallel...`, undefined, processId);
   const generationStartTime = Date.now();
 
@@ -39,7 +41,7 @@ export async function selfConsistencyVote(
     async (temperature, i) => {
       try {
         log(`      Candidate ${i + 1}: temperature=${temperature}`, undefined, processId);
-        const result = await generateSQL(userQuestion, linkedSchema, temperature, conversationHistory, dataContext, model, processId);
+        const result = await generateSQL(userQuestion, linkedSchema, temperature, history, dataContext, model, processId);
         costAccumulator.addUsage(result.model, result.usage, `SQL Generation (Candidate ${i + 1}, temp=${temperature})`);
         if (isReadOnlyQuery(result.sql)) {
           log(`      ✓ Candidate ${i + 1} valid`, undefined, processId);
@@ -90,11 +92,11 @@ export async function selfConsistencyVote(
       // Use stringified result as the grouping key
       const resultKey = JSON.stringify(result);
 
-      if (!resultGroups.has(resultKey)) {
+      if (resultGroups.has(resultKey)) {
+        log(`      ✓ Matched existing group (${result.length} rows)`, undefined, processId);
+      } else {
         resultGroups.set(resultKey, []);
         log(`      ✓ New result group (${result.length} rows)`, undefined, processId);
-      } else {
-        log(`      ✓ Matched existing group (${result.length} rows)`, undefined, processId);
       }
       resultGroups.get(resultKey)!.push({ sql, result });
     } catch (error) {
@@ -123,11 +125,11 @@ export async function selfConsistencyVote(
         successfulExecutions++;
 
         const resultKey = JSON.stringify(refinedResult);
-        if (!resultGroups.has(resultKey)) {
+        if (resultGroups.has(resultKey)) {
+          log(`      ✓ Refinement succeeded: matched existing group (${refinedResult.length} rows)`, undefined, processId);
+        } else {
           resultGroups.set(resultKey, []);
           log(`      ✓ Refinement succeeded: new result group (${refinedResult.length} rows)`, undefined, processId);
-        } else {
-          log(`      ✓ Refinement succeeded: matched existing group (${refinedResult.length} rows)`, undefined, processId);
         }
         resultGroups.get(resultKey)!.push({ sql: refinementResult.sql, result: refinedResult });
       } catch (refinementError) {
@@ -180,13 +182,14 @@ export async function selfConsistencyVote(
 export async function singleQuery(
   userQuestion: string,
   linkedSchema: LinkedSchema,
-  conversationHistory: Array<{ role: string; content: string }> = [],
+  conversationHistory: Array<{ role: string; content: string }> | undefined,
   dataContext: DataContext | undefined,
   model: ModelId,
   costAccumulator: CostAccumulator,
   processId?: string
 ): Promise<{ sql: string; data: Record<string, unknown>[] }> {
-  const result = await generateSQL(userQuestion, linkedSchema, 0.0, conversationHistory, dataContext, model, processId);
+  const history = conversationHistory ?? [];
+  const result = await generateSQL(userQuestion, linkedSchema, 0, history, dataContext, model, processId);
   costAccumulator.addUsage(result.model, result.usage, "SQL Generation (Single Query)");
 
   if (!isReadOnlyQuery(result.sql)) {

@@ -14,12 +14,14 @@ export interface SQLGenerationResult {
 export async function generateSQL(
   userQuestion: string,
   linkedSchema: LinkedSchema,
-  temperature: number = 0.0,
-  conversationHistory: Array<{ role: string; content: string }> = [],
+  temperature: number | undefined,
+  conversationHistory: Array<{ role: string; content: string }> | undefined,
   dataContext: DataContext | undefined,
   model: ModelId,
   processId?: string
 ): Promise<SQLGenerationResult> {
+  const temp = temperature ?? 0;
+  const history = conversationHistory ?? [];
   const schemaSection = formatLinkedSchema(linkedSchema);
 
   const dateAndTime = new Date().toISOString().replace(
@@ -37,8 +39,8 @@ export async function generateSQL(
 
   // Include conversation context if there's history
   let conversationContext = "";
-  if (conversationHistory.length > 1) {
-    const previousMessages = conversationHistory.slice(0, -1);
+  if (history.length > 1) {
+    const previousMessages = history.slice(0, -1);
     conversationContext = `Previous conversation:\n${previousMessages
       .map((msg) => `${msg.role === "user" ? "User" : "Assistant"}: ${msg.content}`)
       .join("\n")}\n\n`;
@@ -83,7 +85,7 @@ Current date and time: ${dateAndTime}
     model,
     await getCalibrationSystemPrompt(),
     userPrompt,
-    { temperature, label: "SQL Generation", processId }
+    { temperature: temp, label: "SQL Generation", processId }
   );
 
   return {

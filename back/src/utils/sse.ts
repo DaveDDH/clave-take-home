@@ -2,9 +2,9 @@ import type { Response } from 'express';
 import type { ChartData } from '../ai/actions/processUserMessage/index.js';
 
 export class SSEWriter {
-  private res: Response;
+  private readonly res: Response;
   private closed = false;
-  private keepAliveInterval?: NodeJS.Timeout;
+  private readonly keepAliveInterval?: NodeJS.Timeout;
 
   constructor(res: Response) {
     this.res = res;

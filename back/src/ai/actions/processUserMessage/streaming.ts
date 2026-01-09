@@ -21,12 +21,14 @@ import { CostAccumulator } from "#utils/cost.js";
 
 export async function processUserMessageStream(
   userQuestion: string,
-  conversationHistory: ConversationMessage[] = [],
-  options: ProcessOptions = {},
+  conversationHistory: ConversationMessage[] | undefined,
+  options: ProcessOptions | undefined,
   sseWriter: SSEWriter,
   processId?: string
 ): Promise<void> {
-  const { useConsistency = true, debug = false, model = DEFAULT_MODEL, reasoningLevel = 'medium' } = options;
+  const history = conversationHistory ?? [];
+  const opts = options ?? {};
+  const { useConsistency = true, debug = false, model = DEFAULT_MODEL, reasoningLevel = 'medium' } = opts;
 
   const requestStartTime = Date.now();
 
@@ -34,7 +36,7 @@ export async function processUserMessageStream(
   log("🚀 C3 Text-to-SQL Streaming Started", undefined, processId);
   log("========================================", undefined, processId);
   log("📝 User Question:", userQuestion, processId);
-  log("💬 Conversation History Length:", conversationHistory.length, processId);
+  log("💬 Conversation History Length:", history.length, processId);
   log("⚙️  Options:", { useConsistency, debug }, processId);
   if (processId) {
     log("🆔 Process ID:", processId, processId);
@@ -85,8 +87,8 @@ export async function processUserMessageStream(
     }
 
     // Start both tasks in parallel (don't wait for both)
-    const classificationPromise = classifyMessage(userQuestion, conversationHistory, dataContext, currentModel, processId);
-    const schemaLinkingPromise = linkSchema(userQuestion, conversationHistory, currentModel, processId);
+    const classificationPromise = classifyMessage(userQuestion, history, dataContext, currentModel, processId);
+    const schemaLinkingPromise = linkSchema(userQuestion, history, currentModel, processId);
 
     // Wait for classification first - it determines if we need schema linking
     const classificationResult = await classificationPromise;
@@ -152,7 +154,7 @@ export async function processUserMessageStream(
         userQuestion,
         linkedSchema,
         candidateCount,
-        conversationHistory,
+        history,
         dataContext,
         currentModel,
         costAccumulator,
@@ -170,7 +172,7 @@ export async function processUserMessageStream(
       const result = await singleQuery(
         userQuestion,
         linkedSchema,
-        conversationHistory,
+        history,
         dataContext,
         currentModel,
         costAccumulator,
@@ -238,7 +240,7 @@ export async function processUserMessageStream(
       userQuestion,
       data,
       chartConfig,
-      conversationHistory,
+      history,
       currentModel,
       costAccumulator,
       sseWriter,

@@ -22,8 +22,8 @@ export async function executeQuery<T = Record<string, unknown>>(
     // Handle multiple statements (returns array of Results)
     if (Array.isArray(result)) {
       // Return rows from the last statement (most likely the main query)
-      const lastResult = result[result.length - 1];
-      if (lastResult && lastResult.rows) {
+      const lastResult = result.at(-1);
+      if (lastResult?.rows) {
         return lastResult.rows as T[];
       }
       console.error('[executeQuery] Multi-statement query returned no usable results:', { sql: sql.slice(0, 200) });
@@ -31,7 +31,7 @@ export async function executeQuery<T = Record<string, unknown>>(
     }
 
     // Safety check: ensure result.rows exists
-    if (!result || !result.rows) {
+    if (!result?.rows) {
       console.error('[executeQuery] Unexpected result format:', { result, sql: sql.slice(0, 200) });
       return [];
     }

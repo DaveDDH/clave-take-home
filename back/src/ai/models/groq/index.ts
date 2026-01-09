@@ -57,7 +57,7 @@ export async function generateTextResponse(
 
   log(`   🤖 [${label}] Starting Groq LLM call...`, undefined, processId);
   log(
-    `      Temperature: ${options?.temperature ?? 0.0}`,
+    `      Temperature: ${options?.temperature ?? 0}`,
     undefined,
     processId
   );
@@ -70,7 +70,7 @@ export async function generateTextResponse(
     model,
     system: systemPrompt,
     prompt: userPrompt,
-    temperature: options?.temperature ?? 0.0,
+    temperature: options?.temperature ?? 0,
   });
 
   const duration = Date.now() - startTime;
@@ -101,7 +101,7 @@ export async function generateObjectResponse<T>(
 
   log(`   🤖 [${label}] Starting Groq LLM call...`, undefined, processId);
   log(
-    `      Temperature: ${options?.temperature ?? 0.0}`,
+    `      Temperature: ${options?.temperature ?? 0}`,
     undefined,
     processId
   );
@@ -115,7 +115,7 @@ export async function generateObjectResponse<T>(
     system: systemPrompt,
     prompt: userPrompt,
     schema,
-    temperature: options?.temperature ?? 0.0,
+    temperature: options?.temperature ?? 0,
   });
 
   const duration = Date.now() - startTime;
@@ -146,7 +146,7 @@ export async function streamTextResponse(
 
   log(`   🤖 [${label}] Starting streaming Groq call...`, undefined, processId);
   log(
-    `      Temperature: ${options?.temperature ?? 0.0}`,
+    `      Temperature: ${options?.temperature ?? 0}`,
     undefined,
     processId
   );
@@ -159,7 +159,7 @@ export async function streamTextResponse(
     model,
     system: systemPrompt,
     prompt: userPrompt,
-    temperature: options?.temperature ?? 0.0,
+    temperature: options?.temperature ?? 0,
   });
 
   let fullText = "";

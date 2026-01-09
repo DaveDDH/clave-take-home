@@ -10,4 +10,10 @@ export default {
     '^.+\\.tsx?$': ['ts-jest', { useESM: true }],
   },
   testMatch: ['**/*.test.ts'],
+  collectCoverageFrom: [
+    'lib/**/*.ts',
+    '!lib/**/*.test.ts',
+  ],
+  coverageDirectory: 'coverage',
+  coverageReporters: ['text', 'lcov'],
 };

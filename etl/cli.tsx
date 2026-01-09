@@ -108,7 +108,7 @@ function Header() {
   );
 }
 
-function ErrorBox({ title, message }: { title: string; message: string }) {
+function ErrorBox({ title, message }: Readonly<{ title: string; message: string }>) {
   return (
     <Box flexDirection="column" marginTop={1}>
       <Text color="red" bold>✗ {title}</Text>
@@ -119,7 +119,7 @@ function ErrorBox({ title, message }: { title: string; message: string }) {
   );
 }
 
-function SuccessBox({ message }: { message: string }) {
+function SuccessBox({ message }: Readonly<{ message: string }>) {
   return (
     <Box marginTop={1}>
       <Text color="green">✓ {message}</Text>
@@ -127,7 +127,7 @@ function SuccessBox({ message }: { message: string }) {
   );
 }
 
-function Spinner({ message }: { message: string }) {
+function Spinner({ message }: Readonly<{ message: string }>) {
   return (
     <Box marginTop={1}>
       <Text color="yellow">⏳ {message}</Text>
@@ -140,12 +140,12 @@ function TextInput({
   onChange,
   onSubmit,
   placeholder,
-}: {
+}: Readonly<{
   value: string;
   onChange: (val: string) => void;
   onSubmit: () => void;
   placeholder?: string;
-}) {
+}>) {
   useInput((input, key) => {
     if (key.return) {
       onSubmit();
@@ -185,12 +185,12 @@ function App() {
   // Check env vars on mount
   useEffect(() => {
     const result = checkEnvVars();
-    if (!result.valid) {
-      setMissingEnvVars(result.missing);
-      setScreen('env_error');
-    } else {
+    if (result.valid) {
       setEnvConfig(result.config!);
       setScreen('initial_menu');
+    } else {
+      setMissingEnvVars(result.missing);
+      setScreen('env_error');
     }
   }, []);
 
@@ -207,10 +207,11 @@ function App() {
 
   // Handle validation
   const handleValidate = async () => {
+    if (!envConfig) return;
     setScreen('validating');
     try {
       const { runValidation } = await import('./lib/cli-actions/index.js');
-      const result = await runValidation(envConfig!);
+      const result = await runValidation(envConfig);
       if (result.success) {
         setScreen('post_validation_menu');
       } else {
@@ -225,10 +226,11 @@ function App() {
 
   // Handle preprocessing
   const handlePreprocess = async () => {
+    if (!envConfig) return;
     setScreen('preprocessing');
     try {
       const { runPreprocess } = await import('./lib/cli-actions/index.js');
-      const result = await runPreprocess(envConfig!);
+      const result = await runPreprocess(envConfig);
       if (result.success) {
         setScreen('prompt_output_path');
       } else {
@@ -243,10 +245,11 @@ function App() {
 
   // Handle save preprocessed data
   const handleSavePreprocessed = async () => {
+    if (!envConfig) return;
     setScreen('saving_preprocessed');
     try {
       const { savePreprocessedData } = await import('./lib/cli-actions/index.js');
-      await savePreprocessedData(envConfig!, outputPath);
+      await savePreprocessedData(envConfig, outputPath);
       setScreen('post_preprocess_menu');
     } catch (err) {
       setPreprocessError(err instanceof Error ? err.message : 'Unknown error');
@@ -297,7 +300,7 @@ function App() {
         <Box flexDirection="column">
           <ErrorBox
             title="Missing environment variables"
-            message={`The following variables must be set in your .env file:\\n\\n${missingEnvVars.map(v => `  • ${v}`).join('\\n')}\\n\\nPlease add them and restart the CLI.`}
+            message={`The following variables must be set in your .env file:\n\n${missingEnvVars.map(v => `  • ${v}`).join('\n')}\n\nPlease add them and restart the CLI.`}
           />
         </Box>
       )}
@@ -337,7 +340,7 @@ function App() {
         <Box flexDirection="column">
           <ErrorBox
             title="Validation failed"
-            message={`The data files do not match the expected schema:\\n\\n${validationErrors.map(e => `  • ${e}`).join('\\n')}\\n\\nPlease fix the data files and try again.`}
+            message={`The data files do not match the expected schema:\n\n${validationErrors.map(e => `  • ${e}`).join('\n')}\n\nPlease fix the data files and try again.`}
           />
           <Box marginTop={2}>
             <Text dimColor>Press Ctrl+C to exit</Text>
@@ -493,8 +496,8 @@ function App() {
           <Spinner message="Loading data to database..." />
           {loadProgress.length > 0 && (
             <Box flexDirection="column" marginTop={1} marginLeft={2}>
-              {loadProgress.map((msg, i) => (
-                <Text key={i} dimColor>• {msg}</Text>
+              {loadProgress.map((msg) => (
+                <Text key={msg} dimColor>• {msg}</Text>
               ))}
             </Box>
           )}
