@@ -1,15 +1,10 @@
-# fly.toml app configuration file generated for clave-take-home on 2026-01-09T19:07:50Z
-#
-# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
-#
-
 app = 'clave-take-home'
 primary_region = 'iad'
 
 [build]
 
 [http_service]
-  internal_port = 3000
+  internal_port = 5006
   force_https = true
   auto_stop_machines = 'stop'
   auto_start_machines = true
@@ -20,4 +15,16 @@ primary_region = 'iad'
   memory = '1gb'
   cpu_kind = 'shared'
   cpus = 1
-  memory_mb = 1024
+  memory_mb = 512
+  min_machines_running = 1
+
+[env]
+  XAI_API_KEY=xai-jV5IbcQndvUZIeVq0GzXCSUi7sHyrHgOWr3N9MP9GC2C2bX8bGSSCpJT7CD3ebMp7Lwipx5pjjCFPfTH
+  XAI_MODEL=grok-4-1-fast-reasoning
+  GROQ_API_KEY=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
+  GROQ_MODEL=openai/gpt-oss-20b
+  OPENAI_API_KEY=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
+  OPENAI_MODEL=gpt-5.2-2025-12-11
+  HELICONE_KEY=sk-helicone-ys4ef3i-5sdufaq-tgswrgq-rhotjlq
+  DATABASE_URL=postgresql://postgres.vsuobtuknhokyqtjgrnn:claveAdminPass@aws-1-us-east-1.pooler.supabase.com:5432/postgres
+  DEBUG=false
