@@ -10,7 +10,7 @@ A production-grade **Text-to-SQL analytics platform** for restaurant data, featu
 cd etl && source .env
 
 # 3. Run ETL pipeline
-npm run cli
+npm run dev
 
 # 4. Start backend
 cd ../back && npm run dev
