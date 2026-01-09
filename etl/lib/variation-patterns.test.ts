@@ -166,7 +166,7 @@ describe('variation-patterns', () => {
       const configWithCapitalize = {
         patterns: [{
           name: 'test',
-          regex: '(\\w+)',
+          regex: String.raw`(\w+)`,
           type: 'size',
           format: '{1|capitalize}',
         }],

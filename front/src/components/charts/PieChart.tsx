@@ -119,6 +119,11 @@ export function PieChart({ data, className }: Readonly<PieChartProps>) {
     [data]
   );
 
+  const renderPieCenterLabel = React.useCallback(
+    (props: { viewBox?: PolarViewBox }) => <PieCenterLabel viewBox={props.viewBox} total={total} />,
+    [total]
+  );
+
   if (data.length === 0) return null;
 
   return (
@@ -168,9 +173,7 @@ export function PieChart({ data, className }: Readonly<PieChartProps>) {
             activeIndex={activeIndex}
             activeShape={ActivePieShape}
           >
-            <Label
-              content={(props) => <PieCenterLabel viewBox={props.viewBox as PolarViewBox} total={total} />}
-            />
+            <Label content={renderPieCenterLabel} />
           </Pie>
           <ChartLegend
             content={<ChartLegendContent nameKey="name" />}

@@ -6,7 +6,7 @@ describe('useTypewriter', () => {
   beforeEach(() => {
     jest.useFakeTimers();
     // Mock requestAnimationFrame
-    jest.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => {
+    jest.spyOn(globalThis, 'requestAnimationFrame').mockImplementation((cb) => {
       cb(0);
       return 0;
     });

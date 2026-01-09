@@ -131,4 +131,36 @@ describe('CostAccumulator', () => {
     expect(breakdown.cachedCost).toBe(0);
     expect(breakdown.totalCost).toBeCloseTo(0.2, 4);
   });
+
+  it('logSummary runs without error when no calls', () => {
+    const accumulator = new CostAccumulator();
+    // Should not throw
+    expect(() => accumulator.logSummary()).not.toThrow();
+  });
+
+  it('logSummary runs without error with calls', () => {
+    const accumulator = new CostAccumulator();
+    accumulator.addUsage('grok-4.1-fast', { promptTokens: 1000, completionTokens: 500 });
+    accumulator.addUsage('gpt-5.2', { promptTokens: 2000, completionTokens: 1000 });
+    // Should not throw
+    expect(() => accumulator.logSummary()).not.toThrow();
+  });
+
+  it('addUsage uses default label when not provided', () => {
+    const accumulator = new CostAccumulator();
+    accumulator.addUsage('grok-4.1-fast', { promptTokens: 100, completionTokens: 50 });
+    expect(accumulator.getCallCount()).toBe(1);
+  });
+
+  it('addUsage uses custom label when provided', () => {
+    const accumulator = new CostAccumulator();
+    accumulator.addUsage('grok-4.1-fast', { promptTokens: 100, completionTokens: 50 }, 'Custom Label');
+    expect(accumulator.getCallCount()).toBe(1);
+  });
+
+  it('works with processId', () => {
+    const accumulator = new CostAccumulator('test-process-id');
+    accumulator.addUsage('gpt-oss-20b', { promptTokens: 500, completionTokens: 200 });
+    expect(accumulator.getTotalCost()).toBeGreaterThan(0);
+  });
 });

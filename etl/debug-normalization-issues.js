@@ -201,14 +201,14 @@ console.log('            Each unique (product_id, name) pair creates a new varia
 console.log('\n' + '='.repeat(70));
 console.log('SUMMARY OF ROOT CAUSES');
 console.log('='.repeat(70));
-console.log(`
+console.log(String.raw`
 1. "expresso" separate product:
    - "expresso" has same length as "espresso" (8 chars)
    - Our new rule rejects same-length fuzzy matches
    - So "expresso" doesn't match the "espresso" keyword
 
 2. Wings duplicate variations (12 pcs, Buffalo Wings 12pc, Wings 12pc):
-   - "12pc" without space doesn't match quantity pattern "\\d+\\s*(pcs?|pieces?)"
+   - "12pc" without space doesn't match quantity pattern "\d+\s*(pcs?|pieces?)"
    - So "Buffalo Wings 12pc" doesn't extract a quantity variation
    - The entire name becomes the variation
 
