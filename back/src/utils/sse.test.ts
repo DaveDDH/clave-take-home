@@ -42,7 +42,7 @@ describe('SSEWriter', () => {
   });
 
   it('sets SSE headers on construction', () => {
-    void new SSEWriter(mockRes);
+    const _writer = new SSEWriter(mockRes);
     expect(headersSent['Content-Type']).toBe('text/event-stream');
     expect(headersSent['Cache-Control']).toBe('no-cache');
     expect(headersSent['Connection']).toBe('keep-alive');
@@ -50,12 +50,12 @@ describe('SSEWriter', () => {
   });
 
   it('flushes headers on construction', () => {
-    void new SSEWriter(mockRes);
+    const _writer = new SSEWriter(mockRes);
     expect(mockRes.flushHeaders).toHaveBeenCalled();
   });
 
   it('sets socket no delay', () => {
-    void new SSEWriter(mockRes);
+    const _writer = new SSEWriter(mockRes);
     expect(mockRes.socket?.setNoDelay).toHaveBeenCalledWith(true);
   });
 
@@ -160,7 +160,7 @@ describe('SSEWriter', () => {
 
   describe('keep-alive', () => {
     it('sends keep-alive comments periodically', () => {
-      void new SSEWriter(mockRes);
+      const _writer = new SSEWriter(mockRes);
       // Advance timer by 15 seconds
       jest.advanceTimersByTime(15000);
       expect(writtenData.some((d) => d.includes('keep-alive'))).toBe(true);

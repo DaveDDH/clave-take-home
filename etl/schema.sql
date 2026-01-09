@@ -8,6 +8,18 @@ EXCEPTION
   WHEN duplicate_object THEN NULL;
 END $$;
 
+DO $$ BEGIN
+  CREATE TYPE order_channel AS ENUM ('pos', 'online', 'doordash', 'third_party');
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE payment_method AS ENUM ('credit', 'cash', 'wallet', 'doordash', 'other');
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
+
 -- 1. Locations (unified across all sources)
 CREATE TABLE IF NOT EXISTS locations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -65,7 +77,7 @@ CREATE TABLE IF NOT EXISTS orders (
   source_order_id TEXT NOT NULL,
   location_id UUID NOT NULL REFERENCES locations(id),
   order_type TEXT NOT NULL CHECK (order_type IN ('dine_in', 'takeout', 'pickup', 'delivery')),
-  channel TEXT NOT NULL CHECK (channel IN ('pos', 'online', 'doordash', 'third_party')),
+  channel order_channel NOT NULL,
   status TEXT CHECK (status IN ('completed', 'delivered', 'picked_up', 'cancelled', 'refunded')),
   created_at TIMESTAMPTZ NOT NULL,
   closed_at TIMESTAMPTZ,
@@ -105,7 +117,7 @@ CREATE TABLE IF NOT EXISTS payments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
   source_payment_id TEXT,
-  payment_type TEXT NOT NULL CHECK (payment_type IN ('credit', 'cash', 'wallet', 'doordash', 'other')),
+  payment_type payment_method NOT NULL,
   card_brand TEXT CHECK (card_brand IN ('visa', 'mastercard', 'amex', 'discover', 'apple_pay', 'google_pay')),
   last_four TEXT,
   amount_cents INT NOT NULL,
