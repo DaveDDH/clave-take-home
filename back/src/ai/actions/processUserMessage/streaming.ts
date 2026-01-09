@@ -213,20 +213,23 @@ export async function processUserMessageStream(
     const cleanXKey = chartConfig.xKey?.replace("_cents", "");
     const cleanYKey = chartConfig.yKey?.replace("_cents", "");
 
+    // Build chart config based on type
+    const getChartConfig = () => {
+      if (chartConfig.type === "table") {
+        return { columns: chartConfig.columns };
+      }
+      if (chartConfig.xKey && chartConfig.yKey) {
+        return { xKey: cleanXKey!, yKey: cleanYKey! };
+      }
+      return undefined;
+    };
+
     if (data.length > 0 && chartConfig.type !== "none") {
       sseWriter.sendChart([
         {
           type: chartConfig.type,
           data: formattedData,
-          config:
-            chartConfig.type === "table"
-              ? { columns: chartConfig.columns }
-              : chartConfig.xKey && chartConfig.yKey
-                ? {
-                    xKey: cleanXKey!,
-                    yKey: cleanYKey!,
-                  }
-                : undefined,
+          config: getChartConfig(),
         },
       ]);
     }

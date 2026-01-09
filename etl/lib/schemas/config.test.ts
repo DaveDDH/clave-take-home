@@ -51,7 +51,7 @@ describe('VariationPatternsConfigSchema', () => {
   it('validates valid variation patterns config', () => {
     const validConfig = {
       patterns: [
-        { name: 'quantity_pcs', regex: '(\\d+)\\s*pcs?', type: 'quantity', format: '{1} pcs' },
+        { name: 'quantity_pcs', regex: String.raw`(\d+)\s*pcs?`, type: 'quantity', format: '{1} pcs' },
       ],
       abbreviations: { lg: 'Large', sm: 'Small' },
     };
@@ -62,7 +62,7 @@ describe('VariationPatternsConfigSchema', () => {
   it('allows optional flags in patterns', () => {
     const validConfig = {
       patterns: [
-        { name: 'size_pattern', regex: '^(lg|sm)\\s+', flags: 'i', type: 'size', format: '{1}' },
+        { name: 'size_pattern', regex: String.raw`^(lg|sm)\s+`, flags: 'i', type: 'size', format: '{1}' },
       ],
       abbreviations: {},
     };

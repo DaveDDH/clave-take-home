@@ -49,14 +49,14 @@ describe('DoorDashDataSchema', () => {
   });
 
   it('validates order with null delivery_time', () => {
-    const data = JSON.parse(JSON.stringify(validDoorDashData));
+    const data = structuredClone(validDoorDashData);
     data.orders[0].delivery_time = null;
     const result = DoorDashDataSchema.safeParse(data);
     expect(result.success).toBe(true);
   });
 
   it('validates order with empty options array', () => {
-    const data = JSON.parse(JSON.stringify(validDoorDashData));
+    const data = structuredClone(validDoorDashData);
     data.orders[0].order_items[0].options = [];
     const result = DoorDashDataSchema.safeParse(data);
     expect(result.success).toBe(true);
@@ -81,14 +81,14 @@ describe('DoorDashDataSchema', () => {
   });
 
   it('validates order with contains_alcohol true', () => {
-    const data = JSON.parse(JSON.stringify(validDoorDashData));
+    const data = structuredClone(validDoorDashData);
     data.orders[0].contains_alcohol = true;
     const result = DoorDashDataSchema.safeParse(data);
     expect(result.success).toBe(true);
   });
 
   it('validates order with is_catering true', () => {
-    const data = JSON.parse(JSON.stringify(validDoorDashData));
+    const data = structuredClone(validDoorDashData);
     data.orders[0].is_catering = true;
     const result = DoorDashDataSchema.safeParse(data);
     expect(result.success).toBe(true);

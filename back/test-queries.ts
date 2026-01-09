@@ -11,23 +11,68 @@ const __dirname = path.dirname(__filename);
 const API_BASE_URL = process.env.API_URL || 'http://localhost:5006';
 const TEST_DATA_DIR = path.join(__dirname, 'test_data');
 
+interface ChartConfig {
+  xKey?: string;
+  yKey?: string;
+  [key: string]: unknown;
+}
+
+interface ChartData {
+  [key: string]: string | number | boolean | null;
+}
+
+interface Chart {
+  type: string;
+  config?: ChartConfig;
+  data?: ChartData[];
+}
+
+interface TestResult {
+  charts?: Chart[];
+}
+
+interface TestCase {
+  file: string;
+  query: string;
+  result: TestResult;
+}
+
+interface StreamResult {
+  content: string;
+  charts: Chart[] | null;
+  sql: string | null;
+}
+
+interface ComparisonResult {
+  match: boolean;
+  errors: string[];
+}
+
+interface TestQueryResult {
+  file: string;
+  query: string;
+  success: boolean;
+  duration: number;
+  errors?: string[];
+}
+
 // Load all test files
-function loadTestFiles() {
+function loadTestFiles(): TestCase[] {
   const files = fs.readdirSync(TEST_DATA_DIR)
     .filter(file => file.match(/^q\d+\.json$/))
     .sort((a, b) => {
-      const numA = Number.parseInt(a.match(/\d+/)[0]);
-      const numB = Number.parseInt(b.match(/\d+/)[0]);
+      const numA = Number.parseInt(a.match(/\d+/)![0]);
+      const numB = Number.parseInt(b.match(/\d+/)![0]);
       return numA - numB;
     });
 
   return files.map(file => {
     const content = fs.readFileSync(path.join(TEST_DATA_DIR, file), 'utf-8');
-    return { file, ...JSON.parse(content) };
+    return { file, ...JSON.parse(content) } as TestCase;
   });
 }
 
-async function streamChatResponse(query) {
+async function streamChatResponse(query: string): Promise<StreamResult> {
   const response = await fetch(`${API_BASE_URL}/api/chat/stream`, {
     method: 'POST',
     headers: {
@@ -45,7 +90,7 @@ async function streamChatResponse(query) {
   }
 
   return new Promise((resolve, reject) => {
-    const result = {
+    const result: StreamResult = {
       content: '',
       charts: null,
       sql: null,
@@ -60,10 +105,10 @@ async function streamChatResponse(query) {
     }, 120000); // 2 min timeout
 
     // Read stream
-    const reader = response.body.getReader();
+    const reader = response.body!.getReader();
     const decoder = new TextDecoder();
 
-    const readStream = async () => {
+    const readStream = async (): Promise<void> => {
       try {
         while (true) {
           const { done, value } = await reader.read();
@@ -134,8 +179,8 @@ async function streamChatResponse(query) {
   });
 }
 
-function compareCharts(actual, expected) {
-  const errors = [];
+function compareCharts(actual: Chart[] | null | undefined, expected: Chart[] | null | undefined): ComparisonResult {
+  const errors: string[] = [];
 
   // Check if both are undefined/null
   if (!actual && !expected) return { match: true, errors: [] };
@@ -216,7 +261,7 @@ function compareCharts(actual, expected) {
   return { match: errors.length === 0, errors };
 }
 
-async function testQuery(testCase, index, total) {
+async function testQuery(testCase: TestCase, index: number, total: number): Promise<TestQueryResult> {
   const startTime = Date.now();
 
   try {
@@ -241,13 +286,14 @@ async function testQuery(testCase, index, total) {
     }
   } catch (error) {
     const duration = Date.now() - startTime;
-    console.log(`  ❌ ERROR (${duration}ms): ${error.message}`);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.log(`  ❌ ERROR (${duration}ms): ${errorMessage}`);
 
-    return { file: testCase.file, query: testCase.query, success: false, duration, errors: [error.message] };
+    return { file: testCase.file, query: testCase.query, success: false, duration, errors: [errorMessage] };
   }
 }
 
-async function runTests() {
+async function runTests(): Promise<void> {
   console.log('╔════════════════════════════════════════════════════════════════╗');
   console.log('║          C3 Text-to-SQL Query Test Suite                      ║');
   console.log('╚════════════════════════════════════════════════════════════════╝');
@@ -296,7 +342,7 @@ async function runTests() {
     console.log('\n❌ Failed Tests:');
     failed.forEach((result, index) => {
       console.log(`\n  ${index + 1}. ${result.file}: "${result.query}"`);
-      result.errors.forEach(error => console.log(`     - ${error}`));
+      result.errors?.forEach(error => console.log(`     - ${error}`));
     });
   }
 

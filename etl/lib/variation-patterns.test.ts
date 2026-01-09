@@ -1,58 +1,59 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
-import {
+
+const validConfig = {
+  patterns: [
+    {
+      name: 'quantity_pcs',
+      regex: String.raw`(\d+)\s*(?:pcs?|pieces?)`,
+      flags: 'i',
+      type: 'quantity',
+      format: '{1} pcs',
+    },
+    {
+      name: 'size_prefix',
+      regex: String.raw`^(lg|sm|med)\s+`,
+      flags: 'i',
+      type: 'size',
+      format: '{1|size_expand}',
+    },
+    {
+      name: 'strength_pattern',
+      regex: String.raw`(single|double|dbl)\s+`,
+      flags: 'i',
+      type: 'strength',
+      format: '{1|strength_expand}',
+    },
+  ],
+  abbreviations: {
+    coke: 'coca-cola',
+    fries: 'french fries',
+  },
+};
+
+// Create mock function with proper typing
+const mockReadFileSync = jest.fn<(path: string, encoding: string) => string>(() => JSON.stringify(validConfig));
+
+// Mock fs module using unstable_mockModule for ESM
+jest.unstable_mockModule('fs', () => ({
+  readFileSync: mockReadFileSync,
+}));
+
+// Dynamic imports after mock setup
+const {
   loadVariationPatterns,
   initializePatterns,
   getVariationPatterns,
   getAbbreviationMap,
-} from './variation-patterns.js';
-
-// Mock fs module
-jest.mock('fs', () => ({
-  readFileSync: jest.fn(),
-}));
-
-import { readFileSync } from 'fs';
-const mockReadFileSync = readFileSync as jest.MockedFunction<typeof readFileSync>;
+} = await import('./variation-patterns.js');
 
 describe('variation-patterns', () => {
-  const validConfig = {
-    patterns: [
-      {
-        name: 'quantity_pcs',
-        regex: '(\\d+)\\s*(?:pcs?|pieces?)',
-        flags: 'i',
-        type: 'quantity',
-        format: '{1} pcs',
-      },
-      {
-        name: 'size_prefix',
-        regex: '^(lg|sm|med)\\s+',
-        flags: 'i',
-        type: 'size',
-        format: '{1|size_expand}',
-      },
-      {
-        name: 'strength_pattern',
-        regex: '(single|double|dbl)\\s+',
-        flags: 'i',
-        type: 'strength',
-        format: '{1|strength_expand}',
-      },
-    ],
-    abbreviations: {
-      coke: 'coca-cola',
-      fries: 'french fries',
-    },
-  };
-
   beforeEach(() => {
     jest.clearAllMocks();
+    mockReadFileSync.mockReturnValue(JSON.stringify(validConfig));
   });
 
   describe('loadVariationPatterns', () => {
     it('loads and validates valid config', () => {
-      mockReadFileSync.mockReturnValue(JSON.stringify(validConfig));
-
       const result = loadVariationPatterns('/fake/path.json');
 
       expect(result).toEqual(validConfig);
@@ -82,8 +83,6 @@ describe('variation-patterns', () => {
 
   describe('initializePatterns', () => {
     it('initializes patterns from config file', () => {
-      mockReadFileSync.mockReturnValue(JSON.stringify(validConfig));
-
       initializePatterns('/fake/path.json');
 
       const patterns = getVariationPatterns();
@@ -93,8 +92,6 @@ describe('variation-patterns', () => {
     });
 
     it('compiles regex patterns correctly', () => {
-      mockReadFileSync.mockReturnValue(JSON.stringify(validConfig));
-
       initializePatterns('/fake/path.json');
 
       const patterns = getVariationPatterns();
@@ -103,8 +100,6 @@ describe('variation-patterns', () => {
     });
 
     it('creates format function from template', () => {
-      mockReadFileSync.mockReturnValue(JSON.stringify(validConfig));
-
       initializePatterns('/fake/path.json');
 
       const patterns = getVariationPatterns();
@@ -115,8 +110,6 @@ describe('variation-patterns', () => {
     });
 
     it('applies size_expand transformer', () => {
-      mockReadFileSync.mockReturnValue(JSON.stringify(validConfig));
-
       initializePatterns('/fake/path.json');
 
       const patterns = getVariationPatterns();
@@ -128,8 +121,6 @@ describe('variation-patterns', () => {
     });
 
     it('applies strength_expand transformer', () => {
-      mockReadFileSync.mockReturnValue(JSON.stringify(validConfig));
-
       initializePatterns('/fake/path.json');
 
       const patterns = getVariationPatterns();
@@ -142,17 +133,7 @@ describe('variation-patterns', () => {
   });
 
   describe('getVariationPatterns', () => {
-    it('throws error if not initialized', () => {
-      // Reset module state by reinitializing with invalid then throwing
-      jest.resetModules();
-
-      // This test assumes the module starts uninitialized
-      // In practice, we'd need to reset the cached state
-    });
-
     it('returns cached patterns after initialization', () => {
-      mockReadFileSync.mockReturnValue(JSON.stringify(validConfig));
-
       initializePatterns('/fake/path.json');
 
       const patterns1 = getVariationPatterns();
@@ -164,8 +145,6 @@ describe('variation-patterns', () => {
 
   describe('getAbbreviationMap', () => {
     it('returns abbreviation map after initialization', () => {
-      mockReadFileSync.mockReturnValue(JSON.stringify(validConfig));
-
       initializePatterns('/fake/path.json');
 
       const abbreviations = getAbbreviationMap();
@@ -173,8 +152,6 @@ describe('variation-patterns', () => {
     });
 
     it('returns cached abbreviations', () => {
-      mockReadFileSync.mockReturnValue(JSON.stringify(validConfig));
-
       initializePatterns('/fake/path.json');
 
       const abbr1 = getAbbreviationMap();
@@ -207,8 +184,6 @@ describe('variation-patterns', () => {
     });
 
     it('size_expand handles unknown sizes', () => {
-      mockReadFileSync.mockReturnValue(JSON.stringify(validConfig));
-
       initializePatterns('/fake/path.json');
 
       const patterns = getVariationPatterns();
@@ -223,8 +198,6 @@ describe('variation-patterns', () => {
     });
 
     it('strength_expand handles unknown strengths', () => {
-      mockReadFileSync.mockReturnValue(JSON.stringify(validConfig));
-
       initializePatterns('/fake/path.json');
 
       const patterns = getVariationPatterns();

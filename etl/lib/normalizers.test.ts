@@ -1,5 +1,45 @@
-import { describe, it, expect, beforeEach } from '@jest/globals';
-import {
+import { jest, describe, it, expect, beforeAll } from '@jest/globals';
+import type { DbProduct } from './types.js';
+
+// Create test fixture for variation patterns
+const testPatternsConfig = {
+  patterns: [
+    {
+      name: 'quantity_pcs',
+      regex: String.raw`(\d+)\s*(?:pcs?|pieces?)`,
+      flags: 'i',
+      type: 'quantity' as const,
+      format: '{1} pcs',
+    },
+    {
+      name: 'size_prefix',
+      regex: String.raw`^(lg|sm|med)\s+`,
+      flags: 'i',
+      type: 'size' as const,
+      format: '{1|size_expand}',
+    },
+    {
+      name: 'size_suffix',
+      regex: String.raw`\s*[-–]\s*(small|medium|large|lg|sm|med)$`,
+      flags: 'i',
+      type: 'size' as const,
+      format: '{1|size_expand}',
+    },
+  ],
+  abbreviations: {
+    coke: 'coca-cola',
+    fries: 'french fries',
+  },
+};
+
+// Mock fs module using unstable_mockModule for ESM
+jest.unstable_mockModule('fs', () => ({
+  readFileSync: jest.fn(() => JSON.stringify(testPatternsConfig)),
+}));
+
+// Dynamic imports after mock setup
+const { initializePatterns } = await import('./variation-patterns.js');
+const {
   extractVariation,
   normalizeVariationName,
   expandAbbreviation,
@@ -14,48 +54,10 @@ import {
   mapSquareChannel,
   normalizePaymentType,
   normalizeCardBrand,
-} from './normalizers.js';
-import { initializePatterns } from './variation-patterns.js';
-import type { DbProduct } from './types.js';
-
-// Create test fixture for variation patterns
-const testPatternsConfig = {
-  patterns: [
-    {
-      name: 'quantity_pcs',
-      regex: '(\\d+)\\s*(?:pcs?|pieces?)',
-      flags: 'i',
-      type: 'quantity' as const,
-      format: '{1} pcs',
-    },
-    {
-      name: 'size_prefix',
-      regex: '^(lg|sm|med)\\s+',
-      flags: 'i',
-      type: 'size' as const,
-      format: '{1|size_expand}',
-    },
-    {
-      name: 'size_suffix',
-      regex: '\\s*[-–]\\s*(small|medium|large|lg|sm|med)$',
-      flags: 'i',
-      type: 'size' as const,
-      format: '{1|size_expand}',
-    },
-  ],
-  abbreviations: {
-    coke: 'coca-cola',
-    fries: 'french fries',
-  },
-};
-
-// Mock fs module
-jest.mock('fs', () => ({
-  readFileSync: jest.fn(() => JSON.stringify(testPatternsConfig)),
-}));
+} = await import('./normalizers.js');
 
 describe('normalizers', () => {
-  beforeEach(() => {
+  beforeAll(() => {
     // Initialize patterns before tests that depend on them
     initializePatterns('/fake/path.json');
   });

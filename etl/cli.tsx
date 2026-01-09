@@ -300,7 +300,7 @@ function App() {
         <Box flexDirection="column">
           <ErrorBox
             title="Missing environment variables"
-            message={`The following variables must be set in your .env file:\n\n${missingEnvVars.map(v => `  • ${v}`).join('\n')}\n\nPlease add them and restart the CLI.`}
+            message={'The following variables must be set in your .env file:\n\n  • ' + missingEnvVars.join('\n  • ') + '\n\nPlease add them and restart the CLI.'}
           />
         </Box>
       )}
@@ -340,7 +340,7 @@ function App() {
         <Box flexDirection="column">
           <ErrorBox
             title="Validation failed"
-            message={`The data files do not match the expected schema:\n\n${validationErrors.map(e => `  • ${e}`).join('\n')}\n\nPlease fix the data files and try again.`}
+            message={'The data files do not match the expected schema:\n\n  • ' + validationErrors.join('\n  • ') + '\n\nPlease fix the data files and try again.'}
           />
           <Box marginTop={2}>
             <Text dimColor>Press Ctrl+C to exit</Text>

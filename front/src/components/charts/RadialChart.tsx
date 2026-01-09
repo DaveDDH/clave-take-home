@@ -33,7 +33,7 @@ export function RadialChart({ data, className }: RadialChartProps) {
 
   const chartConfig = data.reduce<ChartConfig>((acc, item, index) => {
     acc[item.name] = {
-      label: capitalizeWords(item.name.replaceAll(/_/g, ' ')),
+      label: capitalizeWords(item.name.replaceAll('_', ' ')),
       color: COLORS[index % COLORS.length],
     };
     return acc;

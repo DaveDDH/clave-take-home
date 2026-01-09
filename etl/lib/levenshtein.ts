@@ -75,7 +75,7 @@ export function levenshtein(
       const ins = curr[i - 1] + 1; // insert b[j-1]
       const sub = prev[i - 1] + cost;
 
-      const v = del < ins ? (del < sub ? del : sub) : ins < sub ? ins : sub;
+      const v = Math.min(del, ins, sub);
       curr[i] = v;
 
       if (v < rowMin) rowMin = v;

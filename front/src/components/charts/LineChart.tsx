@@ -44,7 +44,7 @@ export function LineChart({ data, xKey, yKey, className }: LineChartProps) {
 
     yKeys.forEach((key, index) => {
       config[key] = {
-        label: capitalizeWords(key.replaceAll(/_/g, ' ')),
+        label: capitalizeWords(key.replaceAll('_', ' ')),
         color: colors[index % colors.length],
       };
     });

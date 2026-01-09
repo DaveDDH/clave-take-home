@@ -1,38 +1,39 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
-import {
+
+const validConfig = {
+  description: 'Test product groups',
+  groups: [
+    { base_name: 'Wings', suffix: 'wings' },
+    { base_name: 'Pizza', suffix: 'pizza' },
+    { base_name: 'Coffee', keywords: ['coffee', 'espresso', 'latte', 'cappuccino'] },
+    { base_name: 'Burger', suffix: 'burger', keywords: ['hamburger'] },
+  ],
+};
+
+// Create mock function with proper typing
+const mockReadFileSync = jest.fn<(path: string, encoding: string) => string>(() => JSON.stringify(validConfig));
+
+// Mock fs module using unstable_mockModule for ESM
+jest.unstable_mockModule('fs', () => ({
+  readFileSync: mockReadFileSync,
+}));
+
+// Dynamic imports after mock setup
+const {
   loadProductGroups,
   initializeProductGroups,
   getProductGroups,
   matchProductToGroup,
-} from './product-groups.js';
-
-// Mock fs module
-jest.mock('fs', () => ({
-  readFileSync: jest.fn(),
-}));
-
-import { readFileSync } from 'fs';
-const mockReadFileSync = readFileSync as jest.MockedFunction<typeof readFileSync>;
+} = await import('./product-groups.js');
 
 describe('product-groups', () => {
-  const validConfig = {
-    description: 'Test product groups',
-    groups: [
-      { base_name: 'Wings', suffix: 'wings' },
-      { base_name: 'Pizza', suffix: 'pizza' },
-      { base_name: 'Coffee', keywords: ['coffee', 'espresso', 'latte', 'cappuccino'] },
-      { base_name: 'Burger', suffix: 'burger', keywords: ['hamburger'] },
-    ],
-  };
-
   beforeEach(() => {
     jest.clearAllMocks();
+    mockReadFileSync.mockReturnValue(JSON.stringify(validConfig));
   });
 
   describe('loadProductGroups', () => {
     it('loads and validates valid config', () => {
-      mockReadFileSync.mockReturnValue(JSON.stringify(validConfig));
-
       const result = loadProductGroups('/fake/path.json');
 
       expect(result).toEqual(validConfig);
@@ -62,8 +63,6 @@ describe('product-groups', () => {
 
   describe('initializeProductGroups', () => {
     it('initializes groups from config file', () => {
-      mockReadFileSync.mockReturnValue(JSON.stringify(validConfig));
-
       initializeProductGroups('/fake/path.json');
 
       const groups = getProductGroups();
@@ -71,8 +70,6 @@ describe('product-groups', () => {
     });
 
     it('compiles groups with lowercase suffix', () => {
-      mockReadFileSync.mockReturnValue(JSON.stringify(validConfig));
-
       initializeProductGroups('/fake/path.json');
 
       const groups = getProductGroups();
@@ -81,8 +78,6 @@ describe('product-groups', () => {
     });
 
     it('compiles groups with lowercase keywords', () => {
-      mockReadFileSync.mockReturnValue(JSON.stringify(validConfig));
-
       initializeProductGroups('/fake/path.json');
 
       const groups = getProductGroups();
@@ -93,14 +88,7 @@ describe('product-groups', () => {
   });
 
   describe('getProductGroups', () => {
-    it('throws error if not initialized', () => {
-      // This would require resetting module state
-      // In practice, the module is typically initialized
-    });
-
     it('returns cached groups after initialization', () => {
-      mockReadFileSync.mockReturnValue(JSON.stringify(validConfig));
-
       initializeProductGroups('/fake/path.json');
 
       const groups1 = getProductGroups();
@@ -112,7 +100,6 @@ describe('product-groups', () => {
 
   describe('matchProductToGroup', () => {
     beforeEach(() => {
-      mockReadFileSync.mockReturnValue(JSON.stringify(validConfig));
       initializeProductGroups('/fake/path.json');
     });
 
@@ -222,7 +209,6 @@ describe('product-groups', () => {
 
   describe('extractVariation edge cases', () => {
     beforeEach(() => {
-      mockReadFileSync.mockReturnValue(JSON.stringify(validConfig));
       initializeProductGroups('/fake/path.json');
     });
 

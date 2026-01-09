@@ -29,7 +29,7 @@ export function DataTable({ data, columns, className }: DataTableProps) {
 
   const formatHeader = (key: string): string => {
     return key
-      .replaceAll(/_/g, ' ')
+      .replaceAll('_', ' ')
       .replaceAll(/\b\w/g, (c) => c.toUpperCase());
   };
 

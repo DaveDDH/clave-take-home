@@ -22,7 +22,7 @@ export function AreaChart({ data, xKey, yKey, className }: AreaChartProps) {
   const chartConfig = useMemo<ChartConfig>(
     () => ({
       [yKey]: {
-        label: capitalizeWords(yKey.replaceAll(/_/g, ' ')),
+        label: capitalizeWords(yKey.replaceAll('_', ' ')),
         color: 'var(--chart-2)',
       },
     }),

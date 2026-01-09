@@ -10,8 +10,8 @@ describe('buildLocations', () => {
     square: {
       locations: { locations: squareLocations },
       catalog: { objects: [] },
-      orders: { orders: [], cursor: null },
-      payments: { payments: [], cursor: null },
+      orders: { orders: [] },
+      payments: { payments: [] },
     },
   });
 

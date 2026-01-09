@@ -3,7 +3,7 @@
  * Groups are used for combining similar products into base product + variations.
  */
 
-import { readFileSync } from 'fs';
+import { readFileSync } from 'node:fs';
 import { ProductGroupsConfigSchema, type ProductGroupsConfig, type ProductGroup } from './schemas/index.js';
 import { levenshtein } from './levenshtein.js';
 
@@ -88,7 +88,7 @@ export function matchProductToGroup(productName: string): {
   for (const group of cachedGroups) {
     // Check suffix match (product contains the suffix word)
     if (group.suffix) {
-      const suffixPattern = new RegExp(`\\b${escapeRegex(group.suffix)}\\b`, 'i');
+      const suffixPattern = new RegExp(String.raw`\b${escapeRegex(group.suffix)}\b`, 'i');
       if (suffixPattern.test(nameLower)) {
         // Extract variation: everything before the suffix
         const variation = extractVariationFromSuffix(productName, group.suffix);
@@ -188,7 +188,7 @@ export function matchProductToGroup(productName: string): {
  *       "Wings" with suffix "Wings" → null (it IS the base)
  */
 function extractVariationFromSuffix(productName: string, suffix: string): string | null {
-  const suffixPattern = new RegExp(`\\s*\\b${escapeRegex(suffix)}\\b\\s*$`, 'i');
+  const suffixPattern = new RegExp(String.raw`\s*\b${escapeRegex(suffix)}\b\s*$`, 'i');
   const variation = productName.replace(suffixPattern, '').trim();
 
   // If nothing left after removing suffix, it's the base product
@@ -205,7 +205,7 @@ function extractVariationFromSuffix(productName: string, suffix: string): string
  */
 function extractVariationFromFuzzyMatch(productName: string, matchedWord: string): string | null {
   // Remove the matched word (case-insensitive)
-  const wordPattern = new RegExp(`\\s*\\b${escapeRegex(matchedWord)}\\b\\s*`, 'i');
+  const wordPattern = new RegExp(String.raw`\s*\b${escapeRegex(matchedWord)}\b\s*`, 'i');
   const variation = productName.replace(wordPattern, ' ').trim();
 
   // If nothing left, it's the base product
@@ -220,5 +220,5 @@ function extractVariationFromFuzzyMatch(productName: string, matchedWord: string
  * Escape special regex characters in a string
  */
 function escapeRegex(str: string): string {
-  return str.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return str.replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
 }

@@ -1,4 +1,4 @@
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import type { LocationConfig, DbProductAlias } from '../types.js';
 import type { NormalizedData, SourceData } from './types.js';
 import { buildLocations } from './build-locations.js';

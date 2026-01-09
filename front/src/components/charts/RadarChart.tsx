@@ -30,7 +30,7 @@ export function RadarChart({ data, labelKey, valueKey, className }: RadarChartPr
   const chartConfig = useMemo<ChartConfig>(
     () => ({
       [valueKey]: {
-        label: capitalizeWords(valueKey.replaceAll(/_/g, ' ')),
+        label: capitalizeWords(valueKey.replaceAll('_', ' ')),
         color: 'var(--chart-4)',
       },
     }),

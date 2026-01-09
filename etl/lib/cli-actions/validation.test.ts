@@ -1,29 +1,29 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
-import { runValidation } from './validation.js';
 import type { EnvConfig } from './types.js';
 
-// Mock fs module
-jest.mock('node:fs', () => ({
-  readFileSync: jest.fn(),
+// Create mock functions
+const mockReadFileSync = jest.fn<(path: string, encoding: string) => string>();
+const mockInitializePatterns = jest.fn();
+const mockInitializeProductGroups = jest.fn();
+
+// Mock node:fs module using unstable_mockModule for ESM
+jest.unstable_mockModule('node:fs', () => ({
+  readFileSync: mockReadFileSync,
 }));
 
-// Mock variation-patterns
-jest.mock('../variation-patterns.js', () => ({
-  initializePatterns: jest.fn(),
+jest.unstable_mockModule('../variation-patterns.js', () => ({
+  initializePatterns: mockInitializePatterns,
+  getVariationPatterns: jest.fn(() => []),
+  getAbbreviationMap: jest.fn(() => ({})),
 }));
 
-// Mock product-groups
-jest.mock('../product-groups.js', () => ({
-  initializeProductGroups: jest.fn(),
+jest.unstable_mockModule('../product-groups.js', () => ({
+  initializeProductGroups: mockInitializeProductGroups,
+  getProductGroups: jest.fn(() => []),
 }));
 
-import { readFileSync } from 'node:fs';
-import { initializePatterns } from '../variation-patterns.js';
-import { initializeProductGroups } from '../product-groups.js';
-
-const mockReadFileSync = readFileSync as jest.MockedFunction<typeof readFileSync>;
-const mockInitializePatterns = initializePatterns as jest.MockedFunction<typeof initializePatterns>;
-const mockInitializeProductGroups = initializeProductGroups as jest.MockedFunction<typeof initializeProductGroups>;
+// Dynamic imports after mock setup
+const { runValidation } = await import('./validation.js');
 
 describe('runValidation', () => {
   const mockConfig: EnvConfig = {
@@ -38,11 +38,31 @@ describe('runValidation', () => {
     SQUARE_PAYMENTS_PATH: '/path/to/square-payments.json',
   };
 
-  const validLocationsConfig = { locations: [] };
-  const validVariationPatterns = { patterns: [], abbreviations: {} };
-  const validProductGroups = { groups: [] };
-  const validToastData = { restaurant: { guid: 'r1', name: 'Test' }, locations: [], orders: [] };
-  const validDoorDashData = { merchant: { merchant_id: 'm1', business_name: 'Test', currency: 'USD' }, stores: [], orders: [] };
+  // Valid data - schemas require at least one item in arrays
+  const validLocationsConfig = { locations: [{ name: 'Downtown', toast_id: 't1', doordash_id: 'd1', square_id: 's1' }] };
+  const validVariationPatterns = {
+    patterns: [{ name: 'size', regex: '(sm|med|lg)', type: 'size', format: '{1}' }],
+    abbreviations: {},
+  };
+  const validProductGroups = {
+    groups: [{ base_name: 'Wings', suffix: 'wings' }],
+  };
+  const validToastData = {
+    restaurant: { guid: 'r1', name: 'Test', managementGroupGuid: 'mgmt-1' },
+    locations: [{
+      guid: 'loc-1', name: 'Downtown', timezone: 'America/New_York',
+      address: { line1: '123 Main St', city: 'NYC', state: 'NY', zip: '10001', country: 'US' },
+    }],
+    orders: [],
+  };
+  const validDoorDashData = {
+    merchant: { merchant_id: 'm1', business_name: 'Test', currency: 'USD' },
+    stores: [{
+      store_id: 's1', name: 'Downtown', timezone: 'America/New_York',
+      address: { street: '123 Main St', city: 'NYC', state: 'NY', zip_code: '10001', country: 'US' },
+    }],
+    orders: [],
+  };
   const validSquareLocations = { locations: [] };
   const validSquareCatalog = { objects: [] };
   const validSquareOrders = { orders: [], cursor: null };
@@ -57,7 +77,7 @@ describe('runValidation', () => {
   it('returns success when all files are valid', async () => {
     mockReadFileSync.mockImplementation((path) => {
       const pathStr = path.toString();
-      if (pathStr.includes('locations')) return JSON.stringify(validLocationsConfig);
+      if (pathStr.includes('locations.json')) return JSON.stringify(validLocationsConfig);
       if (pathStr.includes('variations')) return JSON.stringify(validVariationPatterns);
       if (pathStr.includes('products')) return JSON.stringify(validProductGroups);
       if (pathStr.includes('toast')) return JSON.stringify(validToastData);
@@ -78,7 +98,7 @@ describe('runValidation', () => {
   it('initializes patterns after successful validation', async () => {
     mockReadFileSync.mockImplementation((path) => {
       const pathStr = path.toString();
-      if (pathStr.includes('locations')) return JSON.stringify(validLocationsConfig);
+      if (pathStr.includes('locations.json')) return JSON.stringify(validLocationsConfig);
       if (pathStr.includes('variations')) return JSON.stringify(validVariationPatterns);
       if (pathStr.includes('products')) return JSON.stringify(validProductGroups);
       if (pathStr.includes('toast')) return JSON.stringify(validToastData);
@@ -99,7 +119,15 @@ describe('runValidation', () => {
   it('returns error for invalid JSON', async () => {
     mockReadFileSync.mockImplementation((path) => {
       const pathStr = path.toString();
-      if (pathStr.includes('locations')) return 'not valid json';
+      if (pathStr.includes('locations.json')) return 'not valid json';
+      if (pathStr.includes('variations')) return JSON.stringify(validVariationPatterns);
+      if (pathStr.includes('products')) return JSON.stringify(validProductGroups);
+      if (pathStr.includes('toast')) return JSON.stringify(validToastData);
+      if (pathStr.includes('doordash')) return JSON.stringify(validDoorDashData);
+      if (pathStr.includes('square-locations')) return JSON.stringify(validSquareLocations);
+      if (pathStr.includes('square-catalog')) return JSON.stringify(validSquareCatalog);
+      if (pathStr.includes('square-orders')) return JSON.stringify(validSquareOrders);
+      if (pathStr.includes('square-payments')) return JSON.stringify(validSquarePayments);
       return '{}';
     });
 
@@ -125,7 +153,7 @@ describe('runValidation', () => {
   it('returns error when initializePatterns fails', async () => {
     mockReadFileSync.mockImplementation((path) => {
       const pathStr = path.toString();
-      if (pathStr.includes('locations')) return JSON.stringify(validLocationsConfig);
+      if (pathStr.includes('locations.json')) return JSON.stringify(validLocationsConfig);
       if (pathStr.includes('variations')) return JSON.stringify(validVariationPatterns);
       if (pathStr.includes('products')) return JSON.stringify(validProductGroups);
       if (pathStr.includes('toast')) return JSON.stringify(validToastData);
@@ -149,7 +177,7 @@ describe('runValidation', () => {
   it('returns error when initializeProductGroups fails', async () => {
     mockReadFileSync.mockImplementation((path) => {
       const pathStr = path.toString();
-      if (pathStr.includes('locations')) return JSON.stringify(validLocationsConfig);
+      if (pathStr.includes('locations.json')) return JSON.stringify(validLocationsConfig);
       if (pathStr.includes('variations')) return JSON.stringify(validVariationPatterns);
       if (pathStr.includes('products')) return JSON.stringify(validProductGroups);
       if (pathStr.includes('toast')) return JSON.stringify(validToastData);
@@ -172,14 +200,14 @@ describe('runValidation', () => {
 
   it('returns schema validation errors with path information', async () => {
     const invalidToastData = {
-      restaurant: { guid: 'r1' }, // missing 'name'
+      restaurant: { guid: 'r1' }, // missing 'name' and 'managementGroupGuid'
       locations: [],
       orders: [],
     };
 
     mockReadFileSync.mockImplementation((path) => {
       const pathStr = path.toString();
-      if (pathStr.includes('locations')) return JSON.stringify(validLocationsConfig);
+      if (pathStr.includes('locations.json')) return JSON.stringify(validLocationsConfig);
       if (pathStr.includes('variations')) return JSON.stringify(validVariationPatterns);
       if (pathStr.includes('products')) return JSON.stringify(validProductGroups);
       if (pathStr.includes('toast')) return JSON.stringify(invalidToastData);
@@ -200,7 +228,7 @@ describe('runValidation', () => {
   it('reports multiple validation errors at once', async () => {
     mockReadFileSync.mockImplementation((path) => {
       const pathStr = path.toString();
-      if (pathStr.includes('locations')) return 'invalid';
+      if (pathStr.includes('locations.json')) return 'invalid';
       if (pathStr.includes('variations')) return 'invalid';
       if (pathStr.includes('products')) return JSON.stringify(validProductGroups);
       if (pathStr.includes('toast')) return JSON.stringify(validToastData);

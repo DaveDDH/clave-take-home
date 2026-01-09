@@ -80,7 +80,9 @@ describe('ToastDataSchema', () => {
   });
 
   it('validates payment with null card details', () => {
-    const data = JSON.parse(JSON.stringify(validToastData));
+    const data = structuredClone(validToastData) as typeof validToastData & {
+      orders: Array<{ checks: Array<{ payments: Array<{ cardType: string | null; last4Digits: string | null }> }> }>;
+    };
     data.orders[0].checks[0].payments[0].cardType = null;
     data.orders[0].checks[0].payments[0].last4Digits = null;
     const result = ToastDataSchema.safeParse(data);

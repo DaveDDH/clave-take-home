@@ -3,7 +3,7 @@
  * Patterns are used for extracting variations from product names.
  */
 
-import { readFileSync } from 'fs';
+import { readFileSync } from 'node:fs';
 import { VariationPatternsConfigSchema, type VariationPatternsConfig, type VariationPattern } from './schemas/index.js';
 
 export interface CompiledVariationPattern {

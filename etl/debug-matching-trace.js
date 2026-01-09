@@ -54,7 +54,7 @@ function getSimilarityThreshold(wordLength) {
 }
 
 function escapeRegex(str) {
-  return str.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return str.replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
 }
 
 // Simulate matchProductToGroup logic
@@ -69,7 +69,7 @@ function matchProductToGroup(productName, verbose = false) {
 
     // Check suffix match
     if (suffix) {
-      const suffixPattern = new RegExp(`\\b${escapeRegex(suffix)}\\b`, 'i');
+      const suffixPattern = new RegExp(String.raw`\b${escapeRegex(suffix)}\b`, 'i');
       if (suffixPattern.test(nameLower)) {
         logs.push(`  MATCH (suffix exact): "${productName}" contains word "${suffix}" -> ${baseName}`);
         return { match: baseName, reason: `suffix exact match: "${suffix}"`, logs };

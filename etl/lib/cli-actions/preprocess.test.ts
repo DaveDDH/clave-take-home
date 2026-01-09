@@ -1,29 +1,39 @@
-import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
-import {
+import { jest, describe, it, expect, beforeEach } from '@jest/globals';
+import type { EnvConfig } from './types.js';
+
+// Create mock functions
+const mockReadFileSync = jest.fn<(path: string, encoding: string) => string>();
+const mockWriteFileSync = jest.fn();
+const mockPreprocessData = jest.fn();
+
+// Mock node:fs module using unstable_mockModule for ESM
+jest.unstable_mockModule('node:fs', () => ({
+  readFileSync: mockReadFileSync,
+  writeFileSync: mockWriteFileSync,
+}));
+
+jest.unstable_mockModule('../preprocessor/index.js', () => ({
+  preprocessData: mockPreprocessData,
+}));
+
+jest.unstable_mockModule('../variation-patterns.js', () => ({
+  initializePatterns: jest.fn(),
+  getVariationPatterns: jest.fn(() => []),
+  getAbbreviationMap: jest.fn(() => ({})),
+}));
+
+jest.unstable_mockModule('../product-groups.js', () => ({
+  initializeProductGroups: jest.fn(),
+  getProductGroups: jest.fn(() => []),
+}));
+
+// Dynamic imports after mock setup
+const {
   runPreprocess,
   savePreprocessedData,
   getCachedSourceData,
   getCachedPreprocessedData,
-} from './preprocess.js';
-import type { EnvConfig } from './types.js';
-
-// Mock fs module
-jest.mock('node:fs', () => ({
-  readFileSync: jest.fn(),
-  writeFileSync: jest.fn(),
-}));
-
-// Mock preprocessor
-jest.mock('../preprocessor/index.js', () => ({
-  preprocessData: jest.fn(),
-}));
-
-import { readFileSync, writeFileSync } from 'node:fs';
-import { preprocessData } from '../preprocessor/index.js';
-
-const mockReadFileSync = readFileSync as jest.MockedFunction<typeof readFileSync>;
-const mockWriteFileSync = writeFileSync as jest.MockedFunction<typeof writeFileSync>;
-const mockPreprocessData = preprocessData as jest.MockedFunction<typeof preprocessData>;
+} = await import('./preprocess.js');
 
 describe('preprocess', () => {
   const mockConfig: EnvConfig = {
@@ -43,8 +53,8 @@ describe('preprocess', () => {
   const validDoorDashData = { merchant: { merchant_id: 'm1', business_name: 'Test', currency: 'USD' }, stores: [], orders: [] };
   const validSquareLocations = { locations: [] };
   const validSquareCatalog = { objects: [] };
-  const validSquareOrders = { orders: [], cursor: null };
-  const validSquarePayments = { payments: [], cursor: null };
+  const validSquareOrders = { orders: [] };
+  const validSquarePayments = { payments: [] };
 
   const mockNormalizedData = {
     locations: [],
@@ -215,8 +225,6 @@ describe('preprocess', () => {
     });
 
     it('runs preprocess if no cached data exists', async () => {
-      // Reset the module to clear cache - this is tricky with ESM
-      // Instead we'll just verify writeFileSync is called
       mockReadFileSync.mockImplementation((path) => {
         const pathStr = path.toString();
         if (pathStr.includes('locations')) return JSON.stringify(validLocationsConfig);

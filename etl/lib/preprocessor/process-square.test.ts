@@ -1,12 +1,14 @@
 import { jest, describe, it, expect } from '@jest/globals';
-import { processSquareOrders } from './process-square.js';
 import type { SourceData } from './types.js';
 
-// Mock variation-patterns
-jest.mock('../variation-patterns.js', () => ({
+// Mock variation-patterns module using unstable_mockModule for ESM
+jest.unstable_mockModule('../variation-patterns.js', () => ({
   getVariationPatterns: jest.fn(() => []),
   getAbbreviationMap: jest.fn(() => ({})),
 }));
+
+// Dynamic import after mock setup
+const { processSquareOrders } = await import('./process-square.js');
 
 describe('processSquareOrders', () => {
   const createMockSquareData = (): SourceData['square'] => ({
@@ -40,7 +42,6 @@ describe('processSquareOrders', () => {
         updated_at: '2024-01-15T12:30:00Z',
         closed_at: '2024-01-15T12:30:00Z',
         state: 'COMPLETED',
-        version: 1,
         line_items: [{
           uid: 'li-1',
           catalog_object_id: 'var-1',
@@ -54,7 +55,6 @@ describe('processSquareOrders', () => {
         total_tax_money: { amount: 80, currency: 'USD' },
         total_tip_money: { amount: 0, currency: 'USD' },
       }],
-      cursor: null,
     },
     payments: {
       payments: [{
@@ -62,7 +62,6 @@ describe('processSquareOrders', () => {
         order_id: 'order-1',
         location_id: 'loc-1',
         created_at: '2024-01-15T12:30:00Z',
-        updated_at: '2024-01-15T12:30:00Z',
         amount_money: { amount: 999, currency: 'USD' },
         tip_money: { amount: 0, currency: 'USD' },
         total_money: { amount: 999, currency: 'USD' },
@@ -74,7 +73,6 @@ describe('processSquareOrders', () => {
           card: { card_brand: 'VISA', last_4: '4242' },
         },
       }],
-      cursor: null,
     },
   });
 

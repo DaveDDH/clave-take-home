@@ -1,17 +1,15 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
+import * as variationPatterns from '../variation-patterns.js';
+import * as productGroups from '../product-groups.js';
 import { buildUnifiedCatalog } from './build-catalog.js';
 import type { SourceData } from './types.js';
 
-// Mock variation-patterns
-jest.mock('../variation-patterns.js', () => ({
-  getVariationPatterns: jest.fn(() => []),
-  getAbbreviationMap: jest.fn(() => ({})),
-}));
+// Spy on variation-patterns methods
+jest.spyOn(variationPatterns, 'getVariationPatterns').mockReturnValue([]);
+jest.spyOn(variationPatterns, 'getAbbreviationMap').mockReturnValue({});
 
-// Mock product-groups
-jest.mock('../product-groups.js', () => ({
-  matchProductToGroup: jest.fn(() => null),
-}));
+// Spy on product-groups methods
+jest.spyOn(productGroups, 'matchProductToGroup').mockReturnValue(null);
 
 describe('buildUnifiedCatalog', () => {
   const createEmptySources = (): SourceData => ({
