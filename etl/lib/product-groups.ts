@@ -70,15 +70,140 @@ export function getProductGroups(): CompiledProductGroup[] {
   return cachedGroups;
 }
 
+interface MatchResult {
+  group: CompiledProductGroup;
+  baseName: string;
+  variationName: string | null;
+}
+
+function isFuzzyMatchValidForTypo(word: string, target: string, distance: number): boolean {
+  if (distance === 0) return false;
+  // Reject same-length words with small distance for SHORT words (<=6 chars)
+  // Short words have more "minimal pairs" (different words that differ by 1 char)
+  const shorterLength = Math.min(word.length, target.length);
+  if (word.length === target.length && shorterLength <= 6) {
+    return false;
+  }
+  return true;
+}
+
+function tryExactSuffixMatch(
+  nameLower: string,
+  productName: string,
+  group: CompiledProductGroup
+): MatchResult | null {
+  if (!group.suffix) return null;
+
+  const suffixPattern = new RegExp(String.raw`\b${escapeRegex(group.suffix)}\b`, 'i');
+  if (!suffixPattern.test(nameLower)) return null;
+
+  return {
+    group,
+    baseName: group.baseName,
+    variationName: extractVariationFromSuffix(productName, group.suffix),
+  };
+}
+
+function tryFuzzySuffixMatch(
+  nameLower: string,
+  productName: string,
+  group: CompiledProductGroup
+): MatchResult | null {
+  if (!group.suffix || group.suffix.includes(' ')) return null;
+
+  const nameWords = nameLower.split(/\s+/);
+  for (const word of nameWords) {
+    const threshold = getSimilarityThreshold(Math.min(word.length, group.suffix.length));
+    const distance = levenshtein(word, group.suffix);
+
+    if (distance <= threshold && isFuzzyMatchValidForTypo(word, group.suffix, distance)) {
+      return {
+        group,
+        baseName: group.baseName,
+        variationName: extractVariationFromFuzzyMatch(productName, word),
+      };
+    }
+  }
+  return null;
+}
+
+function tryExactKeywordMatch(
+  nameLower: string,
+  productName: string,
+  group: CompiledProductGroup,
+  keyword: string
+): MatchResult | null {
+  if (nameLower !== keyword && !nameLower.includes(keyword)) return null;
+
+  return {
+    group,
+    baseName: group.baseName,
+    variationName: nameLower === group.baseName.toLowerCase() ? null : productName.trim(),
+  };
+}
+
+function tryFuzzyKeywordMatch(
+  nameLower: string,
+  productName: string,
+  group: CompiledProductGroup,
+  keyword: string
+): MatchResult | null {
+  if (keyword.includes(' ')) return null;
+
+  const nameWords = nameLower.split(/\s+/);
+  for (const word of nameWords) {
+    const threshold = getSimilarityThreshold(Math.min(word.length, keyword.length));
+    const distance = levenshtein(word, keyword);
+
+    if (distance <= threshold && isFuzzyMatchValidForTypo(word, keyword, distance)) {
+      return {
+        group,
+        baseName: group.baseName,
+        variationName: nameLower === group.baseName.toLowerCase() ? null : productName.trim(),
+      };
+    }
+  }
+  return null;
+}
+
+function tryKeywordMatch(
+  nameLower: string,
+  productName: string,
+  group: CompiledProductGroup
+): MatchResult | null {
+  if (!group.keywords) return null;
+
+  for (const keyword of group.keywords) {
+    const exactMatch = tryExactKeywordMatch(nameLower, productName, group, keyword);
+    if (exactMatch) return exactMatch;
+
+    const fuzzyMatch = tryFuzzyKeywordMatch(nameLower, productName, group, keyword);
+    if (fuzzyMatch) return fuzzyMatch;
+  }
+  return null;
+}
+
+function matchGroupToProduct(
+  nameLower: string,
+  productName: string,
+  group: CompiledProductGroup
+): MatchResult | null {
+  // Try suffix matches first
+  const exactSuffix = tryExactSuffixMatch(nameLower, productName, group);
+  if (exactSuffix) return exactSuffix;
+
+  const fuzzySuffix = tryFuzzySuffixMatch(nameLower, productName, group);
+  if (fuzzySuffix) return fuzzySuffix;
+
+  // Try keyword matches
+  return tryKeywordMatch(nameLower, productName, group);
+}
+
 /**
  * Match a product name to a group.
  * Returns the group and extracted variation name, or null if no match.
  */
-export function matchProductToGroup(productName: string): {
-  group: CompiledProductGroup;
-  baseName: string;
-  variationName: string | null;
-} | null {
+export function matchProductToGroup(productName: string): MatchResult | null {
   if (!cachedGroups) {
     throw new Error('Product groups not initialized. Call initializeProductGroups() first.');
   }
@@ -86,97 +211,8 @@ export function matchProductToGroup(productName: string): {
   const nameLower = productName.toLowerCase().trim();
 
   for (const group of cachedGroups) {
-    // Check suffix match (product contains the suffix word)
-    if (group.suffix) {
-      const suffixPattern = new RegExp(String.raw`\b${escapeRegex(group.suffix)}\b`, 'i');
-      if (suffixPattern.test(nameLower)) {
-        // Extract variation: everything before the suffix
-        const variation = extractVariationFromSuffix(productName, group.suffix);
-        return {
-          group,
-          baseName: group.baseName,
-          variationName: variation,
-        };
-      }
-
-      // Fuzzy suffix match for single-word suffixes
-      // This catches typos like "Wngs" → "Wings", "Piza" → "Pizza"
-      // Uses length-based threshold to prevent false matches on short words
-      if (!group.suffix.includes(' ')) {
-        const nameWords = nameLower.split(/\s+/);
-        for (const word of nameWords) {
-          const threshold = getSimilarityThreshold(Math.min(word.length, group.suffix.length));
-          const distance = levenshtein(word, group.suffix);
-
-          if (distance <= threshold && distance > 0) {
-            // Additional check: reject same-length words with small distance for SHORT words
-            // Short words have more "minimal pairs" (different words that differ by 1 char)
-            // e.g., "rings" vs "wings" (both 5 chars, distance 1) = different words
-            // e.g., "wngs" vs "wings" (4 vs 5 chars, distance 1) = likely typo
-            // But for longer words (>6 chars), typos are more common:
-            // e.g., "expresso" vs "espresso" (both 8 chars, distance 1) = typo
-            const shorterLength = Math.min(word.length, group.suffix.length);
-            if (word.length === group.suffix.length && shorterLength <= 6) {
-              continue; // Skip - same length short word suggests different word, not typo
-            }
-
-            // Extract variation by removing the fuzzy-matched word
-            const variation = extractVariationFromFuzzyMatch(productName, word);
-            return {
-              group,
-              baseName: group.baseName,
-              variationName: variation,
-            };
-          }
-        }
-      }
-    }
-
-    // Check keyword match
-    if (group.keywords) {
-      for (const keyword of group.keywords) {
-        // Exact or substring match
-        if (nameLower === keyword || nameLower.includes(keyword)) {
-          const variation = nameLower === group.baseName.toLowerCase()
-            ? null
-            : productName.trim();
-          return {
-            group,
-            baseName: group.baseName,
-            variationName: variation,
-          };
-        }
-
-        // Fuzzy match using Levenshtein for single-word keywords
-        // This catches typos like "expresso" → "espresso", "coffe" → "coffee"
-        // Uses length-based threshold to prevent false matches on short words
-        if (!keyword.includes(' ')) {
-          const nameWords = nameLower.split(/\s+/);
-          for (const word of nameWords) {
-            const threshold = getSimilarityThreshold(Math.min(word.length, keyword.length));
-            const distance = levenshtein(word, keyword);
-
-            if (distance <= threshold && distance > 0) {
-              // Additional check: reject same-length words with small distance for SHORT words
-              // But allow for longer words where typos are more common
-              const shorterLength = Math.min(word.length, keyword.length);
-              if (word.length === keyword.length && shorterLength <= 6) {
-                continue; // Skip - same length short word suggests different word, not typo
-              }
-
-              const variation = nameLower === group.baseName.toLowerCase()
-                ? null
-                : productName.trim();
-              return {
-                group,
-                baseName: group.baseName,
-                variationName: variation,
-              };
-            }
-          }
-        }
-      }
-    }
+    const match = matchGroupToProduct(nameLower, productName, group);
+    if (match) return match;
   }
 
   return null;

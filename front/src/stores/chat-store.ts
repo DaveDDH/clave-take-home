@@ -191,9 +191,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
     const reasoningLevel = get().reasoningLevel;
 
     // Create pending conversation optimistically if this is a new conversation
-    const pendingConversation = !currentConversationId
-      ? { tempId: crypto.randomUUID(), preview: trimmedContent.slice(0, 50) }
-      : null;
+    const pendingConversation = currentConversationId
+      ? null
+      : { tempId: crypto.randomUUID(), preview: trimmedContent.slice(0, 50) };
 
     const userMessage: Message = {
       id: crypto.randomUUID(),

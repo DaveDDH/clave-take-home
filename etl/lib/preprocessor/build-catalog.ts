@@ -12,13 +12,14 @@ import type { SourceData, RawProductItem, ProductGroupResult, CatalogResult } fr
 
 // Helper to pick the "best" canonical name (prefer properly capitalized, no typos)
 function pickCanonicalName(names: string[]): string {
-  return names.sort((a, b) => {
-    const aProper = a[0] === a[0].toUpperCase();
-    const bProper = b[0] === b[0].toUpperCase();
+  const sorted = [...names].sort((a: string, b: string) => {
+    const aProper = a.length > 0 && a[0] === a[0].toUpperCase();
+    const bProper = b.length > 0 && b[0] === b[0].toUpperCase();
     if (aProper && !bProper) return -1;
     if (!aProper && bProper) return 1;
     return b.length - a.length;
-  })[0];
+  });
+  return sorted[0];
 }
 
 function collectFromSquare(

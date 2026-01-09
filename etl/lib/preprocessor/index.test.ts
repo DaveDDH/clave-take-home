@@ -1,16 +1,19 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
-import * as variationPatterns from '../variation-patterns.js';
-import * as productGroups from '../product-groups.js';
-import { preprocessData } from './index.js';
 import type { SourceData } from './types.js';
 import type { LocationConfig } from '../types.js';
 
-// Spy on variation-patterns methods
-jest.spyOn(variationPatterns, 'getVariationPatterns').mockReturnValue([]);
-jest.spyOn(variationPatterns, 'getAbbreviationMap').mockReturnValue({});
+// Mock modules using unstable_mockModule for ESM
+jest.unstable_mockModule('../variation-patterns.js', () => ({
+  getVariationPatterns: jest.fn(() => []),
+  getAbbreviationMap: jest.fn(() => ({})),
+}));
 
-// Spy on product-groups methods
-jest.spyOn(productGroups, 'matchProductToGroup').mockReturnValue(null);
+jest.unstable_mockModule('../product-groups.js', () => ({
+  matchProductToGroup: jest.fn(() => null),
+}));
+
+// Dynamic import after mock setup
+const { preprocessData } = await import('./index.js');
 
 describe('preprocessData', () => {
   const createMockSources = (): SourceData => ({
@@ -83,6 +86,8 @@ describe('preprocessData', () => {
           quantity: 1,
           unit_price: 1499,
           total_price: 1499,
+          special_instructions: '',
+          options: [],
           category: 'Pizza',
         }],
         order_subtotal: 1499,
@@ -113,7 +118,7 @@ describe('preprocessData', () => {
               name: 'Hamburger',
               category_id: 'sq-cat-1',
               variations: [
-                { id: 'sq-var-1', item_variation_data: { name: 'Regular', item_id: 'sq-item-1', pricing_type: 'FIXED', price_money: { amount: 999, currency: 'USD' } } },
+                { type: 'ITEM_VARIATION', id: 'sq-var-1', item_variation_data: { name: 'Regular', item_id: 'sq-item-1', pricing_type: 'FIXED', price_money: { amount: 999, currency: 'USD' } } },
               ],
             },
           },
@@ -129,7 +134,6 @@ describe('preprocessData', () => {
           updated_at: '2024-01-15T16:30:00Z',
           closed_at: '2024-01-15T16:30:00Z',
           state: 'COMPLETED',
-          version: 1,
           line_items: [{
             uid: 'li-1',
             catalog_object_id: 'sq-var-1',
@@ -143,7 +147,6 @@ describe('preprocessData', () => {
           total_tax_money: { amount: 80, currency: 'USD' },
           total_tip_money: { amount: 0, currency: 'USD' },
         }],
-        cursor: null,
       },
       payments: {
         payments: [{
@@ -151,7 +154,6 @@ describe('preprocessData', () => {
           order_id: 'sq-order-1',
           location_id: 'sq-loc-1',
           created_at: '2024-01-15T16:30:00Z',
-          updated_at: '2024-01-15T16:30:00Z',
           amount_money: { amount: 1079, currency: 'USD' },
           tip_money: { amount: 0, currency: 'USD' },
           total_money: { amount: 1079, currency: 'USD' },
@@ -163,7 +165,6 @@ describe('preprocessData', () => {
             card: { card_brand: 'VISA', last_4: '1234' },
           },
         }],
-        cursor: null,
       },
     },
   });
@@ -289,6 +290,9 @@ describe('preprocessData', () => {
         quantity: 1,
         unit_price: 899,
         total_price: 899,
+        special_instructions: '',
+        options: [],
+        category: 'Salads',
       }],
       order_subtotal: 899,
       delivery_fee: 0,

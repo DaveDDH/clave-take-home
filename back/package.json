@@ -13,7 +13,7 @@
     "typecheck": "npm run check",
     "lint": "npm run check",
     "lint:fix": "eslint . --fix",
-    "build": "tsc",
+    "build": "tsup src/index.ts --format esm --out-dir dist --clean",
     "test:queries": "node test-queries.js",
     "test": "NODE_OPTIONS='--experimental-vm-modules' jest --coverage"
   },
@@ -43,6 +43,7 @@
     "globals": "^17.0.0",
     "jest": "^30.2.0",
     "ts-jest": "^29.4.6",
+    "tsup": "^8.5.1",
     "tsx": "^4.21.0",
     "typescript": "^5.3.0",
     "typescript-eslint": "^8.51.0"

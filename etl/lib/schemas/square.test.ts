@@ -81,21 +81,21 @@ describe('SquareCatalogDataSchema', () => {
   });
 
   it('validates item without description', () => {
-    const data = structuredClone(validCatalogData);
+    const data = JSON.parse(JSON.stringify(validCatalogData));
     delete data.objects[1].item_data.description;
     const result = SquareCatalogDataSchema.safeParse(data);
     expect(result.success).toBe(true);
   });
 
   it('validates item without category_id', () => {
-    const data = structuredClone(validCatalogData);
+    const data = JSON.parse(JSON.stringify(validCatalogData));
     delete data.objects[1].item_data.category_id;
     const result = SquareCatalogDataSchema.safeParse(data);
     expect(result.success).toBe(true);
   });
 
   it('validates item without present_at_location_ids', () => {
-    const data = structuredClone(validCatalogData);
+    const data = JSON.parse(JSON.stringify(validCatalogData));
     delete data.objects[1].present_at_location_ids;
     const result = SquareCatalogDataSchema.safeParse(data);
     expect(result.success).toBe(true);
@@ -155,14 +155,14 @@ describe('SquareOrdersDataSchema', () => {
   });
 
   it('validates order with applied_modifiers', () => {
-    const data = structuredClone(validOrdersData);
+    const data = JSON.parse(JSON.stringify(validOrdersData));
     data.orders[0].line_items[0].applied_modifiers = [{ modifier_id: 'mod-123' }];
     const result = SquareOrdersDataSchema.safeParse(data);
     expect(result.success).toBe(true);
   });
 
   it('validates order without applied_modifiers', () => {
-    const data = structuredClone(validOrdersData);
+    const data = JSON.parse(JSON.stringify(validOrdersData));
     delete data.orders[0].line_items[0].applied_modifiers;
     const result = SquareOrdersDataSchema.safeParse(data);
     expect(result.success).toBe(true);
@@ -245,7 +245,7 @@ describe('SquarePaymentsDataSchema', () => {
   });
 
   it('validates card without optional exp fields', () => {
-    const data = structuredClone(validPaymentsData);
+    const data = JSON.parse(JSON.stringify(validPaymentsData));
     delete data.payments[0].card_details.card.exp_month;
     delete data.payments[0].card_details.card.exp_year;
     const result = SquarePaymentsDataSchema.safeParse(data);

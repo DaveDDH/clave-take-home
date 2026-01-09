@@ -1,4 +1,4 @@
-import { jest, describe, it, expect, beforeEach } from '@jest/globals';
+import { jest, describe, it, expect } from '@jest/globals';
 import type { ToastData, DbProduct, DbProductVariation } from '../types.js';
 
 // Mock modules using unstable_mockModule for ESM

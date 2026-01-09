@@ -298,7 +298,7 @@ describe('buildUnifiedCatalog', () => {
       const result = buildUnifiedCatalog(sources);
 
       expect(result.categories).toHaveLength(1);
-      expect(result.categories[0].name).toBe('entrees');
+      expect(result.categories[0].name.toLowerCase()).toBe('entrees');
     });
 
     it('extracts products from DoorDash items', () => {

@@ -22,7 +22,7 @@ describe('buildLocations', () => {
 
   it('creates locations from config', () => {
     const sources = createMockSources();
-    const { locations, locationMap } = buildLocations(sources, locationConfigs);
+    const { locations } = buildLocations(sources, locationConfigs);
 
     expect(locations).toHaveLength(2);
     expect(locations[0].name).toBe('Downtown');

@@ -2,6 +2,8 @@
 
 A production-grade **Text-to-SQL analytics platform** for restaurant data, featuring AI-powered natural language queries, real-time streaming responses, and a drag-and-drop dashboard.
 
+**Deployed on:** https://clave-take-home-3v808zaa5-daveddhs-projects.vercel.app
+
 ## Quick Start
 
 ```bash

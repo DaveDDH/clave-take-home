@@ -75,6 +75,69 @@ export interface StreamHandlers {
   onError?: (error: string) => void;
 }
 
+interface SSEEvent {
+  type: string;
+  data: Record<string, unknown>;
+}
+
+function parseSSELine(line: string): SSEEvent | null {
+  if (!line.trim() || line.startsWith(':')) return null;
+
+  const eventMatch = /^event: (.+)/m.exec(line);
+  const dataMatch = /^data: (.+)/m.exec(line);
+
+  if (!eventMatch || !dataMatch) return null;
+
+  try {
+    return {
+      type: eventMatch[1],
+      data: JSON.parse(dataMatch[1]),
+    };
+  } catch {
+    console.error('Failed to parse SSE event');
+    return null;
+  }
+}
+
+function dispatchSSEEvent(event: SSEEvent, handlers: StreamHandlers): boolean {
+  const { type, data } = event;
+
+  switch (type) {
+    case 'classification':
+      handlers.onClassification?.(data as { isDataQuery: boolean; chartType: string; conversationalResponse: string });
+      return false;
+    case 'progress':
+      handlers.onProgress?.(data.message as string, data.step as string);
+      return false;
+    case 'sql':
+      handlers.onSQL?.(data.sql as string);
+      return false;
+    case 'chart':
+      handlers.onChart?.(data.charts as ChartData[]);
+      return false;
+    case 'content-delta':
+      handlers.onContentDelta?.(data.token as string);
+      return false;
+    case 'content':
+      handlers.onContent?.(data.content as string);
+      return false;
+    case 'conversationId':
+      handlers.onConversationId?.(data.id as string);
+      return false;
+    case 'cost':
+      handlers.onCost?.(data.totalCost as number);
+      return false;
+    case 'complete':
+      handlers.onComplete?.();
+      return true;
+    case 'error':
+      handlers.onError?.(data.error as string);
+      return false;
+    default:
+      return false;
+  }
+}
+
 export async function streamChatResponse(
   message: string,
   conversationId: string | null,
@@ -116,54 +179,10 @@ export async function streamChatResponse(
         buffer = lines.pop() || '';
 
         for (const line of lines) {
-          if (!line.trim() || line.startsWith(':')) continue;
-
-          const eventMatch = /^event: (.+)/m.exec(line);
-          const dataMatch = /^data: (.+)/m.exec(line);
-
-          if (eventMatch && dataMatch) {
-            const eventType = eventMatch[1];
-            const dataStr = dataMatch[1];
-
-            try {
-              const event = JSON.parse(dataStr);
-
-              switch (eventType) {
-                case 'classification':
-                  handlers.onClassification?.(event);
-                  break;
-                case 'progress':
-                  handlers.onProgress?.(event.message, event.step);
-                  break;
-                case 'sql':
-                  handlers.onSQL?.(event.sql);
-                  break;
-                case 'chart':
-                  handlers.onChart?.(event.charts);
-                  break;
-                case 'content-delta':
-                  handlers.onContentDelta?.(event.token);
-                  break;
-                case 'content':
-                  handlers.onContent?.(event.content);
-                  break;
-                case 'conversationId':
-                  handlers.onConversationId?.(event.id);
-                  break;
-                case 'cost':
-                  handlers.onCost?.(event.totalCost);
-                  break;
-                case 'complete':
-                  receivedComplete = true;
-                  handlers.onComplete?.();
-                  break;
-                case 'error':
-                  handlers.onError?.(event.error);
-                  break;
-              }
-            } catch (err) {
-              console.error('Failed to parse SSE event:', err);
-            }
+          const event = parseSSELine(line);
+          if (event) {
+            const isComplete = dispatchSSEEvent(event, handlers);
+            if (isComplete) receivedComplete = true;
           }
         }
       }
@@ -178,7 +197,7 @@ export async function streamChatResponse(
     }
   };
 
-  readStream();
+  void readStream();
 
   return () => { void reader.cancel(); };
 }

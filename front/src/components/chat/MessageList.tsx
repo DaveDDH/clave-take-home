@@ -131,7 +131,7 @@ export function MessageList({
             .map((msg) => msg.content)
             .join("\n\n");
 
-          const nextMessage = !isLastInBlock ? messages[index + 1] : undefined;
+          const nextMessage = isLastInBlock ? undefined : messages[index + 1];
 
           return (
             <MessageBubble

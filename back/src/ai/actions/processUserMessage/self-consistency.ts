@@ -15,140 +15,121 @@ export interface ConsistencyResult {
   successfulExecutions: number;
 }
 
+export interface SelfConsistencyOptions {
+  userQuestion: string;
+  linkedSchema: LinkedSchema;
+  candidateCount?: number;
+  conversationHistory?: Array<{ role: string; content: string }>;
+  dataContext?: DataContext;
+  model: ModelId;
+  costAccumulator: CostAccumulator;
+  processId?: string;
+}
+
 const TEMPERATURES = [0, 0.3, 0.5]; // 3 candidates: deterministic, medium, creative
 
-export async function selfConsistencyVote(
-  userQuestion: string,
-  linkedSchema: LinkedSchema,
-  candidateCount: number | undefined,
-  conversationHistory: Array<{ role: string; content: string }> | undefined,
-  dataContext: DataContext | undefined,
-  model: ModelId,
-  costAccumulator: CostAccumulator,
-  processId?: string
-): Promise<ConsistencyResult> {
-  const count = candidateCount ?? 3;
-  const history = conversationHistory ?? [];
-  const votingStartTime = Date.now();
-  const candidates: string[] = [];
+type ResultGroup = { sql: string; result: Record<string, unknown>[] }[];
 
-  const numCandidates = Math.min(count, TEMPERATURES.length);
-  log(`   🔄 Generating ${numCandidates} SQL candidates in parallel...`, undefined, processId);
-  const generationStartTime = Date.now();
+async function generateCandidate(
+  options: SelfConsistencyOptions,
+  temperature: number,
+  index: number,
+  history: Array<{ role: string; content: string }>
+): Promise<string | null> {
+  const { userQuestion, linkedSchema, dataContext, model, costAccumulator, processId } = options;
 
-  // Generate multiple SQL candidates with varying temperatures in parallel
-  const candidatePromises = TEMPERATURES.slice(0, numCandidates).map(
-    async (temperature, i) => {
-      try {
-        log(`      Candidate ${i + 1}: temperature=${temperature}`, undefined, processId);
-        const result = await generateSQL(userQuestion, linkedSchema, temperature, history, dataContext, model, processId);
-        costAccumulator.addUsage(result.model, result.usage, `SQL Generation (Candidate ${i + 1}, temp=${temperature})`);
-        if (isReadOnlyQuery(result.sql)) {
-          log(`      ✓ Candidate ${i + 1} valid`, undefined, processId);
-          return result.sql;
-        } else {
-          log(`      ✗ Candidate ${i + 1} rejected (not read-only)`, undefined, processId);
-          log(`         SQL: ${result.sql}`, undefined, processId);
-          return null;
-        }
-      } catch (error) {
-        logError(
-          `      ✗ Candidate ${i + 1} failed:`,
-          error instanceof Error ? error.message : error,
-          processId
-        );
-        return null;
-      }
+  try {
+    log(`      Candidate ${index + 1}: temperature=${temperature}`, undefined, processId);
+    const result = await generateSQL(userQuestion, linkedSchema, temperature, history, dataContext, model, processId);
+    costAccumulator.addUsage(result.model, result.usage, `SQL Generation (Candidate ${index + 1}, temp=${temperature})`);
+
+    if (isReadOnlyQuery(result.sql)) {
+      log(`      ✓ Candidate ${index + 1} valid`, undefined, processId);
+      return result.sql;
     }
-  );
 
-  const results = await Promise.all(candidatePromises);
-  candidates.push(...results.filter((sql): sql is string => sql !== null));
-
-  const generationTime = Date.now() - generationStartTime;
-  log(`   📝 Generated ${candidates.length} valid SQL candidates (${generationTime}ms)`, undefined, processId);
-
-  if (candidates.length === 0)
-    throw new Error("Failed to generate any valid SQL candidates");
-
-  // Execute each candidate and collect results
-  const executionStartTime = Date.now();
-  log(`   ⚡ Executing ${candidates.length} SQL queries...`, undefined, processId);
-
-  const resultGroups = new Map<
-    string,
-    { sql: string; result: Record<string, unknown>[] }[]
-  >();
-
-  let successfulExecutions = 0;
-
-  for (let i = 0; i < candidates.length; i++) {
-    const sql = candidates[i];
-    try {
-      log(`      Executing query ${i + 1}/${candidates.length}...`, undefined, processId);
-      const result = await executeQuery<Record<string, unknown>>(sql);
-      successfulExecutions++;
-
-      // Use stringified result as the grouping key
-      const resultKey = JSON.stringify(result);
-
-      if (resultGroups.has(resultKey)) {
-        log(`      ✓ Matched existing group (${result.length} rows)`, undefined, processId);
-      } else {
-        resultGroups.set(resultKey, []);
-        log(`      ✓ New result group (${result.length} rows)`, undefined, processId);
-      }
-      resultGroups.get(resultKey)!.push({ sql, result });
-    } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      logWarn(`      ✗ SQL execution failed:`, errorMsg, processId);
-
-      // Iterative refinement: attempt to fix the SQL using error feedback
-      try {
-        const refinementResult = await refineSQLWithError(
-          sql,
-          errorMsg,
-          userQuestion,
-          linkedSchema,
-          model,
-          processId
-        );
-        costAccumulator.addUsage(refinementResult.model, refinementResult.usage, `SQL Refinement (Query ${i + 1})`);
-
-        // Validate refined SQL is read-only before executing
-        if (!isReadOnlyQuery(refinementResult.sql)) {
-          logWarn(`      ✗ Refined SQL rejected (not read-only)`, undefined, processId);
-          continue;
-        }
-
-        const refinedResult = await executeQuery<Record<string, unknown>>(refinementResult.sql);
-        successfulExecutions++;
-
-        const resultKey = JSON.stringify(refinedResult);
-        if (resultGroups.has(resultKey)) {
-          log(`      ✓ Refinement succeeded: matched existing group (${refinedResult.length} rows)`, undefined, processId);
-        } else {
-          resultGroups.set(resultKey, []);
-          log(`      ✓ Refinement succeeded: new result group (${refinedResult.length} rows)`, undefined, processId);
-        }
-        resultGroups.get(resultKey)!.push({ sql: refinementResult.sql, result: refinedResult });
-      } catch (refinementError) {
-        const refineErrorMsg = refinementError instanceof Error ? refinementError.message : String(refinementError);
-        logWarn(`      ✗ Refinement also failed:`, refineErrorMsg, processId);
-      }
-    }
+    log(`      ✗ Candidate ${index + 1} rejected (not read-only)`, undefined, processId);
+    log(`         SQL: ${result.sql}`, undefined, processId);
+    return null;
+  } catch (error) {
+    logError(
+      `      ✗ Candidate ${index + 1} failed:`,
+      error instanceof Error ? error.message : error,
+      processId
+    );
+    return null;
   }
+}
 
-  const executionTime = Date.now() - executionStartTime;
-  log(`   📊 Execution complete: ${successfulExecutions}/${candidates.length} successful, ${resultGroups.size} unique result(s) (${executionTime}ms)`, undefined, processId);
+async function tryRefineSQL(
+  sql: string,
+  errorMsg: string,
+  options: SelfConsistencyOptions,
+  queryIndex: number,
+  resultGroups: Map<string, ResultGroup>
+): Promise<{ success: boolean }> {
+  const { userQuestion, linkedSchema, model, costAccumulator, processId } = options;
 
-  if (resultGroups.size === 0)
-    throw new Error("All SQL candidates failed execution");
+  try {
+    const refinementResult = await refineSQLWithError(sql, errorMsg, userQuestion, linkedSchema, model, processId);
+    costAccumulator.addUsage(refinementResult.model, refinementResult.usage, `SQL Refinement (Query ${queryIndex + 1})`);
 
-  // Find the largest group (most common result)
-  log(`   🗳️  Voting on results...`, undefined, processId);
+    if (!isReadOnlyQuery(refinementResult.sql)) {
+      logWarn(`      ✗ Refined SQL rejected (not read-only)`, undefined, processId);
+      return { success: false };
+    }
 
-  let bestGroup: { sql: string; result: Record<string, unknown>[] }[] = [];
+    const refinedResult = await executeQuery<Record<string, unknown>>(refinementResult.sql);
+    const resultKey = JSON.stringify(refinedResult);
+
+    if (resultGroups.has(resultKey)) {
+      log(`      ✓ Refinement succeeded: matched existing group (${refinedResult.length} rows)`, undefined, processId);
+    } else {
+      resultGroups.set(resultKey, []);
+      log(`      ✓ Refinement succeeded: new result group (${refinedResult.length} rows)`, undefined, processId);
+    }
+    resultGroups.get(resultKey)!.push({ sql: refinementResult.sql, result: refinedResult });
+    return { success: true };
+  } catch (refinementError) {
+    const refineErrorMsg = refinementError instanceof Error ? refinementError.message : String(refinementError);
+    logWarn(`      ✗ Refinement also failed:`, refineErrorMsg, processId);
+    return { success: false };
+  }
+}
+
+async function executeCandidate(
+  sql: string,
+  index: number,
+  candidatesLength: number,
+  options: SelfConsistencyOptions,
+  resultGroups: Map<string, ResultGroup>
+): Promise<boolean> {
+  const { processId } = options;
+
+  try {
+    log(`      Executing query ${index + 1}/${candidatesLength}...`, undefined, processId);
+    const result = await executeQuery<Record<string, unknown>>(sql);
+    const resultKey = JSON.stringify(result);
+
+    if (resultGroups.has(resultKey)) {
+      log(`      ✓ Matched existing group (${result.length} rows)`, undefined, processId);
+    } else {
+      resultGroups.set(resultKey, []);
+      log(`      ✓ New result group (${result.length} rows)`, undefined, processId);
+    }
+    resultGroups.get(resultKey)!.push({ sql, result });
+    return true;
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    logWarn(`      ✗ SQL execution failed:`, errorMsg, processId);
+
+    const refinement = await tryRefineSQL(sql, errorMsg, options, index, resultGroups);
+    return refinement.success;
+  }
+}
+
+function findBestResultGroup(resultGroups: Map<string, ResultGroup>, processId?: string): ResultGroup {
+  let bestGroup: ResultGroup = [];
   let maxCount = 0;
   let groupIndex = 1;
 
@@ -161,12 +142,64 @@ export async function selfConsistencyVote(
     groupIndex++;
   }
 
+  return bestGroup;
+}
+
+export async function selfConsistencyVote(options: SelfConsistencyOptions): Promise<ConsistencyResult> {
+  const { candidateCount, conversationHistory, processId } = options;
+
+  const count = candidateCount ?? 3;
+  const history = conversationHistory ?? [];
+  const votingStartTime = Date.now();
+
+  const numCandidates = Math.min(count, TEMPERATURES.length);
+  log(`   🔄 Generating ${numCandidates} SQL candidates in parallel...`, undefined, processId);
+  const generationStartTime = Date.now();
+
+  // Generate multiple SQL candidates with varying temperatures in parallel
+  const candidatePromises = TEMPERATURES.slice(0, numCandidates).map(
+    (temperature, i) => generateCandidate(options, temperature, i, history)
+  );
+
+  const results = await Promise.all(candidatePromises);
+  const candidates = results.filter((sql): sql is string => sql !== null);
+
+  const generationTime = Date.now() - generationStartTime;
+  log(`   📝 Generated ${candidates.length} valid SQL candidates (${generationTime}ms)`, undefined, processId);
+
+  if (candidates.length === 0) {
+    throw new Error("Failed to generate any valid SQL candidates");
+  }
+
+  // Execute each candidate and collect results
+  const executionStartTime = Date.now();
+  log(`   ⚡ Executing ${candidates.length} SQL queries...`, undefined, processId);
+
+  const resultGroups = new Map<string, ResultGroup>();
+  let successfulExecutions = 0;
+
+  for (let i = 0; i < candidates.length; i++) {
+    const success = await executeCandidate(candidates[i], i, candidates.length, options, resultGroups);
+    if (success) successfulExecutions++;
+  }
+
+  const executionTime = Date.now() - executionStartTime;
+  log(`   📊 Execution complete: ${successfulExecutions}/${candidates.length} successful, ${resultGroups.size} unique result(s) (${executionTime}ms)`, undefined, processId);
+
+  if (resultGroups.size === 0) {
+    throw new Error("All SQL candidates failed execution");
+  }
+
+  // Find the largest group (most common result)
+  log(`   🗳️  Voting on results...`, undefined, processId);
+  const bestGroup = findBestResultGroup(resultGroups, processId);
+
   // Select the first SQL from the best group (typically the one with lowest temperature)
   const selected = bestGroup[0];
-  const confidence = maxCount / successfulExecutions;
+  const confidence = bestGroup.length / successfulExecutions;
 
   const totalVotingTime = Date.now() - votingStartTime;
-  log(`   🏆 Winner selected: ${maxCount}/${successfulExecutions} votes (${(confidence * 100).toFixed(1)}% confidence)`, undefined, processId);
+  log(`   🏆 Winner selected: ${bestGroup.length}/${successfulExecutions} votes (${(confidence * 100).toFixed(1)}% confidence)`, undefined, processId);
   log(`   ⏱️  Self-consistency voting total time: ${totalVotingTime}ms (${(totalVotingTime / 1000).toFixed(2)}s)`, undefined, processId);
 
   return {
@@ -178,16 +211,22 @@ export async function selfConsistencyVote(
   };
 }
 
+export interface SingleQueryOptions {
+  userQuestion: string;
+  linkedSchema: LinkedSchema;
+  conversationHistory?: Array<{ role: string; content: string }>;
+  dataContext?: DataContext;
+  model: ModelId;
+  costAccumulator: CostAccumulator;
+  processId?: string;
+}
+
 // Simplified version for faster response (single query)
 export async function singleQuery(
-  userQuestion: string,
-  linkedSchema: LinkedSchema,
-  conversationHistory: Array<{ role: string; content: string }> | undefined,
-  dataContext: DataContext | undefined,
-  model: ModelId,
-  costAccumulator: CostAccumulator,
-  processId?: string
+  options: SingleQueryOptions
 ): Promise<{ sql: string; data: Record<string, unknown>[] }> {
+  const { userQuestion, linkedSchema, conversationHistory, dataContext, model, costAccumulator, processId } = options;
+
   const history = conversationHistory ?? [];
   const result = await generateSQL(userQuestion, linkedSchema, 0, history, dataContext, model, processId);
   costAccumulator.addUsage(result.model, result.usage, "SQL Generation (Single Query)");

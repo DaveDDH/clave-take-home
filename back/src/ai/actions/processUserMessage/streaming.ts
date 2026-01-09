@@ -19,6 +19,17 @@ import {
 } from "./escalation.js";
 import { CostAccumulator } from "#utils/cost.js";
 
+interface NaturalResponseStreamOptions {
+  question: string;
+  data: Record<string, unknown>[];
+  chartConfig: ChartConfig;
+  conversationHistory: ConversationMessage[];
+  model: ModelId;
+  costAccumulator: CostAccumulator;
+  sseWriter: SSEWriter;
+  processId?: string;
+}
+
 export async function processUserMessageStream(
   userQuestion: string,
   conversationHistory: ConversationMessage[] | undefined,
@@ -150,16 +161,16 @@ export async function processUserMessageStream(
     const startSQLGeneration = Date.now();
     if (useConsistency) {
       log(`🔄 Using self-consistency voting (${candidateCount} candidates, reasoning: ${currentReasoning})`, undefined, processId);
-      const result = await selfConsistencyVote(
+      const result = await selfConsistencyVote({
         userQuestion,
         linkedSchema,
         candidateCount,
-        history,
+        conversationHistory: history,
         dataContext,
-        currentModel,
+        model: currentModel,
         costAccumulator,
-        processId
-      );
+        processId,
+      });
       sql = result.sql;
       data = result.data;
       confidence = result.confidence;
@@ -169,15 +180,15 @@ export async function processUserMessageStream(
       log(`   Confidence: ${(confidence * 100).toFixed(1)}%`, undefined, processId);
     } else {
       log("⚡ Using single query (fast mode)", undefined, processId);
-      const result = await singleQuery(
+      const result = await singleQuery({
         userQuestion,
         linkedSchema,
-        history,
+        conversationHistory: history,
         dataContext,
-        currentModel,
+        model: currentModel,
         costAccumulator,
-        processId
-      );
+        processId,
+      });
       sql = result.sql;
       data = result.data;
 
@@ -239,16 +250,16 @@ export async function processUserMessageStream(
     sseWriter.sendProgress("Generating response...", "response");
 
     const startResponse = Date.now();
-    await generateNaturalResponseStream(
-      userQuestion,
+    await generateNaturalResponseStream({
+      question: userQuestion,
       data,
       chartConfig,
-      history,
-      currentModel,
+      conversationHistory: history,
+      model: currentModel,
       costAccumulator,
       sseWriter,
-      processId
-    );
+      processId,
+    });
     const responseTime = Date.now() - startResponse;
     log(`✅ Response Streamed (${responseTime}ms)`, undefined, processId);
 
@@ -295,15 +306,10 @@ export async function processUserMessageStream(
 }
 
 async function generateNaturalResponseStream(
-  question: string,
-  data: Record<string, unknown>[],
-  chartConfig: ChartConfig,
-  conversationHistory: ConversationMessage[],
-  model: ModelId,
-  costAccumulator: CostAccumulator,
-  sseWriter: SSEWriter,
-  processId?: string
+  options: NaturalResponseStreamOptions
 ): Promise<void> {
+  const { question, data, chartConfig, conversationHistory, model, costAccumulator, sseWriter, processId } = options;
+
   if (data.length === 0) {
     const fallbackMessage =
       "I couldn't find any data matching your query. Please try rephrasing your question or check if the data exists for the criteria you specified.";

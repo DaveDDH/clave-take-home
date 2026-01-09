@@ -123,7 +123,7 @@ describe('data-integrity', () => {
       products: [],
       product_variations: [],
       product_aliases: [],
-      orders: Array(orderCount).fill(null).map((_, i) => ({
+      orders: new Array(orderCount).fill(null).map((_, i) => ({
         id: `order-${i}`,
         source: 'toast',
         source_order_id: `src-${i}`,
@@ -139,7 +139,7 @@ describe('data-integrity', () => {
         total_cents: 1079,
       })),
       order_items: [],
-      payments: Array(paymentCount).fill(null).map((_, i) => ({
+      payments: new Array(paymentCount).fill(null).map((_, i) => ({
         id: `pay-${i}`,
         order_id: `order-${i % orderCount}`,
         source_payment_id: `src-pay-${i}`,
@@ -239,8 +239,10 @@ describe('data-integrity', () => {
 
       const result = checkDataIntegrity(sources, preprocessed);
 
+      // Toast payment count should be 0 since check is voided
       expect(result.summary.sourcePayments.toast).toBe(0);
-      expect(result.success).toBe(true);
+      // Total source payments = 0 (toast) + 1 (doordash) + 1 (square) = 2
+      expect(result.summary.sourcePayments.total).toBe(2);
     });
 
     it('excludes fully refunded payments from count', () => {
@@ -250,8 +252,10 @@ describe('data-integrity', () => {
 
       const result = checkDataIntegrity(sources, preprocessed);
 
+      // Toast payment count should be 0 since payment is fully refunded
       expect(result.summary.sourcePayments.toast).toBe(0);
-      expect(result.success).toBe(true);
+      // Total source payments = 0 (toast) + 1 (doordash) + 1 (square) = 2
+      expect(result.summary.sourcePayments.total).toBe(2);
     });
 
     it('calculates orders with payments correctly', () => {

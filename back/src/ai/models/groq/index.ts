@@ -18,7 +18,7 @@ const customFetch = async (
   options: RequestInit | undefined
 ) => {
   if (options?.body) {
-    const body = options.body.toString();
+    const body = typeof options.body === 'string' ? options.body : JSON.stringify(options.body);
     const parsedBody = JSON.parse(body);
     parsedBody["reasoning_effort"] = "low";
     options.body = JSON.stringify(parsedBody);
