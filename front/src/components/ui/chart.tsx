@@ -47,10 +47,11 @@ function ChartContainer({
   >["children"]
 }) {
   const uniqueId = React.useId()
-  const chartId = `chart-${id || uniqueId.replaceAll(/:/g, "")}`
+  const chartId = `chart-${id ?? uniqueId.replaceAll(":", "")}`
+  const contextValue = React.useMemo(() => ({ config }), [config])
 
   return (
-    <ChartContext.Provider value={{ config }}>
+    <ChartContext.Provider value={contextValue}>
       <div
         data-slot="chart"
         data-chart={chartId}
@@ -342,9 +343,10 @@ function getPayloadConfigFromPayload(
     ] as string
   }
 
-  return configLabelKey in config
-    ? config[configLabelKey]
-    : config[key as keyof typeof config]
+  if (configLabelKey in config) {
+    return config[configLabelKey];
+  }
+  return config[key as keyof typeof config]
 }
 
 export {

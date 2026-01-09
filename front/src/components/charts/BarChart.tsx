@@ -19,6 +19,31 @@ const COLORS = [
   'var(--chart-5)',
 ];
 
+function BarChartTooltipFormatter(
+  value: string | number,
+  name: string | number,
+  item: { fill?: string; color?: string; payload?: { fill?: string } } | undefined,
+  index: number
+) {
+  const nameStr = String(name).toLowerCase();
+  const label = capitalizeWords(String(name).replaceAll('_', ' '));
+  const isCurrencyValue = nameStr.includes('sales') || nameStr.includes('revenue');
+  const formattedValue = isCurrencyValue
+    ? `$${Number(value).toLocaleString()}`
+    : Number(value).toLocaleString();
+  const color = item?.fill || item?.color || item?.payload?.fill || COLORS[index % COLORS.length];
+  return (
+    <div className="flex items-center gap-2 w-full">
+      <div
+        className="h-2.5 w-2.5 shrink-0 rounded-[2px]"
+        style={{ backgroundColor: color }}
+      />
+      <span className="text-muted-foreground">{label}</span>
+      <span className="ml-auto font-mono font-medium">{formattedValue}</span>
+    </div>
+  );
+}
+
 interface BarChartProps {
   data: BarChartData;
   xKey: string;
@@ -142,25 +167,7 @@ export function BarChart({ data, xKey, yKey, className }: Readonly<BarChartProps
             content={
               <ChartTooltipContent
                 hideIndicator
-                formatter={(value, name, item, index) => {
-                  const nameStr = String(name).toLowerCase();
-                  const label = capitalizeWords(String(name).replaceAll('_', ' '));
-                  const isCurrencyValue = nameStr.includes('sales') || nameStr.includes('revenue');
-                  const formattedValue = isCurrencyValue
-                    ? `$${Number(value).toLocaleString()}`
-                    : Number(value).toLocaleString();
-                  const color = item?.fill || item?.color || item?.payload?.fill || COLORS[index % COLORS.length];
-                  return (
-                    <div className="flex items-center gap-2 w-full">
-                      <div
-                        className="h-2.5 w-2.5 shrink-0 rounded-[2px]"
-                        style={{ backgroundColor: color }}
-                      />
-                      <span className="text-muted-foreground">{label}</span>
-                      <span className="ml-auto font-mono font-medium">{formattedValue}</span>
-                    </div>
-                  );
-                }}
+                formatter={BarChartTooltipFormatter}
               />
             }
           />
@@ -171,8 +178,8 @@ export function BarChart({ data, xKey, yKey, className }: Readonly<BarChartProps
               fill={useCellColors ? undefined : COLORS[yKeys.indexOf(key) % COLORS.length]}
               radius={4}
             >
-              {useCellColors && transformedData.map((_, index) => (
-                <Cell key={index} fill={COLORS[index % COLORS.length]} />
+              {useCellColors && transformedData.map((entry, index) => (
+                <Cell key={`cell-${String(entry[categoryKey] ?? index)}-${index}`} fill={COLORS[index % COLORS.length]} />
               ))}
             </Bar>
           ))}

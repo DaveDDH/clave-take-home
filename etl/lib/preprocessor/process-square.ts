@@ -52,9 +52,13 @@ function processLineItem(
   variationMap: Map<string, string>
 ): DbOrderItem & { id: string } {
   const productId = catalogInfo ? productMap.get(catalogInfo.itemId) : undefined;
-  const itemName = catalogInfo
-    ? `${catalogInfo.itemName}${catalogInfo.varName === 'Regular' ? '' : ` - ${catalogInfo.varName}`}`
-    : lineItem.catalog_object_id;
+  let itemName: string;
+  if (catalogInfo) {
+    const varSuffix = catalogInfo.varName === 'Regular' ? '' : ` - ${catalogInfo.varName}`;
+    itemName = `${catalogInfo.itemName}${varSuffix}`;
+  } else {
+    itemName = lineItem.catalog_object_id;
+  }
 
   let variationId: string | undefined;
   if (productId && catalogInfo && catalogInfo.varName.toLowerCase() !== 'regular') {

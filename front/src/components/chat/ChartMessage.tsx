@@ -38,7 +38,7 @@ export function ChartMessage({ charts }: Readonly<ChartMessageProps>) {
         <CardContent className="pt-0">
           <div className="flex flex-wrap gap-4">
             {charts.map((chart, index) => (
-              <div key={index} className="w-full mr-24">
+              <div key={`chart-${chart.type}-${index}`} className="w-full mr-24">
                 {renderChart(chart)}
               </div>
             ))}

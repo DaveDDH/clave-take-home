@@ -12,7 +12,7 @@ interface ColumnClassification {
   category: string[];
 }
 
-const TIME_COLUMN_NAMES = ["hour", "day", "month", "year", "week"];
+const TIME_COLUMN_NAMES = new Set(["hour", "day", "month", "year", "week"]);
 const TIME_COLUMN_PATTERNS = ["date", "time", "day", "hour", "month", "week"];
 
 function classifyColumns(data: Record<string, unknown>[], columns: string[]): ColumnClassification {
@@ -33,7 +33,7 @@ function findTimeSeriesAxes(
   columns: string[]
 ): { xKey: string | undefined; yKey: string | undefined } {
   // Check numeric columns first (hour, year, etc.)
-  const numericTimeCol = numericColumns.find((c) => TIME_COLUMN_NAMES.includes(c));
+  const numericTimeCol = numericColumns.find((c) => TIME_COLUMN_NAMES.has(c));
 
   // Check category columns for date/time strings
   const categoryTimeCol = categoryColumns.find((c) =>

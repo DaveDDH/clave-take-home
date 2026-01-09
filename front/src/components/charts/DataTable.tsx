@@ -38,7 +38,19 @@ export function DataTable({ data, columns, className }: Readonly<DataTableProps>
     if (typeof value === 'number') {
       return value.toLocaleString();
     }
+    if (typeof value === 'object') {
+      return JSON.stringify(value);
+    }
     return String(value);
+  };
+
+  const getRowKey = (row: Record<string, unknown>, index: number): string => {
+    // Try to find a unique identifier in the row
+    const id = row.id ?? row.uuid ?? row.guid ?? row.key;
+    if (id !== undefined) return String(id);
+    // Fallback to index-based key with first column value for some stability
+    const firstValue = displayColumns.length > 0 ? row[displayColumns[0]] : '';
+    return `row-${index}-${String(firstValue ?? '')}`;
   };
 
   return (
@@ -55,7 +67,7 @@ export function DataTable({ data, columns, className }: Readonly<DataTableProps>
         </TableHeader>
         <TableBody>
           {data.map((row, rowIndex) => (
-            <TableRow key={rowIndex}>
+            <TableRow key={getRowKey(row, rowIndex)}>
               {displayColumns.map((col) => (
                 <TableCell key={col}>
                   {formatValue(row[col])}

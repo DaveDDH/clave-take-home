@@ -15,9 +15,9 @@ export function AddWidgetPopover() {
   const widgetPositions = useDashboardStore((state) => state.widgetPositions);
   const addWidget = useDashboardStore((state) => state.addWidget);
 
-  const activeWidgetIds = widgetPositions.map((w) => w.id);
+  const activeWidgetIds = new Set(widgetPositions.map((w) => w.id));
   const availableWidgets = widgets.filter(
-    (w) => !activeWidgetIds.includes(w.id)
+    (w) => !activeWidgetIds.has(w.id)
   );
 
   const hasNoWidgets = widgets.length === 0;

@@ -22,6 +22,53 @@ import {
 import type { PieChartData } from '@/types/chart';
 import { capitalizeWords } from '@/lib/utils';
 
+function ActivePieShape({ outerRadius = 0, ...props }: PieSectorDataItem) {
+  return (
+    <g>
+      <Sector {...props} outerRadius={outerRadius + 5} />
+      <Sector
+        {...props}
+        outerRadius={outerRadius + 14}
+        innerRadius={outerRadius + 8}
+      />
+    </g>
+  );
+}
+
+interface PolarViewBox {
+  cx?: number;
+  cy?: number;
+}
+
+function PieCenterLabel({ viewBox, total }: { viewBox?: PolarViewBox; total: number }) {
+  if (!viewBox || viewBox.cx === undefined || viewBox.cy === undefined) {
+    return null;
+  }
+  return (
+    <text
+      x={viewBox.cx}
+      y={viewBox.cy}
+      textAnchor="middle"
+      dominantBaseline="middle"
+    >
+      <tspan
+        x={viewBox.cx}
+        y={viewBox.cy}
+        className="fill-foreground text-3xl font-bold"
+      >
+        {total.toLocaleString()}
+      </tspan>
+      <tspan
+        x={viewBox.cx}
+        y={viewBox.cy + 24}
+        className="fill-muted-foreground"
+      >
+        Total
+      </tspan>
+    </text>
+  );
+}
+
 interface PieChartProps {
   data: PieChartData;
   className?: string;
@@ -117,45 +164,10 @@ export function PieChart({ data, className }: Readonly<PieChartProps>) {
             innerRadius={60}
             strokeWidth={5}
             activeIndex={activeIndex}
-            activeShape={({ outerRadius = 0, ...props }: PieSectorDataItem) => (
-              <g>
-                <Sector {...props} outerRadius={outerRadius + 5} />
-                <Sector
-                  {...props}
-                  outerRadius={outerRadius + 14}
-                  innerRadius={outerRadius + 8}
-                />
-              </g>
-            )}
+            activeShape={ActivePieShape}
           >
             <Label
-              content={({ viewBox }) => {
-                if (viewBox && 'cx' in viewBox && 'cy' in viewBox) {
-                  return (
-                    <text
-                      x={viewBox.cx}
-                      y={viewBox.cy}
-                      textAnchor="middle"
-                      dominantBaseline="middle"
-                    >
-                      <tspan
-                        x={viewBox.cx}
-                        y={viewBox.cy}
-                        className="fill-foreground text-3xl font-bold"
-                      >
-                        {total.toLocaleString()}
-                      </tspan>
-                      <tspan
-                        x={viewBox.cx}
-                        y={(viewBox.cy || 0) + 24}
-                        className="fill-muted-foreground"
-                      >
-                        Total
-                      </tspan>
-                    </text>
-                  );
-                }
-              }}
+              content={({ viewBox }) => <PieCenterLabel viewBox={viewBox as PolarViewBox} total={total} />}
             />
           </Pie>
           <ChartLegend

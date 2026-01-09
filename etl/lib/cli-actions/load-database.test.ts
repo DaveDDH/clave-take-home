@@ -161,9 +161,10 @@ describe('loadToDatabase', () => {
     await loadToDatabase('/path/to/data.json', true);
 
     // Should have called query with DROP statements
-    const dropCall = mockQuery.mock.calls.find((call: unknown[]) =>
-      typeof call[0] === 'string' && (call[0] as string).includes('DROP VIEW')
-    );
+    const dropCall = mockQuery.mock.calls.find((call: unknown[]) => {
+      const query = call[0];
+      return typeof query === 'string' && query.includes('DROP VIEW');
+    });
     expect(dropCall).toBeTruthy();
   });
 
@@ -275,9 +276,10 @@ describe('loadToDatabase', () => {
     await loadToDatabase('/path/to/data.json');
 
     // Find the location insert query
-    const locationInsert = mockQuery.mock.calls.find((call: unknown[]) =>
-      typeof call[0] === 'string' && (call[0] as string).includes('INSERT INTO locations')
-    );
+    const locationInsert = mockQuery.mock.calls.find((call: unknown[]) => {
+      const query = call[0];
+      return typeof query === 'string' && query.includes('INSERT INTO locations');
+    });
     expect(locationInsert).toBeTruthy();
   });
 

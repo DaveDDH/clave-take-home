@@ -131,7 +131,7 @@ export function WidgetCard({ widget, x, y, width, height }: Readonly<WidgetCardP
             <CardContent className="pt-0 flex-1 overflow-auto">
               <div className="flex flex-wrap gap-4 h-full">
                 {widget.charts.map((chart, index) => (
-                  <div key={index} className="flex-1 min-w-[200px]">
+                  <div key={`widget-chart-${chart.type}-${index}`} className="flex-1 min-w-[200px]">
                     {renderChart(chart)}
                   </div>
                 ))}

@@ -154,7 +154,7 @@ async function processStreamingMessage(
     );
   } catch (error) {
     clearTimeout(timeout);
-    const targetId = secondMessageId || assistantMessageId;
+    const targetId = secondMessageId ?? assistantMessageId;
     set((state) => ({
       messages: state.messages.map((msg) =>
         msg.id === targetId

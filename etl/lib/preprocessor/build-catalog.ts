@@ -11,10 +11,16 @@ import type { DbCategory, DbProduct, DbProductVariation } from '../types.js';
 import type { SourceData, RawProductItem, ProductGroupResult, CatalogResult } from './types.js';
 
 // Helper to pick the "best" canonical name (prefer properly capitalized, no typos)
+function isProperCase(str: string): boolean {
+  if (str.length === 0) return false;
+  const firstChar = str[0];
+  return firstChar === firstChar.toUpperCase() && firstChar !== firstChar.toLowerCase();
+}
+
 function pickCanonicalName(names: string[]): string {
   const sorted = [...names].sort((a: string, b: string) => {
-    const aProper = a.length > 0 && a[0] === a[0].toUpperCase();
-    const bProper = b.length > 0 && b[0] === b[0].toUpperCase();
+    const aProper = isProperCase(a);
+    const bProper = isProperCase(b);
     if (aProper && !bProper) return -1;
     if (!aProper && bProper) return 1;
     return b.length - a.length;
