@@ -118,7 +118,7 @@ describe('useChatStore', () => {
     });
 
     it('creates pending conversation for new conversations', async () => {
-      mockStreamChatResponse.mockImplementation(async () => () => {});
+      mockStreamChatResponse.mockImplementation(async () => noopCleanup);
 
       const sendPromise = useChatStore.getState().sendMessage('Hello');
 

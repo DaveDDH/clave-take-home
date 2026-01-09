@@ -318,7 +318,7 @@ describe('normalizers', () => {
   describe('normalizeCardBrand', () => {
     it('returns undefined for null/undefined', () => {
       expect(normalizeCardBrand(null)).toBeUndefined();
-      expect(normalizeCardBrand(undefined)).toBeUndefined();
+      expect(normalizeCardBrand()).toBeUndefined();
     });
 
     it('normalizes VISA', () => {

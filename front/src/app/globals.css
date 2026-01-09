@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-@custom-variant dark (&:is(.dark *));
+@custom-variant dark (&:is(.dark *)); /* NOSONAR - Tailwind CSS v4 custom variant syntax */
 
 @theme inline {
   --color-background: var(--background);

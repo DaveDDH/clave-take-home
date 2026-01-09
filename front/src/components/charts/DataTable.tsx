@@ -57,7 +57,12 @@ export function DataTable({ data, columns, className }: Readonly<DataTableProps>
     if (typeof id === 'number') return id.toString();
     // Fallback to index-based key with first column value for some stability
     const firstValue = displayColumns.length > 0 ? row[displayColumns[0]] : '';
-    const valueStr = typeof firstValue === 'string' ? firstValue : (typeof firstValue === 'number' ? firstValue.toString() : '');
+    let valueStr = '';
+    if (typeof firstValue === 'string') {
+      valueStr = firstValue;
+    } else if (typeof firstValue === 'number') {
+      valueStr = firstValue.toString();
+    }
     return `row-${index}-${valueStr}`;
   };
 

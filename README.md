@@ -280,12 +280,52 @@ AI coding assistants follow documented standards:
 - Anti-patterns to avoid
 
 ### Testing
+
+All three projects have comprehensive Jest test suites with 80%+ coverage requirements.
+
+```bash
+# Run all tests
+cd etl && npm test    # 96% coverage, 283 tests
+cd back && npm test   # 98% coverage, 140 tests
+cd front && npm test  # 95% coverage, 171 tests
+```
+
+#### ETL Tests (`/etl`)
+| Module | Coverage | Description |
+|--------|----------|-------------|
+| `lib/levenshtein.ts` | 100% | Fuzzy string matching algorithm |
+| `lib/normalizers.ts` | 99% | Product name normalization |
+| `lib/product-groups.ts` | 95% | Product grouping logic |
+| `lib/schemas/` | 100% | Zod schema validation |
+| `lib/preprocessor/` | 95% | Data transformation |
+| `lib/cli-actions/` | 96% | CLI command handlers |
+
+#### Backend Tests (`/back`)
+| Module | Coverage | Description |
+|--------|----------|-------------|
+| `utils/cost.ts` | 100% | Token cost calculation |
+| `utils/logger.ts` | 100% | Logging utilities |
+| `utils/sse.ts` | 95% | Server-Sent Events |
+| `db/schema.ts` | 100% | Database schema exports |
+| `db/metadata.ts` | 100% | Database metadata queries |
+| `ai/actions/.../prompt.ts` | 100% | C3 calibration prompts |
+| `constants/` | 100% | Environment configuration |
+
+#### Frontend Tests (`/front`)
+| Module | Coverage | Description |
+|--------|----------|-------------|
+| `stores/` | 96% | Zustand state management |
+| `lib/api.ts` | 99% | API client with SSE parsing |
+| `hooks/useTypewriter.ts` | 100% | Typewriter animation hook |
+| `components/layout/` | 100% | Layout components |
+| `components/chat/` | 90% | Chat UI components |
+| `components/dashboard/` | 97% | Dashboard components |
+
+#### Integration Tests
 ```bash
 cd back && node test-queries.js
 ```
-
-Integration tests validate full pipeline:
-- Query → Classification → SQL → Execution → Chart
+Validates full pipeline: Query → Classification → SQL → Execution → Chart
 
 ## Scalability Design
 
