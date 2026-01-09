@@ -40,7 +40,7 @@ interface PolarViewBox {
   cy?: number;
 }
 
-function PieCenterLabel({ viewBox, total }: { viewBox?: PolarViewBox; total: number }) {
+function PieCenterLabel({ viewBox, total }: Readonly<{ viewBox?: PolarViewBox; total: number }>) {
   const cx = viewBox?.cx;
   const cy = viewBox?.cy;
   if (cx === undefined || cy === undefined) {
@@ -120,7 +120,10 @@ export function PieChart({ data, className }: Readonly<PieChartProps>) {
   );
 
   const renderPieCenterLabel = React.useCallback(
-    (props: { viewBox?: PolarViewBox }) => <PieCenterLabel viewBox={props.viewBox} total={total} />,
+    (props: unknown) => {
+      const polarProps = props as { viewBox?: PolarViewBox };
+      return <PieCenterLabel viewBox={polarProps.viewBox} total={total} />;
+    },
     [total]
   );
 

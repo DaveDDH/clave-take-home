@@ -154,8 +154,7 @@ describe('runValidation', () => {
 
   it('handles non-Error exceptions in file read', async () => {
     mockReadFileSync.mockImplementation(() => {
-      // eslint-disable-next-line @typescript-eslint/only-throw-error -- Testing non-Error exception handling
-      throw null;
+      throw null; // NOSONAR - Intentionally testing non-Error exception handling
     });
 
     const result = await runValidation(mockConfig);

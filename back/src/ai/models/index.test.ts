@@ -19,7 +19,7 @@ describe('ai/models', () => {
       // gpt-oss-20b is cheapest, should be first
       expect(MODEL_IDS[0]).toBe('gpt-oss-20b');
       // gpt-5.2 is most expensive, should be last
-      expect(MODEL_IDS[MODEL_IDS.length - 1]).toBe('gpt-5.2');
+      expect(MODEL_IDS.at(-1)).toBe('gpt-5.2');
     });
   });
 

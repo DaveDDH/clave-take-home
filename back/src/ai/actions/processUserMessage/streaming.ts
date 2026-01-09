@@ -62,18 +62,21 @@ interface SQLGenerationResult {
   confidence?: number;
 }
 
-async function generateSQL(
-  useConsistency: boolean,
-  candidateCount: number,
-  currentReasoning: ReasoningLevel,
-  userQuestion: string,
-  linkedSchema: Awaited<ReturnType<typeof linkSchema>>["result"],
-  history: ConversationMessage[],
-  dataContext: Awaited<ReturnType<typeof import("./data-context.js").getDataContext>>,
-  currentModel: ModelId,
-  costAccumulator: CostAccumulator,
-  processId?: string
-): Promise<SQLGenerationResult> {
+interface SQLGenerationOptions {
+  useConsistency: boolean;
+  candidateCount: number;
+  currentReasoning: ReasoningLevel;
+  userQuestion: string;
+  linkedSchema: Awaited<ReturnType<typeof linkSchema>>["result"];
+  history: ConversationMessage[];
+  dataContext: Awaited<ReturnType<typeof import("./data-context.js").getDataContext>>;
+  currentModel: ModelId;
+  costAccumulator: CostAccumulator;
+  processId?: string;
+}
+
+async function generateSQL(opts: SQLGenerationOptions): Promise<SQLGenerationResult> {
+  const { useConsistency, candidateCount, currentReasoning, userQuestion, linkedSchema, history, dataContext, currentModel, costAccumulator, processId } = opts;
   const startSQLGeneration = Date.now();
 
   if (useConsistency) {
@@ -238,7 +241,7 @@ async function executeC3Pipeline(ctx: PipelineContext): Promise<{ completed: boo
   sseWriter.sendProgress("Starting analysis...", "init");
 
   // Step 0: Run classification and schema linking in parallel
-  const { classification, linkedSchema, classificationTime } = await runParallelClassificationAndSchema(
+  const { classification, linkedSchema } = await runParallelClassificationAndSchema(
     userQuestion, history, currentModel, costAccumulator, sseWriter, processId
   );
 
@@ -259,10 +262,10 @@ async function executeC3Pipeline(ctx: PipelineContext): Promise<{ completed: boo
   const { getDataContext } = await import("./data-context.js");
   const dataContext = await getDataContext();
 
-  const { sql, data } = await generateSQL(
+  const { sql, data } = await generateSQL({
     useConsistency, candidateCount, currentReasoning, userQuestion,
-    linkedSchema, history, dataContext, currentModel, costAccumulator, processId
-  );
+    linkedSchema, history, dataContext, currentModel, costAccumulator, processId,
+  });
 
   log("📜 Generated SQL:", undefined, processId);
   log("   " + sql.split("\n").join("\n   "), undefined, processId);

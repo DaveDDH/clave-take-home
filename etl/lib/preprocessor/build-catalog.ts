@@ -64,44 +64,48 @@ function collectFromSquare(
   }
 }
 
+// Helper to get all valid selections from Toast orders
+function getValidToastSelections(sources: SourceData) {
+  return sources.toast.orders
+    .filter(order => !order.voided && !order.deleted)
+    .flatMap(order => order.checks)
+    .filter(check => !check.voided && !check.deleted)
+    .flatMap(check => check.selections)
+    .filter(selection => !selection.voided);
+}
+
 function collectFromToast(
   sources: SourceData,
   rawItems: RawProductItem[],
   rawCategories: Map<string, { squareId?: string; name: string }>
 ): void {
   const seenToastItems = new Set<string>();
-  for (const order of sources.toast.orders) {
-    if (order.voided || order.deleted) continue;
-    for (const check of order.checks) {
-      if (check.voided || check.deleted) continue;
-      for (const selection of check.selections) {
-        if (selection.voided) continue;
+  const selections = getValidToastSelections(sources);
 
-        const normalizedKey = selection.displayName.toLowerCase().trim();
-        if (seenToastItems.has(normalizedKey)) continue;
-        seenToastItems.add(normalizedKey);
+  for (const selection of selections) {
+    const normalizedKey = selection.displayName.toLowerCase().trim();
+    if (seenToastItems.has(normalizedKey)) continue;
+    seenToastItems.add(normalizedKey);
 
-        const { baseName, variation, variationType } = extractVariation(selection.displayName);
+    const { baseName, variation, variationType } = extractVariation(selection.displayName);
 
-        let categoryName: string | undefined;
-        if (selection.itemGroup?.name) {
-          categoryName = normalizeCategory(selection.itemGroup.name);
-          if (!rawCategories.has(categoryName)) {
-            rawCategories.set(categoryName, { name: categoryName });
-          }
-        }
-
-        rawItems.push({
-          source: 'toast',
-          sourceId: selection.guid,
-          originalName: selection.displayName,
-          baseName,
-          extractedVariation: variation,
-          extractedVariationType: variationType,
-          categoryName,
-        });
+    let categoryName: string | undefined;
+    if (selection.itemGroup?.name) {
+      categoryName = normalizeCategory(selection.itemGroup.name);
+      if (!rawCategories.has(categoryName)) {
+        rawCategories.set(categoryName, { name: categoryName });
       }
     }
+
+    rawItems.push({
+      source: 'toast',
+      sourceId: selection.guid,
+      originalName: selection.displayName,
+      baseName,
+      extractedVariation: variation,
+      extractedVariationType: variationType,
+      categoryName,
+    });
   }
 }
 
@@ -140,6 +144,42 @@ function collectFromDoorDash(
   }
 }
 
+// Helper: Update group's optional fields from item
+function updateGroupFromItem(group: ProductGroupResult, item: RawProductItem): void {
+  if (!group.description && item.description) {
+    group.description = item.description;
+  }
+  if (!group.categoryId) {
+    group.categoryId = item.categoryId || item.categoryName;
+  }
+}
+
+// Helper: Apply variation from group match to item
+function applyVariationFromMatch(item: RawProductItem, variationName: string | null | undefined): void {
+  if (variationName) {
+    item.extractedVariation = variationName;
+    item.extractedVariationType = 'semantic';
+  }
+}
+
+// Helper: Find a group matching by Levenshtein distance
+function findSimilarGroup(
+  normalizedBaseName: string,
+  productGroups: ProductGroupResult[],
+  configuredGroups: Map<string, ProductGroupResult>,
+  threshold: number
+): ProductGroupResult | undefined {
+  for (const group of productGroups) {
+    if (configuredGroups.has(group.canonicalName.toLowerCase())) continue;
+
+    const groupNormalizedBase = getNormalizedBaseName(group.canonicalName);
+    const distance = levenshtein(normalizedBaseName, groupNormalizedBase, { maxDistance: threshold });
+
+    if (distance <= threshold) return group;
+  }
+  return undefined;
+}
+
 function groupProducts(rawItems: RawProductItem[]): ProductGroupResult[] {
   const productGroups: ProductGroupResult[] = [];
   const configuredGroups = new Map<string, ProductGroupResult>();
@@ -148,35 +188,15 @@ function groupProducts(rawItems: RawProductItem[]): ProductGroupResult[] {
   for (const item of rawItems) {
     const groupMatch = matchProductToGroup(item.originalName);
 
-    /* istanbul ignore if */
     if (groupMatch) {
       const groupKey = groupMatch.baseName.toLowerCase();
+      applyVariationFromMatch(item, groupMatch.variationName);
 
       if (configuredGroups.has(groupKey)) {
         const group = configuredGroups.get(groupKey)!;
         group.items.push(item);
-
-        if (groupMatch.variationName) {
-          item.extractedVariation = groupMatch.variationName;
-          item.extractedVariationType = 'semantic';
-        }
-
-        if (!group.description && item.description) {
-          group.description = item.description;
-        }
-        if (!group.categoryId) {
-          if (item.categoryId) {
-            group.categoryId = item.categoryId;
-          } else if (item.categoryName) {
-            group.categoryId = item.categoryName;
-          }
-        }
+        updateGroupFromItem(group, item);
       } else {
-        if (groupMatch.variationName) {
-          item.extractedVariation = groupMatch.variationName;
-          item.extractedVariationType = 'semantic';
-        }
-
         const newGroup: ProductGroupResult = {
           canonicalName: groupMatch.baseName,
           categoryId: item.categoryId || item.categoryName,
@@ -191,39 +211,13 @@ function groupProducts(rawItems: RawProductItem[]): ProductGroupResult[] {
 
     // Fallback: use Levenshtein grouping
     const normalizedBaseName = getNormalizedBaseName(item.originalName);
+    const similarGroup = findSimilarGroup(normalizedBaseName, productGroups, configuredGroups, SIMILARITY_THRESHOLD);
 
-    let foundGroup = false;
-    for (const group of productGroups) {
-      /* istanbul ignore if */
-      if (configuredGroups.has(group.canonicalName.toLowerCase())) {
-        continue;
-      }
-
-      const groupNormalizedBase = getNormalizedBaseName(group.canonicalName);
-      const distance = levenshtein(normalizedBaseName, groupNormalizedBase, { maxDistance: SIMILARITY_THRESHOLD });
-
-      if (distance <= SIMILARITY_THRESHOLD) {
-        group.items.push(item);
-        const allBaseNames = group.items.map(i => i.baseName);
-        group.canonicalName = pickCanonicalName(allBaseNames);
-        /* istanbul ignore if */
-        if (!group.description && item.description) {
-          group.description = item.description;
-        }
-        /* istanbul ignore if */
-        if (!group.categoryId) {
-          if (item.categoryId) {
-            group.categoryId = item.categoryId;
-          } else if (item.categoryName) {
-            group.categoryId = item.categoryName;
-          }
-        }
-        foundGroup = true;
-        break;
-      }
-    }
-
-    if (!foundGroup) {
+    if (similarGroup) {
+      similarGroup.items.push(item);
+      similarGroup.canonicalName = pickCanonicalName(similarGroup.items.map(i => i.baseName));
+      updateGroupFromItem(similarGroup, item);
+    } else {
       productGroups.push({
         canonicalName: item.baseName,
         categoryId: item.categoryId || item.categoryName,
@@ -236,6 +230,101 @@ function groupProducts(rawItems: RawProductItem[]): ProductGroupResult[] {
   return productGroups;
 }
 
+// Context for building products and variations
+interface BuildContext {
+  productMap: Map<string, string>;
+  variationMap: Map<string, string>;
+  seenVariations: Set<string>;
+  variationNamesByProduct: Map<string, Map<string, string>>;
+  product_variations: Array<DbProductVariation & { id: string }>;
+}
+
+// Helper: Get canonical variation name with fuzzy matching
+function getCanonicalVariationName(ctx: BuildContext, productId: string, variationName: string): string {
+  if (!ctx.variationNamesByProduct.has(productId)) {
+    ctx.variationNamesByProduct.set(productId, new Map());
+  }
+  const productVariations = ctx.variationNamesByProduct.get(productId)!;
+  const normalizedLower = variationName.toLowerCase();
+
+  if (productVariations.has(normalizedLower)) {
+    return productVariations.get(normalizedLower)!;
+  }
+
+  for (const [existingLower, existingCanonical] of productVariations) {
+    const distance = levenshtein(normalizedLower, existingLower, { maxDistance: 2 });
+    if (distance <= 2) {
+      const canonical = existingCanonical.length >= variationName.length ? existingCanonical : variationName;
+      productVariations.set(normalizedLower, canonical);
+      productVariations.set(existingLower, canonical);
+      return canonical;
+    }
+  }
+
+  productVariations.set(normalizedLower, variationName);
+  return variationName;
+}
+
+type VariationType = 'quantity' | 'size' | 'serving' | 'strength' | 'semantic';
+
+// Helper: Add a variation if not already seen
+function addVariationIfNew(
+  ctx: BuildContext,
+  productId: string,
+  canonicalName: string,
+  finalType: VariationType | undefined,
+  sourceRawName: string,
+  rawData: Record<string, unknown>
+): void {
+  const variationKey = `${productId}:${canonicalName.toLowerCase()}`;
+  if (ctx.seenVariations.has(variationKey)) return;
+
+  ctx.seenVariations.add(variationKey);
+  const variationId = randomUUID();
+  ctx.product_variations.push({
+    id: variationId,
+    product_id: productId,
+    name: canonicalName,
+    variation_type: finalType,
+    source_raw_name: sourceRawName,
+    raw_data: rawData,
+  });
+  ctx.variationMap.set(variationKey, variationId);
+}
+
+// Helper: Process extracted variation from item
+function processExtractedVariation(ctx: BuildContext, productId: string, item: RawProductItem): void {
+  if (!item.extractedVariation) return;
+
+  const { normalized: normalizedName, variationType: normalizedType } = normalizeVariationName(item.extractedVariation);
+  const finalType = normalizedType || item.extractedVariationType;
+  const canonicalName = getCanonicalVariationName(ctx, productId, normalizedName);
+
+  addVariationIfNew(ctx, productId, canonicalName, finalType, item.originalName, {
+    source: item.source, sourceId: item.sourceId, originalName: item.originalName, extractedVariation: item.extractedVariation,
+  });
+}
+
+// Helper: Process Square variations from item
+function processSquareVariations(ctx: BuildContext, productId: string, item: RawProductItem): void {
+  if (!item.squareVariations) return;
+
+  for (const sqVariation of item.squareVariations) {
+    ctx.productMap.set(sqVariation.id, productId);
+    if (sqVariation.name.toLowerCase() === 'regular') continue;
+
+    const { variation: extractedVar, variationType } = extractVariation(sqVariation.name);
+    const rawVarName = extractedVar || sqVariation.name;
+    const { normalized: normalizedName, variationType: normalizedType } = normalizeVariationName(rawVarName);
+    const finalType = normalizedType || variationType;
+    const canonicalName = getCanonicalVariationName(ctx, productId, normalizedName);
+
+    addVariationIfNew(ctx, productId, canonicalName, finalType, `${item.originalName} - ${sqVariation.name}`, {
+      source: 'square', squareVariationId: sqVariation.id, squareVariationName: sqVariation.name, parentItemName: item.originalName,
+    });
+  }
+}
+
 function buildProductsAndVariations(
   productGroups: ProductGroupResult[],
   categoryMap: Map<string, string>
@@ -246,120 +335,37 @@ function buildProductsAndVariations(
   variationMap: Map<string, string>;
 } {
   const products: Array<DbProduct & { id: string }> = [];
-  const product_variations: Array<DbProductVariation & { id: string }> = [];
-  const productMap = new Map<string, string>();
-  const variationMap = new Map<string, string>();
-  const seenVariations = new Set<string>();
-  const variationNamesByProduct = new Map<string, Map<string, string>>();
-
-  /* istanbul ignore next */
-  function getCanonicalVariationName(productId: string, variationName: string): string {
-    if (!variationNamesByProduct.has(productId)) {
-      variationNamesByProduct.set(productId, new Map());
-    }
-    const productVariations = variationNamesByProduct.get(productId)!;
-    const normalizedLower = variationName.toLowerCase();
-
-    if (productVariations.has(normalizedLower)) {
-      return productVariations.get(normalizedLower)!;
-    }
-
-    for (const [existingLower, existingCanonical] of productVariations) {
-      const distance = levenshtein(normalizedLower, existingLower, { maxDistance: 2 });
-      if (distance <= 2) {
-        const canonical = existingCanonical.length >= variationName.length ? existingCanonical : variationName;
-        productVariations.set(normalizedLower, canonical);
-        productVariations.set(existingLower, canonical);
-        return canonical;
-      }
-    }
-
-    productVariations.set(normalizedLower, variationName);
-    return variationName;
-  }
+  const ctx: BuildContext = {
+    productMap: new Map(),
+    variationMap: new Map(),
+    seenVariations: new Set(),
+    variationNamesByProduct: new Map(),
+    product_variations: [],
+  };
 
   for (const group of productGroups) {
     const productId = randomUUID();
     const categoryId = group.categoryId ? categoryMap.get(group.categoryId) : undefined;
-
-    const rawItems = group.items.map(item => ({
-      source: item.source,
-      sourceId: item.sourceId,
-      originalName: item.originalName,
-    }));
 
     products.push({
       id: productId,
       name: group.canonicalName,
       category_id: categoryId,
       description: group.description,
-      raw_data: { items: rawItems },
+      raw_data: { items: group.items.map(i => ({ source: i.source, sourceId: i.sourceId, originalName: i.originalName })) },
     });
 
     for (const item of group.items) {
-      if (item.sourceId) {
-        productMap.set(item.sourceId, productId);
-      }
-      productMap.set(item.originalName.toLowerCase(), productId);
-      productMap.set(item.baseName.toLowerCase(), productId);
+      if (item.sourceId) ctx.productMap.set(item.sourceId, productId);
+      ctx.productMap.set(item.originalName.toLowerCase(), productId);
+      ctx.productMap.set(item.baseName.toLowerCase(), productId);
 
-      /* istanbul ignore if */
-      if (item.extractedVariation) {
-        const { normalized: normalizedName, variationType: normalizedType } =
-          normalizeVariationName(item.extractedVariation);
-        const finalType = normalizedType || item.extractedVariationType;
-        const canonicalName = getCanonicalVariationName(productId, normalizedName);
-        const variationKey = `${productId}:${canonicalName.toLowerCase()}`;
-
-        if (!seenVariations.has(variationKey)) {
-          seenVariations.add(variationKey);
-          const variationId = randomUUID();
-          product_variations.push({
-            id: variationId,
-            product_id: productId,
-            name: canonicalName,
-            variation_type: finalType,
-            source_raw_name: item.originalName,
-            raw_data: { source: item.source, sourceId: item.sourceId, originalName: item.originalName, extractedVariation: item.extractedVariation },
-          });
-          variationMap.set(variationKey, variationId);
-        }
-      }
-
-      /* istanbul ignore if */
-      if (item.squareVariations) {
-        for (const sqVariation of item.squareVariations) {
-          productMap.set(sqVariation.id, productId);
-
-          if (sqVariation.name.toLowerCase() === 'regular') continue;
-
-          const { variation: extractedVar, variationType } = extractVariation(sqVariation.name);
-          const rawVarName = extractedVar || sqVariation.name;
-          const { normalized: normalizedName, variationType: normalizedType } =
-            normalizeVariationName(rawVarName);
-          const finalType = normalizedType || variationType;
-          const canonicalName = getCanonicalVariationName(productId, normalizedName);
-          const variationKey = `${productId}:${canonicalName.toLowerCase()}`;
-
-          if (!seenVariations.has(variationKey)) {
-            seenVariations.add(variationKey);
-            const variationId = randomUUID();
-            product_variations.push({
-              id: variationId,
-              product_id: productId,
-              name: canonicalName,
-              variation_type: finalType,
-              source_raw_name: `${item.originalName} - ${sqVariation.name}`,
-              raw_data: { source: 'square', squareVariationId: sqVariation.id, squareVariationName: sqVariation.name, parentItemName: item.originalName },
-            });
-            variationMap.set(variationKey, variationId);
-          }
-        }
-      }
+      processExtractedVariation(ctx, productId, item);
+      processSquareVariations(ctx, productId, item);
     }
   }
 
-  return { products, product_variations, productMap, variationMap };
+  return { products, product_variations: ctx.product_variations, productMap: ctx.productMap, variationMap: ctx.variationMap };
 }
 
 export function buildUnifiedCatalog(sources: SourceData): CatalogResult {

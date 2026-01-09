@@ -1,6 +1,13 @@
 -- Restaurant Analytics Database Schema
 -- Generated from preprocessed data analysis
 
+-- ENUM types for reusable constraints
+DO $$ BEGIN
+  CREATE TYPE source_platform AS ENUM ('toast', 'doordash', 'square');
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
+
 -- 1. Locations (unified across all sources)
 CREATE TABLE IF NOT EXISTS locations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -47,14 +54,14 @@ CREATE TABLE IF NOT EXISTS product_aliases (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
   raw_name TEXT NOT NULL,
-  source TEXT NOT NULL CHECK (source IN ('toast', 'doordash', 'square')),
+  source source_platform NOT NULL,
   UNIQUE(raw_name, source)
 );
 
 -- 6. Orders (unified from all sources)
 CREATE TABLE IF NOT EXISTS orders (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  source TEXT NOT NULL CHECK (source IN ('toast', 'doordash', 'square')),
+  source source_platform NOT NULL,
   source_order_id TEXT NOT NULL,
   location_id UUID NOT NULL REFERENCES locations(id),
   order_type TEXT NOT NULL CHECK (order_type IN ('dine_in', 'takeout', 'pickup', 'delivery')),

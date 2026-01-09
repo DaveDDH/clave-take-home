@@ -138,6 +138,50 @@ function dispatchSSEEvent(event: SSEEvent, handlers: StreamHandlers): boolean {
   }
 }
 
+interface StreamState {
+  buffer: string;
+  receivedComplete: boolean;
+}
+
+function processStreamChunk(
+  state: StreamState,
+  value: Uint8Array,
+  decoder: TextDecoder,
+  handlers: StreamHandlers
+): void {
+  state.buffer += decoder.decode(value, { stream: true });
+  const lines = state.buffer.split('\n\n');
+  state.buffer = lines.pop() || '';
+
+  for (const line of lines) {
+    const event = parseSSELine(line);
+    if (event && dispatchSSEEvent(event, handlers)) {
+      state.receivedComplete = true;
+    }
+  }
+}
+
+async function consumeStream(
+  reader: ReadableStreamDefaultReader<Uint8Array>,
+  handlers: StreamHandlers
+): Promise<void> {
+  const decoder = new TextDecoder();
+  const state: StreamState = { buffer: '', receivedComplete: false };
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      processStreamChunk(state, value, decoder, handlers);
+    }
+    if (!state.receivedComplete) {
+      handlers.onComplete?.();
+    }
+  } catch (error) {
+    handlers.onError?.(error instanceof Error ? error.message : 'Stream failed');
+  }
+}
+
 export async function streamChatResponse(
   message: string,
   conversationId: string | null,
@@ -164,40 +208,7 @@ export async function streamChatResponse(
   }
 
   const reader = response.body!.getReader();
-  const decoder = new TextDecoder();
-  let buffer = '';
-
-  const readStream = async () => {
-    let receivedComplete = false;
-    try {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n\n');
-        buffer = lines.pop() || '';
-
-        for (const line of lines) {
-          const event = parseSSELine(line);
-          if (event) {
-            const isComplete = dispatchSSEEvent(event, handlers);
-            if (isComplete) receivedComplete = true;
-          }
-        }
-      }
-      // Ensure onComplete is called when stream ends, even if no explicit complete event
-      if (!receivedComplete) {
-        handlers.onComplete?.();
-      }
-    } catch (error) {
-      handlers.onError?.(
-        error instanceof Error ? error.message : 'Stream failed'
-      );
-    }
-  };
-
-  void readStream();
+  void consumeStream(reader, handlers);
 
   return () => { void reader.cancel(); };
 }
