@@ -16,8 +16,8 @@ function loadTestFiles() {
   const files = fs.readdirSync(TEST_DATA_DIR)
     .filter(file => file.match(/^q\d+\.json$/))
     .sort((a, b) => {
-      const numA = parseInt(a.match(/\d+/)[0]);
-      const numB = parseInt(b.match(/\d+/)[0]);
+      const numA = Number.parseInt(a.match(/\d+/)[0]);
+      const numB = Number.parseInt(b.match(/\d+/)[0]);
       return numA - numB;
     });
 

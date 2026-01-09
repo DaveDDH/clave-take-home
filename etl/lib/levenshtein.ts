@@ -27,7 +27,7 @@ export function levenshtein(
     b = b.toLowerCase();
   }
   if (normalizeDiacritics) {
-    const strip = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const strip = (s: string) => s.normalize('NFD').replaceAll(/[\u0300-\u036f]/g, '');
     a = strip(a);
     b = strip(b);
   }
@@ -65,10 +65,10 @@ export function levenshtein(
     // Track minimum value in this row for early-abandon
     let rowMin = curr[0];
 
-    const bj = b.charCodeAt(j - 1);
+    const bj = b.codePointAt(j - 1);
 
     for (let i = 1; i <= m; i++) {
-      const cost = a.charCodeAt(i - 1) === bj ? 0 : 1;
+      const cost = a.codePointAt(i - 1) === bj ? 0 : 1;
 
       // classic recurrence: min of delete, insert, substitute
       const del = prev[i] + 1; // delete a[i-1]

@@ -56,7 +56,7 @@ function getSimilarityThreshold(wordLength) {
 }
 
 function escapeRegex(str) {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return str.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 // Simulate matchProductToGroup logic

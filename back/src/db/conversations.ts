@@ -71,7 +71,7 @@ export async function conversationExists(conversationId: string): Promise<boolea
   const result = await executeQuery<{ count: string }>(
     `SELECT COUNT(*) as count FROM conversations WHERE id = '${conversationId}'`
   );
-  return parseInt(result[0].count) > 0;
+  return Number.parseInt(result[0].count) > 0;
 }
 
 export interface ConversationWithPreview {

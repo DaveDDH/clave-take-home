@@ -97,7 +97,7 @@ function cleanSQL(raw: string): string {
   let sql = raw.trim();
 
   // Remove markdown code blocks if present
-  sql = sql.replace(/```sql\n?/gi, "").replace(/```\n?/g, "");
+  sql = sql.replaceAll(/```sql\n?/gi, "").replaceAll(/```\n?/g, "");
 
   // If response doesn't start with SELECT or WITH (CTE), prepend SELECT
   const normalized = sql.toUpperCase();

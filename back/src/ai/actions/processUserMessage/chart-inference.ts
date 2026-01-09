@@ -28,7 +28,7 @@ export function determineChartAxes(
     const value = data[0][col];
     return (
       typeof value === "number" ||
-      (typeof value === "string" && !isNaN(Number(value)))
+      (typeof value === "string" && !Number.isNaN(Number(value)))
     );
   });
   const categoryColumns = columns.filter(
@@ -100,12 +100,12 @@ export function formatDataForChart(
       if (key.endsWith("_cents")) {
         // Handle both string and number cents values
         const numValue =
-          typeof value === "number" ? value : parseFloat(String(value));
+          typeof value === "number" ? value : Number.parseFloat(String(value));
         const dollarKey = key.replace("_cents", "");
-        formatted[dollarKey] = isNaN(numValue) ? value : numValue / 100;
-      } else if (typeof value === "string" && !isNaN(Number(value))) {
+        formatted[dollarKey] = Number.isNaN(numValue) ? value : numValue / 100;
+      } else if (typeof value === "string" && !Number.isNaN(Number(value))) {
         // Convert numeric strings to numbers
-        formatted[key] = parseFloat(value);
+        formatted[key] = Number.parseFloat(value);
       } else {
         formatted[key] = value;
       }

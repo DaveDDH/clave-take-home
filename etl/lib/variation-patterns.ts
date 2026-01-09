@@ -46,8 +46,8 @@ const FORMAT_TRANSFORMERS: Record<string, (value: string) => string> = {
  */
 function createFormatter(formatTemplate: string): (match: RegExpMatchArray) => string {
   return (match: RegExpMatchArray) => {
-    return formatTemplate.replace(/\{(\d+)(?:\|(\w+))?\}/g, (_, groupNum, transformer) => {
-      const value = match[parseInt(groupNum, 10)] || '';
+    return formatTemplate.replaceAll(/\{(\d+)(?:\|(\w+))?\}/g, (_, groupNum, transformer) => {
+      const value = match[Number.parseInt(groupNum, 10)] || '';
       if (transformer && FORMAT_TRANSFORMERS[transformer]) {
         return FORMAT_TRANSFORMERS[transformer](value);
       }

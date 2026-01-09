@@ -37,7 +37,7 @@ const COLORS = [
 
 export function PieChart({ data, className }: PieChartProps) {
   const id = React.useId();
-  const chartId = `pie-${id.replace(/:/g, '')}`;
+  const chartId = `pie-${id.replaceAll(/:/g, '')}`;
 
   const [activeItem, setActiveItem] = React.useState(data[0]?.name ?? '');
 
@@ -49,7 +49,7 @@ export function PieChart({ data, className }: PieChartProps) {
   const chartConfig = React.useMemo(() => {
     return data.reduce<ChartConfig>((acc, item, index) => {
       acc[item.name] = {
-        label: capitalizeWords(item.name.replace(/_/g, ' ')),
+        label: capitalizeWords(item.name.replaceAll(/_/g, ' ')),
         color: COLORS[index % COLORS.length],
       };
       return acc;

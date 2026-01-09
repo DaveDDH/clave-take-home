@@ -29,7 +29,7 @@ export function LineChart({ data, xKey, yKey, className }: LineChartProps) {
       return (
         key !== xKey &&
         (typeof value === 'number' ||
-         (typeof value === 'string' && !isNaN(Number(value))))
+         (typeof value === 'string' && !Number.isNaN(Number(value))))
       );
     });
 
@@ -44,7 +44,7 @@ export function LineChart({ data, xKey, yKey, className }: LineChartProps) {
 
     yKeys.forEach((key, index) => {
       config[key] = {
-        label: capitalizeWords(key.replace(/_/g, ' ')),
+        label: capitalizeWords(key.replaceAll(/_/g, ' ')),
         color: colors[index % colors.length],
       };
     });

@@ -70,7 +70,7 @@ for (const keyword of coffeeGroup.keywords || []) {
   if (!keyword.includes(' ')) {
     const words = nameLower.split(/\s+/);
     for (const word of words) {
-      const cleanWord = word.replace(/[^a-z]/g, '');
+      const cleanWord = word.replaceAll(/[^a-z]/g, '');
       const distance = levenshtein(cleanWord, keyword);
       const threshold = getSimilarityThreshold(Math.min(cleanWord.length, keyword.length));
       const sameLength = cleanWord.length === keyword.length;

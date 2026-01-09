@@ -180,5 +180,5 @@ export async function streamChatResponse(
 
   readStream();
 
-  return () => reader.cancel();
+  return () => { void reader.cancel(); };
 }

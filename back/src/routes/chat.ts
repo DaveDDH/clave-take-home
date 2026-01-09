@@ -130,27 +130,29 @@ router.post("/chat/stream", async (req: Request, res: Response) => {
 
     // Wrap sendComplete to save assistant response after streaming completes
     const originalSendComplete = sseWriter.sendComplete.bind(sseWriter);
-    sseWriter.sendComplete = async () => {
-      // Save messages based on what we captured (skip in debug mode)
-      if (!DEBUG_MODE) {
-        if (capturedCharts && capturedCharts.length > 0) {
-          // Data query with charts: save partial response first, then chart response
-          if (partialResponse.trim()) {
+    sseWriter.sendComplete = () => {
+      void (async () => {
+        // Save messages based on what we captured (skip in debug mode)
+        if (!DEBUG_MODE) {
+          if (capturedCharts && capturedCharts.length > 0) {
+            // Data query with charts: save partial response first, then chart response
+            if (partialResponse.trim()) {
+              await addMessage(conversationId, "assistant", partialResponse);
+            }
+            // Save chart response (even if empty content, charts are important)
+            await addMessage(conversationId, "assistant", assistantResponse, capturedCharts);
+          } else if (assistantResponse.trim()) {
+            // Has streamed response but no charts
+            await addMessage(conversationId, "assistant", assistantResponse);
+          } else if (partialResponse.trim()) {
+            // Non-data query: only partial response (no charts, no streamed response)
             await addMessage(conversationId, "assistant", partialResponse);
           }
-          // Save chart response (even if empty content, charts are important)
-          await addMessage(conversationId, "assistant", assistantResponse, capturedCharts);
-        } else if (assistantResponse.trim()) {
-          // Has streamed response but no charts
-          await addMessage(conversationId, "assistant", assistantResponse);
-        } else if (partialResponse.trim()) {
-          // Non-data query: only partial response (no charts, no streamed response)
-          await addMessage(conversationId, "assistant", partialResponse);
         }
-      }
-      // Send conversation ID with completion
-      sseWriter.sendEvent("conversationId", { id: conversationId });
-      originalSendComplete();
+        // Send conversation ID with completion
+        sseWriter.sendEvent("conversationId", { id: conversationId });
+        originalSendComplete();
+      })();
     };
 
     const processOptions: ProcessOptions = {

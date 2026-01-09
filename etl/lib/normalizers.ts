@@ -124,11 +124,11 @@ export function getNormalizedBaseName(name: string): string {
 export function normalizeCategory(raw: string): string {
   return raw
     // Remove emojis (covers most emoji ranges)
-    .replace(/[\u{1F300}-\u{1F9FF}]/gu, '')
-    .replace(/[\u{2600}-\u{26FF}]/gu, '')
-    .replace(/[\u{2700}-\u{27BF}]/gu, '')
+    .replaceAll(/[\u{1F300}-\u{1F9FF}]/gu, '')
+    .replaceAll(/[\u{2600}-\u{26FF}]/gu, '')
+    .replaceAll(/[\u{2700}-\u{27BF}]/gu, '')
     .trim()
-    .replace(/\s+/g, ' ')
+    .replaceAll(/\s+/g, ' ')
     .split(' ')
     .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join(' ');
@@ -142,7 +142,7 @@ export function normalizeProductName(raw: string): string {
   return raw
     .toLowerCase()
     .trim()
-    .replace(/\s+/g, ' ');
+    .replaceAll(/\s+/g, ' ');
 }
 
 /**

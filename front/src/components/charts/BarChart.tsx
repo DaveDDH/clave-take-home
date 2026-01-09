@@ -38,7 +38,7 @@ export function BarChart({ data, xKey, yKey, className }: BarChartProps) {
       const value = firstRow[key];
       return (
         typeof value === 'number' ||
-        (typeof value === 'string' && !isNaN(Number(value)))
+        (typeof value === 'string' && !Number.isNaN(Number(value)))
       );
     });
 
@@ -49,7 +49,7 @@ export function BarChart({ data, xKey, yKey, className }: BarChartProps) {
     // We need to transform it to long format for bar charts
     if (data.length === 1 && allNumericKeys.length > 1) {
       const transformed = allNumericKeys.map((key) => ({
-        category: key.replace(/_/g, ' '),
+        category: key.replaceAll(/_/g, ' '),
         value: firstRow[key],
       }));
       return {
@@ -79,7 +79,7 @@ export function BarChart({ data, xKey, yKey, className }: BarChartProps) {
       transformedData.forEach((item, index) => {
         const key = String(item[hasMultipleSeries ? 'category' : xKey] || `Item ${index + 1}`);
         config[key] = {
-          label: capitalizeWords(key.replace(/_/g, ' ')),
+          label: capitalizeWords(key.replaceAll(/_/g, ' ')),
           color: COLORS[index % COLORS.length],
         };
       });
@@ -87,7 +87,7 @@ export function BarChart({ data, xKey, yKey, className }: BarChartProps) {
       // Create config entries for each series
       yKeys.forEach((key, index) => {
         config[key] = {
-          label: capitalizeWords(key.replace(/_/g, ' ')),
+          label: capitalizeWords(key.replaceAll(/_/g, ' ')),
           color: COLORS[index % COLORS.length],
         };
       });
@@ -136,7 +136,7 @@ export function BarChart({ data, xKey, yKey, className }: BarChartProps) {
             axisLine={false}
             tickMargin={8}
             width={100}
-            tickFormatter={(value) => String(value).replace(/_/g, ' ')}
+            tickFormatter={(value) => String(value).replaceAll(/_/g, ' ')}
           />
           <ChartTooltip
             content={
@@ -144,7 +144,7 @@ export function BarChart({ data, xKey, yKey, className }: BarChartProps) {
                 hideIndicator
                 formatter={(value, name, item, index) => {
                   const nameStr = String(name).toLowerCase();
-                  const label = capitalizeWords(String(name).replace(/_/g, ' '));
+                  const label = capitalizeWords(String(name).replaceAll(/_/g, ' '));
                   const isCurrencyValue = nameStr.includes('sales') || nameStr.includes('revenue');
                   const formattedValue = isCurrencyValue
                     ? `$${Number(value).toLocaleString()}`

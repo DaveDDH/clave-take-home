@@ -66,7 +66,7 @@ export function processSquareOrders(
         variationId = variationMap.get(variationKey);
       }
 
-      const quantity = parseInt(lineItem.quantity, 10);
+      const quantity = Number.parseInt(lineItem.quantity, 10);
       const totalPrice = lineItem.total_money.amount;
       const unitPrice = Math.round(totalPrice / quantity);
 
