@@ -321,12 +321,6 @@ cd front && npm test  # 95% coverage, 171 tests
 | `components/chat/` | 90% | Chat UI components |
 | `components/dashboard/` | 97% | Dashboard components |
 
-#### Integration Tests
-```bash
-cd back && node test-queries.js
-```
-Validates full pipeline: Query → Classification → SQL → Execution → Chart
-
 ## Scalability Design
 
 ### Zero Vendor Lock-in
