@@ -4,3 +4,10 @@ import { TextEncoder, TextDecoder } from 'util';
 // Polyfill TextEncoder/TextDecoder for jsdom
 global.TextEncoder = TextEncoder;
 global.TextDecoder = TextDecoder as typeof global.TextDecoder;
+
+// Mock ResizeObserver for recharts
+global.ResizeObserver = class ResizeObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};

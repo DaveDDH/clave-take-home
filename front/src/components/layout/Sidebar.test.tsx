@@ -5,6 +5,8 @@ import React from 'react';
 const mockPush = jest.fn();
 let mockPathname = '/copilot';
 const mockFetchConversations = jest.fn<() => Promise<Array<{ id: string; preview: string; created_at: string; updated_at: string; message_count: number }>>>();
+const mockStreamChatResponse = jest.fn();
+const mockFetchConversation = jest.fn();
 
 // Mock all external dependencies before imports
 jest.unstable_mockModule('next/link', () => ({
@@ -23,6 +25,8 @@ jest.unstable_mockModule('next/navigation', () => ({
 
 jest.unstable_mockModule('@/lib/api', () => ({
   fetchConversations: () => mockFetchConversations(),
+  fetchConversation: mockFetchConversation,
+  streamChatResponse: mockStreamChatResponse,
 }));
 
 // Dynamic import after mocks

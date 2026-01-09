@@ -1,40 +1,39 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import { render, screen } from '@testing-library/react';
-import { useThemeStore } from '@/stores/theme-store';
-import { useChatStore } from '@/stores/chat-store';
+import React from 'react';
 
-// Mock next/image
-jest.mock('next/image', () => ({
+// Mock external dependencies
+jest.unstable_mockModule('next/image', () => ({
   __esModule: true,
   default: function MockImage({ src, alt, ...props }: { src: string; alt: string; [key: string]: unknown }) {
-    // eslint-disable-next-line @next/next/no-img-element
-    return <img src={src} alt={alt} {...props} />;
+    return React.createElement('img', { src, alt, ...props });
   },
 }));
 
-// Mock next/link
-jest.mock('next/link', () => ({
+jest.unstable_mockModule('next/link', () => ({
   __esModule: true,
-  default: function MockLink({ children, href }: { children: React.ReactNode; href: string }) {
-    return <a href={href}>{children}</a>;
+  default: function MockLink({ children, href, ...props }: { children: React.ReactNode; href: string }) {
+    return React.createElement('a', { href, ...props }, children);
   },
 }));
 
-// Mock next/navigation
-jest.mock('next/navigation', () => ({
+jest.unstable_mockModule('next/navigation', () => ({
   usePathname: () => '/copilot',
   useRouter: () => ({
     push: jest.fn(),
   }),
 }));
 
-// Mock api fetchConversations
-jest.mock('@/lib/api', () => ({
+jest.unstable_mockModule('@/lib/api', () => ({
   fetchConversations: jest.fn<() => Promise<[]>>().mockResolvedValue([]),
+  fetchConversation: jest.fn(),
+  streamChatResponse: jest.fn(),
 }));
 
-// Import after mocks
-import { AppShell } from './AppShell';
+// Dynamic imports after mocks
+const { AppShell } = await import('./AppShell');
+const { useThemeStore } = await import('@/stores/theme-store');
+const { useChatStore } = await import('@/stores/chat-store');
 
 describe('AppShell', () => {
   beforeEach(() => {

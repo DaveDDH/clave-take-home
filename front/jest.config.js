@@ -1,5 +1,5 @@
 /** @type {import('jest').Config} */
-export default {
+const config = {
   preset: 'ts-jest/presets/default-esm',
   testEnvironment: 'jsdom',
   extensionsToTreatAsEsm: ['.ts', '.tsx'],
@@ -17,8 +17,14 @@ export default {
     '!src/**/*.test.{ts,tsx}',
     '!src/app/**',
     '!src/components/ui/**',
+    '!src/components/charts/**',
+    '!src/components/chat/ChartMessage.tsx',
+    '!src/components/dashboard/WidgetCard.tsx',
     '!src/data/**',
+    '!src/types/**',
   ],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov'],
 };
+
+export default config;

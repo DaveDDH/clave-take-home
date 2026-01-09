@@ -1,10 +1,10 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
-import type { Message, ChartConfig as ChartConfigType } from '@/types/chat';
+import type { ChartData } from '@/types/chat';
 
 // Handler types for streamChatResponse
 interface StreamHandlers {
   onClassification?: (data: { isDataQuery: boolean; chartType: string; conversationalResponse: string }) => void;
-  onChart?: (charts: ChartConfigType[]) => void;
+  onChart?: (charts: ChartData[]) => void;
   onSQL?: (sql: string) => void;
   onContentDelta?: (delta: string) => void;
   onContent?: (content: string) => void;
@@ -24,7 +24,7 @@ type StreamChatFn = (
 
 type FetchConversationFn = (id: string) => Promise<{
   id: string;
-  messages: Array<{ role: string; content: string; charts: ChartConfigType[] | null }>;
+  messages: Array<{ role: string; content: string; charts: ChartData[] | null }>;
 }>;
 
 // Mock the api module
@@ -213,7 +213,7 @@ describe('useChatStore', () => {
     });
 
     it('handles cost callback', async () => {
-      mockStreamChatResponse.mockImplementation(async (_msg, _conv, _model, _opts, handlers) => {
+      mockStreamChatResponse.mockImplementation(async (_msg, _conv, _model, _opts, handlers: StreamHandlers) => {
         handlers.onCost?.(0.05);
         handlers.onComplete?.();
         return () => {};
@@ -226,7 +226,7 @@ describe('useChatStore', () => {
     });
 
     it('handles error callback', async () => {
-      mockStreamChatResponse.mockImplementation(async (_msg, _conv, _model, _opts, handlers) => {
+      mockStreamChatResponse.mockImplementation(async (_msg, _conv, _model, _opts, handlers: StreamHandlers) => {
         handlers.onError?.('Something went wrong');
         return () => {};
       });
@@ -273,7 +273,7 @@ describe('useChatStore', () => {
         ],
       });
 
-      mockStreamChatResponse.mockImplementation(async (_msg, _conv, _model, _opts, handlers) => {
+      mockStreamChatResponse.mockImplementation(async (_msg, _conv, _model, _opts, handlers: StreamHandlers) => {
         handlers.onComplete?.();
         return () => {};
       });

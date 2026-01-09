@@ -19,8 +19,10 @@ const COLORS = [
   'var(--chart-5)',
 ];
 
+type ValueType = string | number | Array<string | number>;
+
 function BarChartTooltipFormatter(
-  value: string | number,
+  value: ValueType,
   name: string | number,
   item: { fill?: string; color?: string; payload?: { fill?: string } } | undefined,
   index: number
@@ -28,9 +30,10 @@ function BarChartTooltipFormatter(
   const nameStr = String(name).toLowerCase();
   const label = capitalizeWords(String(name).replaceAll('_', ' '));
   const isCurrencyValue = nameStr.includes('sales') || nameStr.includes('revenue');
+  const numValue = Array.isArray(value) ? Number(value[0]) : Number(value);
   const formattedValue = isCurrencyValue
-    ? `$${Number(value).toLocaleString()}`
-    : Number(value).toLocaleString();
+    ? `$${numValue.toLocaleString()}`
+    : numValue.toLocaleString();
   const color = item?.fill || item?.color || item?.payload?.fill || COLORS[index % COLORS.length];
   return (
     <div className="flex items-center gap-2 w-full">
@@ -179,7 +182,7 @@ export function BarChart({ data, xKey, yKey, className }: Readonly<BarChartProps
               radius={4}
             >
               {useCellColors && transformedData.map((entry, index) => (
-                <Cell key={`cell-${String(entry[categoryKey] ?? index)}-${index}`} fill={COLORS[index % COLORS.length]} />
+                <Cell key={`cell-${String((entry as Record<string, unknown>)[categoryKey] ?? index)}-${index}`} fill={COLORS[index % COLORS.length]} />
               ))}
             </Bar>
           ))}
