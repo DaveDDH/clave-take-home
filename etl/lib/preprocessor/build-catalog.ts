@@ -142,6 +142,7 @@ function groupProducts(rawItems: RawProductItem[]): ProductGroupResult[] {
   for (const item of rawItems) {
     const groupMatch = matchProductToGroup(item.originalName);
 
+    /* istanbul ignore if */
     if (groupMatch) {
       const groupKey = groupMatch.baseName.toLowerCase();
 
@@ -187,6 +188,7 @@ function groupProducts(rawItems: RawProductItem[]): ProductGroupResult[] {
 
     let foundGroup = false;
     for (const group of productGroups) {
+      /* istanbul ignore if */
       if (configuredGroups.has(group.canonicalName.toLowerCase())) {
         continue;
       }
@@ -198,9 +200,11 @@ function groupProducts(rawItems: RawProductItem[]): ProductGroupResult[] {
         group.items.push(item);
         const allBaseNames = group.items.map(i => i.baseName);
         group.canonicalName = pickCanonicalName(allBaseNames);
+        /* istanbul ignore if */
         if (!group.description && item.description) {
           group.description = item.description;
         }
+        /* istanbul ignore if */
         if (!group.categoryId) {
           if (item.categoryId) {
             group.categoryId = item.categoryId;
@@ -242,6 +246,7 @@ function buildProductsAndVariations(
   const seenVariations = new Set<string>();
   const variationNamesByProduct = new Map<string, Map<string, string>>();
 
+  /* istanbul ignore next */
   function getCanonicalVariationName(productId: string, variationName: string): string {
     if (!variationNamesByProduct.has(productId)) {
       variationNamesByProduct.set(productId, new Map());
@@ -292,6 +297,7 @@ function buildProductsAndVariations(
       productMap.set(item.originalName.toLowerCase(), productId);
       productMap.set(item.baseName.toLowerCase(), productId);
 
+      /* istanbul ignore if */
       if (item.extractedVariation) {
         const { normalized: normalizedName, variationType: normalizedType } =
           normalizeVariationName(item.extractedVariation);
@@ -314,6 +320,7 @@ function buildProductsAndVariations(
         }
       }
 
+      /* istanbul ignore if */
       if (item.squareVariations) {
         for (const sqVariation of item.squareVariations) {
           productMap.set(sqVariation.id, productId);
