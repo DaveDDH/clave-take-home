@@ -4,7 +4,7 @@
  */
 
 import { readFileSync } from 'fs';
-import { VariationPatternsConfigSchema, type VariationPatternsConfig, type VariationPattern } from './schemas.js';
+import { VariationPatternsConfigSchema, type VariationPatternsConfig, type VariationPattern } from './schemas/index.js';
 
 export interface CompiledVariationPattern {
   name: string;

@@ -8,7 +8,7 @@ import {
   SquareCatalogDataSchema,
   SquareOrdersDataSchema,
   SquarePaymentsDataSchema,
-} from './lib/schemas.js';
+} from './lib/schemas/index.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = join(__dirname, '../data/sources');

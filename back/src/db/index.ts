@@ -2,7 +2,7 @@ import pg from "pg";
 
 const { Client } = pg;
 
-const DATABASE_URL = process.env.DATABASE_URL || "postgresql://postgres:claveAdminPass@db.vsuobtuknhokyqtjgrnn.supabase.co:5432/postgres";
+const DATABASE_URL = process.env.DATABASE_URL;
 
 if (!DATABASE_URL) {
   throw new Error("DATABASE_URL environment variable is required");

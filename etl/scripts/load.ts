@@ -6,7 +6,7 @@
  */
 
 import 'dotenv/config';
-import { loadToDatabase } from '../lib/cli-actions.js';
+import { loadToDatabase } from '../lib/cli-actions/index.js';
 
 async function main() {
   const inputPath = process.argv[2];

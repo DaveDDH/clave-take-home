@@ -10,8 +10,8 @@ import {
 import { RESPONSE_GENERATION_SYSTEM_PROMPT } from "./prompt.js";
 import { log, logError, logWarn } from "#utils/logger.js";
 import { SSEWriter } from "#utils/sse.js";
-import type { ConversationMessage, ProcessOptions } from "./index.js";
-import { REASONING_TO_CANDIDATES } from "./index.js";
+import type { ConversationMessage, ProcessOptions } from "./types.js";
+import { REASONING_TO_CANDIDATES } from "./types.js";
 import {
   getNextEscalation,
   ESCALATION_EXHAUSTED_MESSAGE,

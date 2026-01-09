@@ -4,7 +4,7 @@
  */
 
 import { readFileSync } from 'fs';
-import { ProductGroupsConfigSchema, type ProductGroupsConfig, type ProductGroup } from './schemas.js';
+import { ProductGroupsConfigSchema, type ProductGroupsConfig, type ProductGroup } from './schemas/index.js';
 import { levenshtein } from './levenshtein.js';
 
 // Dynamic threshold based on word length to prevent false matches on short words

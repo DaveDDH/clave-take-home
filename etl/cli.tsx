@@ -209,7 +209,7 @@ function App() {
   const handleValidate = async () => {
     setScreen('validating');
     try {
-      const { runValidation } = await import('./lib/cli-actions.js');
+      const { runValidation } = await import('./lib/cli-actions/index.js');
       const result = await runValidation(envConfig!);
       if (result.success) {
         setScreen('post_validation_menu');
@@ -227,7 +227,7 @@ function App() {
   const handlePreprocess = async () => {
     setScreen('preprocessing');
     try {
-      const { runPreprocess } = await import('./lib/cli-actions.js');
+      const { runPreprocess } = await import('./lib/cli-actions/index.js');
       const result = await runPreprocess(envConfig!);
       if (result.success) {
         setScreen('prompt_output_path');
@@ -245,7 +245,7 @@ function App() {
   const handleSavePreprocessed = async () => {
     setScreen('saving_preprocessed');
     try {
-      const { savePreprocessedData } = await import('./lib/cli-actions.js');
+      const { savePreprocessedData } = await import('./lib/cli-actions/index.js');
       await savePreprocessedData(envConfig!, outputPath);
       setScreen('post_preprocess_menu');
     } catch (err) {
@@ -259,7 +259,7 @@ function App() {
     setLoadProgress([]);
     setScreen('loading_to_db');
     try {
-      const { loadToDatabase } = await import('./lib/cli-actions.js');
+      const { loadToDatabase } = await import('./lib/cli-actions/index.js');
       const result = await loadToDatabase(path, cleanDb, (message) => {
         setLoadProgress((prev) => [...prev, message]);
       });

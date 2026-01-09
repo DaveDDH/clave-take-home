@@ -5,7 +5,7 @@
  */
 
 import 'dotenv/config';
-import { runValidation, EnvConfig } from '../lib/cli-actions.js';
+import { runValidation, EnvConfig } from '../lib/cli-actions/index.js';
 
 const REQUIRED_ENV_VARS = [
   'LOCATIONS_PATH',

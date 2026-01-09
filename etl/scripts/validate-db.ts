@@ -14,7 +14,7 @@ const { Client } = pg;
 async function main() {
   console.log('Validating database connection...\n');
 
-  const connectionString = process.env.DATABASE_URL || "postgresql://postgres:claveAdminPass@db.vsuobtuknhokyqtjgrnn.supabase.co:5432/postgres";
+  const connectionString = process.env.DATABASE_URL;
 
   if (!connectionString) {
     console.error('Error: Missing DATABASE_URL environment variable.');
