@@ -76,7 +76,7 @@ CORRECT (pivot second dimension into columns):
   SELECT source,
     SUM(CASE WHEN payment_type = 'credit' THEN 1 ELSE 0 END) AS credit,
     SUM(CASE WHEN payment_type = 'cash' THEN 1 ELSE 0 END) AS cash,
-    SUM(CASE WHEN payment_type = 'doordash' THEN 1 ELSE 0 END) AS doordash,
+    SUM(CASE WHEN payment_type = 'platform' THEN 1 ELSE 0 END) AS platform,
     SUM(CASE WHEN payment_type = 'wallet' THEN 1 ELSE 0 END) AS wallet,
     SUM(CASE WHEN payment_type = 'other' THEN 1 ELSE 0 END) AS other
   FROM orders o JOIN payments p ON p.order_id = o.id

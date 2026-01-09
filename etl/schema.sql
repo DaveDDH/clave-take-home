@@ -9,13 +9,13 @@ EXCEPTION
 END $$;
 
 DO $$ BEGIN
-  CREATE TYPE order_channel AS ENUM ('pos', 'online', 'doordash', 'third_party');
+  CREATE TYPE order_channel AS ENUM ('pos', 'online', 'delivery_app', 'third_party');
 EXCEPTION
   WHEN duplicate_object THEN NULL;
 END $$;
 
 DO $$ BEGIN
-  CREATE TYPE payment_method AS ENUM ('credit', 'cash', 'wallet', 'doordash', 'other');
+  CREATE TYPE payment_method AS ENUM ('credit', 'cash', 'wallet', 'platform', 'other');
 EXCEPTION
   WHEN duplicate_object THEN NULL;
 END $$;

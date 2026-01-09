@@ -81,7 +81,7 @@ describe('processDoorDashOrders', () => {
     expect(orders[0].source_order_id).toBe('dd-order-1');
     expect(orders[0].location_id).toBe('unified-loc-1');
     expect(orders[0].order_type).toBe('delivery');
-    expect(orders[0].channel).toBe('doordash');
+    expect(orders[0].channel).toBe('delivery_app');
     expect(orders[0].status).toBe('completed');
   });
 
@@ -140,7 +140,7 @@ describe('processDoorDashOrders', () => {
 
     const { payments } = processDoorDashOrders(data, locationMap, products, variations, variationMap, addAlias);
 
-    expect(payments[0].payment_type).toBe('doordash');
+    expect(payments[0].payment_type).toBe('platform');
     expect(payments[0].amount_cents).toBe(2456); // merchant_payout
     expect(payments[0].tip_cents).toBe(500);
     expect(payments[0].processing_fee_cents).toBe(300); // commission

@@ -220,7 +220,7 @@ SELECT
   -- By channel
   COUNT(DISTINCT CASE WHEN channel = 'pos' THEN order_id END) AS pos_orders,
   COUNT(DISTINCT CASE WHEN channel = 'online' THEN order_id END) AS online_orders,
-  COUNT(DISTINCT CASE WHEN channel = 'doordash' THEN order_id END) AS doordash_orders
+  COUNT(DISTINCT CASE WHEN channel = 'delivery_app' THEN order_id END) AS delivery_app_orders
 
 FROM gold_orders
 GROUP BY location_name, order_date, order_hour, day_of_week, day_name;
