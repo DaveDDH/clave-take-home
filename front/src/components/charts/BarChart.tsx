@@ -26,7 +26,7 @@ interface BarChartProps {
   className?: string;
 }
 
-export function BarChart({ data, xKey, yKey, className }: BarChartProps) {
+export function BarChart({ data, xKey, yKey, className }: Readonly<BarChartProps>) {
   // Auto-detect multiple series (numeric columns other than xKey)
   const { yKeys, transformedData, hasMultipleSeries, useCellColors } = useMemo(() => {
     if (data.length === 0) return { yKeys: [yKey], transformedData: data, hasMultipleSeries: false, useCellColors: false };

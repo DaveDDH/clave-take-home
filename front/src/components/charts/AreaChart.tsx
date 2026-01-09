@@ -18,7 +18,7 @@ interface AreaChartProps {
   className?: string;
 }
 
-export function AreaChart({ data, xKey, yKey, className }: AreaChartProps) {
+export function AreaChart({ data, xKey, yKey, className }: Readonly<AreaChartProps>) {
   const chartConfig = useMemo<ChartConfig>(
     () => ({
       [yKey]: {

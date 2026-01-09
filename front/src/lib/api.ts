@@ -118,8 +118,8 @@ export async function streamChatResponse(
         for (const line of lines) {
           if (!line.trim() || line.startsWith(':')) continue;
 
-          const eventMatch = line.match(/^event: (.+)/m);
-          const dataMatch = line.match(/^data: (.+)/m);
+          const eventMatch = /^event: (.+)/m.exec(line);
+          const dataMatch = /^data: (.+)/m.exec(line);
 
           if (eventMatch && dataMatch) {
             const eventType = eventMatch[1];

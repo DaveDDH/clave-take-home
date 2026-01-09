@@ -21,7 +21,7 @@ interface ChartMessageProps {
   charts: ChartData[];
 }
 
-export function ChartMessage({ charts }: ChartMessageProps) {
+export function ChartMessage({ charts }: Readonly<ChartMessageProps>) {
   const [saveModalOpen, setSaveModalOpen] = useState(false);
 
   const widgetCharts = useMemo<WidgetChart[]>(() => {

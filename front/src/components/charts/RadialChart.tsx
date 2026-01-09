@@ -25,7 +25,7 @@ const COLORS = [
   'var(--chart-5)',
 ];
 
-export function RadialChart({ data, className }: RadialChartProps) {
+export function RadialChart({ data, className }: Readonly<RadialChartProps>) {
   const chartData = data.map((item, index) => ({
     ...item,
     fill: COLORS[index % COLORS.length],

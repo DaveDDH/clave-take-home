@@ -21,7 +21,7 @@ interface SaveWidgetModalProps {
   charts: WidgetChart[];
 }
 
-export function SaveWidgetModal({ open, onOpenChange, charts }: SaveWidgetModalProps) {
+export function SaveWidgetModal({ open, onOpenChange, charts }: Readonly<SaveWidgetModalProps>) {
   const [name, setName] = useState('');
   const addWidget = useWidgetStore((state) => state.addWidget);
 

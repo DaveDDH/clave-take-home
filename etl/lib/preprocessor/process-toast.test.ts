@@ -1,15 +1,18 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
-import * as variationPatterns from '../variation-patterns.js';
-import * as productGroups from '../product-groups.js';
-import { processToastOrders } from './process-toast.js';
 import type { ToastData, DbProduct, DbProductVariation } from '../types.js';
 
-// Spy on variation-patterns methods
-jest.spyOn(variationPatterns, 'getVariationPatterns').mockReturnValue([]);
-jest.spyOn(variationPatterns, 'getAbbreviationMap').mockReturnValue({});
+// Mock modules using unstable_mockModule for ESM
+jest.unstable_mockModule('../variation-patterns.js', () => ({
+  getVariationPatterns: jest.fn(() => []),
+  getAbbreviationMap: jest.fn(() => ({})),
+}));
 
-// Spy on product-groups methods
-jest.spyOn(productGroups, 'matchProductToGroup').mockReturnValue(null);
+jest.unstable_mockModule('../product-groups.js', () => ({
+  matchProductToGroup: jest.fn(() => null),
+}));
+
+// Dynamic import after mock setup
+const { processToastOrders } = await import('./process-toast.js');
 
 describe('processToastOrders', () => {
   const createMockToastData = (): ToastData => ({
@@ -71,6 +74,10 @@ describe('processToastOrders', () => {
   ];
   const variations: Array<DbProductVariation & { id: string }> = [];
   const variationMap = new Map<string, string>();
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
 
   it('processes valid Toast order', () => {
     const data = createMockToastData();

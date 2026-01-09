@@ -26,7 +26,7 @@ interface RadarChartProps {
   className?: string;
 }
 
-export function RadarChart({ data, labelKey, valueKey, className }: RadarChartProps) {
+export function RadarChart({ data, labelKey, valueKey, className }: Readonly<RadarChartProps>) {
   const chartConfig = useMemo<ChartConfig>(
     () => ({
       [valueKey]: {

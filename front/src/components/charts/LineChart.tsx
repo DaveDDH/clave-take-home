@@ -18,7 +18,7 @@ interface LineChartProps {
   className?: string;
 }
 
-export function LineChart({ data, xKey, yKey, className }: LineChartProps) {
+export function LineChart({ data, xKey, yKey, className }: Readonly<LineChartProps>) {
   // Auto-detect multiple series (numeric columns other than xKey)
   const yKeys = useMemo(() => {
     if (data.length === 0) return [yKey];

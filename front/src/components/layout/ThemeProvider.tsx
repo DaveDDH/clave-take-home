@@ -7,7 +7,7 @@ interface ThemeProviderProps {
   children: React.ReactNode;
 }
 
-export function ThemeProvider({ children }: ThemeProviderProps) {
+export function ThemeProvider({ children }: Readonly<ThemeProviderProps>) {
   const theme = useThemeStore((state) => state.theme);
 
   useEffect(() => {

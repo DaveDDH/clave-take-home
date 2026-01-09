@@ -35,7 +35,7 @@ const COLORS = [
   'var(--chart-5)',
 ];
 
-export function PieChart({ data, className }: PieChartProps) {
+export function PieChart({ data, className }: Readonly<PieChartProps>) {
   const id = React.useId();
   const chartId = `pie-${id.replaceAll(':', '')}`;
 

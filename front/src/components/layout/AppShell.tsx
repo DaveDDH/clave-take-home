@@ -5,7 +5,7 @@ interface AppShellProps {
   children: React.ReactNode;
 }
 
-export function AppShell({ children }: AppShellProps) {
+export function AppShell({ children }: Readonly<AppShellProps>) {
   return (
     <div className="flex flex-col w-full h-full bg-background overflow-hidden">
       <Header />

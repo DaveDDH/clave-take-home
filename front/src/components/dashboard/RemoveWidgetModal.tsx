@@ -24,7 +24,7 @@ export function RemoveWidgetModal({
   onOpenChange,
   widgetId,
   widgetName,
-}: RemoveWidgetModalProps) {
+}: Readonly<RemoveWidgetModalProps>) {
   const removeFromDashboard = useDashboardStore((state) => state.removeWidget);
   const removeFromProject = useWidgetStore((state) => state.removeWidget);
 

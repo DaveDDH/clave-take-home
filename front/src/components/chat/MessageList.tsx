@@ -41,7 +41,7 @@ export function MessageList({
   messages,
   isLoading,
   onSendMessage,
-}: MessageListProps) {
+}: Readonly<MessageListProps>) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const isEmpty = messages.length === 0 && !isLoading;

@@ -41,7 +41,7 @@ const DEFAULT_HEIGHT = 400;
 const MIN_WIDTH = 280;
 const MIN_HEIGHT = 300;
 
-export function WidgetCard({ widget, x, y, width, height }: WidgetCardProps) {
+export function WidgetCard({ widget, x, y, width, height }: Readonly<WidgetCardProps>) {
   const [removeModalOpen, setRemoveModalOpen] = useState(false);
   const updateWidgetSize = useDashboardStore((state) => state.updateWidgetSize);
 

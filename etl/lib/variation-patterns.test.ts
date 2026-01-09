@@ -103,7 +103,7 @@ describe('variation-patterns', () => {
       initializePatterns('/fake/path.json');
 
       const patterns = getVariationPatterns();
-      const match = '12 pcs'.match(patterns[0].regex);
+      const match = patterns[0].regex.exec('12 pcs');
       if (match) {
         expect(patterns[0].format(match)).toBe('12 pcs');
       }
@@ -114,7 +114,7 @@ describe('variation-patterns', () => {
 
       const patterns = getVariationPatterns();
       const sizePattern = patterns.find(p => p.name === 'size_prefix')!;
-      const match = 'lg Coke'.match(sizePattern.regex);
+      const match = sizePattern.regex.exec('lg Coke');
       if (match) {
         expect(sizePattern.format(match)).toBe('Large');
       }
@@ -125,7 +125,7 @@ describe('variation-patterns', () => {
 
       const patterns = getVariationPatterns();
       const strengthPattern = patterns.find(p => p.name === 'strength_pattern')!;
-      const match = 'double shot'.match(strengthPattern.regex);
+      const match = strengthPattern.regex.exec('double shot');
       if (match) {
         expect(strengthPattern.format(match)).toBe('Double');
       }
@@ -177,7 +177,7 @@ describe('variation-patterns', () => {
       initializePatterns('/fake/path.json');
 
       const patterns = getVariationPatterns();
-      const match = 'hello world'.match(patterns[0].regex);
+      const match = patterns[0].regex.exec('hello world');
       if (match) {
         expect(patterns[0].format(match)).toBe('Hello');
       }

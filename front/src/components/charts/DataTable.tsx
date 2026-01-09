@@ -16,7 +16,7 @@ interface DataTableProps {
   className?: string;
 }
 
-export function DataTable({ data, columns, className }: DataTableProps) {
+export function DataTable({ data, columns, className }: Readonly<DataTableProps>) {
   if (data.length === 0) {
     return (
       <div className="text-muted-foreground text-sm p-4">

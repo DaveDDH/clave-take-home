@@ -49,7 +49,7 @@ describe('DoorDashDataSchema', () => {
   });
 
   it('validates order with null delivery_time', () => {
-    const data = structuredClone(validDoorDashData);
+    const data = JSON.parse(JSON.stringify(validDoorDashData));
     data.orders[0].delivery_time = null;
     const result = DoorDashDataSchema.safeParse(data);
     expect(result.success).toBe(true);

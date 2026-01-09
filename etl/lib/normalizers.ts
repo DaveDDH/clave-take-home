@@ -33,7 +33,7 @@ export function extractVariation(name: string): VariationExtractionResult {
   const patterns = getVariationPatterns();
 
   for (const pattern of patterns) {
-    const match = trimmed.match(pattern.regex);
+    const match = pattern.regex.exec(trimmed);
     if (match) {
       const baseName = trimmed.replace(pattern.regex, '').trim();
       return {

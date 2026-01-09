@@ -30,7 +30,7 @@ const REASONING_LEVELS: { id: ReasoningLevel; name: string; description: string 
   { id: "high", name: "High", description: "Most accurate, slower" },
 ];
 
-export function ChatInput({ onSend, disabled }: ChatInputProps) {
+export function ChatInput({ onSend, disabled }: Readonly<ChatInputProps>) {
   const [input, setInput] = useState("");
   const [mounted, setMounted] = useState(false);
   const selectedModelId = useChatStore((state) => state.selectedModel);

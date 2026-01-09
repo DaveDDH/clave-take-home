@@ -1,15 +1,18 @@
-import { jest, describe, it, expect } from '@jest/globals';
-import * as variationPatterns from '../variation-patterns.js';
-import * as productGroups from '../product-groups.js';
-import { processDoorDashOrders } from './process-doordash.js';
+import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import type { DoorDashData, DbProduct, DbProductVariation } from '../types.js';
 
-// Spy on variation-patterns methods
-jest.spyOn(variationPatterns, 'getVariationPatterns').mockReturnValue([]);
-jest.spyOn(variationPatterns, 'getAbbreviationMap').mockReturnValue({});
+// Mock modules using unstable_mockModule for ESM
+jest.unstable_mockModule('../variation-patterns.js', () => ({
+  getVariationPatterns: jest.fn(() => []),
+  getAbbreviationMap: jest.fn(() => ({})),
+}));
 
-// Spy on product-groups methods
-jest.spyOn(productGroups, 'matchProductToGroup').mockReturnValue(null);
+jest.unstable_mockModule('../product-groups.js', () => ({
+  matchProductToGroup: jest.fn(() => null),
+}));
+
+// Dynamic import after mock setup
+const { processDoorDashOrders } = await import('./process-doordash.js');
 
 describe('processDoorDashOrders', () => {
   const createMockDoorDashData = (): DoorDashData => ({
@@ -52,6 +55,10 @@ describe('processDoorDashOrders', () => {
   ];
   const variations: Array<DbProductVariation & { id: string }> = [];
   const variationMap = new Map<string, string>();
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
 
   it('processes valid DoorDash order', () => {
     const data = createMockDoorDashData();

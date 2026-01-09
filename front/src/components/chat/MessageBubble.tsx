@@ -33,7 +33,7 @@ export function MessageBubble({
   isLoading = false,
   nextMessage,
   totalConversationCost,
-}: MessageBubbleProps) {
+}: Readonly<MessageBubbleProps>) {
   const isUser = message.role === "user";
 
   // Use typewriter effect for assistant messages that are streaming
