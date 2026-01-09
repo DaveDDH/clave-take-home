@@ -14,6 +14,10 @@ EXCEPTION
   WHEN duplicate_object THEN NULL;
 END $$;
 
+-- Add missing enum values for existing databases
+ALTER TYPE order_channel ADD VALUE IF NOT EXISTS 'delivery_app';
+ALTER TYPE order_channel ADD VALUE IF NOT EXISTS 'third_party';
+
 DO $$ BEGIN
   CREATE TYPE payment_method AS ENUM ('credit', 'cash', 'wallet', 'platform', 'other');
 EXCEPTION
