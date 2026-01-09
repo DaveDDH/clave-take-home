@@ -8,6 +8,11 @@ EXCEPTION
   WHEN duplicate_object THEN NULL;
 END $$;
 
+-- Add missing enum values for existing databases
+ALTER TYPE source_platform ADD VALUE IF NOT EXISTS 'toast';
+ALTER TYPE source_platform ADD VALUE IF NOT EXISTS 'doordash';
+ALTER TYPE source_platform ADD VALUE IF NOT EXISTS 'square';
+
 DO $$ BEGIN
   CREATE TYPE order_channel AS ENUM ('pos', 'online', 'delivery_app', 'third_party');
 EXCEPTION
@@ -23,6 +28,11 @@ DO $$ BEGIN
 EXCEPTION
   WHEN duplicate_object THEN NULL;
 END $$;
+
+-- Add missing enum values for existing databases
+ALTER TYPE payment_method ADD VALUE IF NOT EXISTS 'wallet';
+ALTER TYPE payment_method ADD VALUE IF NOT EXISTS 'platform';
+ALTER TYPE payment_method ADD VALUE IF NOT EXISTS 'other';
 
 -- 1. Locations (unified across all sources)
 CREATE TABLE IF NOT EXISTS locations (
