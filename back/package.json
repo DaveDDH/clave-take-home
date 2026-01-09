@@ -18,6 +18,8 @@
     "test": "NODE_OPTIONS='--experimental-vm-modules' jest --coverage"
   },
   "dependencies": {
+    "@ai-sdk/groq": "^3.0.4",
+    "@ai-sdk/openai": "^3.0.7",
     "@ai-sdk/xai": "^3.0.3",
     "@helicone/ai-sdk-provider": "^1.0.12",
     "ai": "^6.0.23",
@@ -29,10 +31,11 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
+    "@flydotio/dockerfile": "^0.7.10",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.2",
     "@types/jest": "^30.0.0",
-    "@types/node": "^20.10.0",
+    "@types/node": "^20.19.27",
     "@types/pg": "^8.16.0",
     "@typescript-eslint/eslint-plugin": "^8.51.0",
     "@typescript-eslint/parser": "^8.51.0",
