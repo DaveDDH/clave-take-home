@@ -1,13 +1,12 @@
 import '@testing-library/jest-dom';
-import { TextEncoder, TextDecoder } from 'util';
+import { TextEncoder, TextDecoder } from 'node:util';
 
 // Polyfill TextEncoder/TextDecoder for jsdom
-global.TextEncoder = TextEncoder;
-global.TextDecoder = TextDecoder as typeof global.TextDecoder;
+Object.assign(global, { TextEncoder, TextDecoder });
 
 // Mock ResizeObserver for recharts
 global.ResizeObserver = class ResizeObserver {
-  observe() {}
-  unobserve() {}
-  disconnect() {}
+  observe(): void { /* noop */ }
+  unobserve(): void { /* noop */ }
+  disconnect(): void { /* noop */ }
 };

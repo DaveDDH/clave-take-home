@@ -49,7 +49,8 @@ describe('DoorDashDataSchema', () => {
   });
 
   it('validates order with null delivery_time', () => {
-    const data = structuredClone(validDoorDashData);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data = structuredClone(validDoorDashData) as any;
     data.orders[0].delivery_time = null;
     const result = DoorDashDataSchema.safeParse(data);
     expect(result.success).toBe(true);

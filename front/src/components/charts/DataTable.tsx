@@ -38,19 +38,27 @@ export function DataTable({ data, columns, className }: Readonly<DataTableProps>
     if (typeof value === 'number') {
       return value.toLocaleString();
     }
+    if (typeof value === 'boolean') {
+      return value ? 'Yes' : 'No';
+    }
+    if (typeof value === 'string') {
+      return value;
+    }
     if (typeof value === 'object') {
       return JSON.stringify(value);
     }
-    return String(value);
+    return '-';
   };
 
   const getRowKey = (row: Record<string, unknown>, index: number): string => {
     // Try to find a unique identifier in the row
     const id = row.id ?? row.uuid ?? row.guid ?? row.key;
-    if (id !== undefined) return String(id);
+    if (typeof id === 'string') return id;
+    if (typeof id === 'number') return id.toString();
     // Fallback to index-based key with first column value for some stability
     const firstValue = displayColumns.length > 0 ? row[displayColumns[0]] : '';
-    return `row-${index}-${String(firstValue ?? '')}`;
+    const valueStr = typeof firstValue === 'string' ? firstValue : (typeof firstValue === 'number' ? firstValue.toString() : '');
+    return `row-${index}-${valueStr}`;
   };
 
   return (

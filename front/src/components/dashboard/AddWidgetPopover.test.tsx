@@ -22,7 +22,7 @@ describe('AddWidgetPopover', () => {
 
   it('disables button when all widgets are on dashboard', () => {
     useWidgetStore.setState({
-      widgets: [{ id: 'w1', name: 'Widget 1', charts: [] }],
+      widgets: [{ id: 'w1', name: 'Widget 1', charts: [], createdAt: new Date() }],
     });
     useDashboardStore.setState({
       widgetPositions: [{ id: 'w1', x: 0, y: 0 }],
@@ -34,7 +34,7 @@ describe('AddWidgetPopover', () => {
 
   it('enables button when widgets are available', () => {
     useWidgetStore.setState({
-      widgets: [{ id: 'w1', name: 'Widget 1', charts: [] }],
+      widgets: [{ id: 'w1', name: 'Widget 1', charts: [], createdAt: new Date() }],
     });
 
     render(<AddWidgetPopover />);
@@ -44,8 +44,8 @@ describe('AddWidgetPopover', () => {
   it('only shows widgets not on dashboard', () => {
     useWidgetStore.setState({
       widgets: [
-        { id: 'w1', name: 'Widget 1', charts: [] },
-        { id: 'w2', name: 'Widget 2', charts: [] },
+        { id: 'w1', name: 'Widget 1', charts: [], createdAt: new Date() },
+        { id: 'w2', name: 'Widget 2', charts: [], createdAt: new Date() },
       ],
     });
     useDashboardStore.setState({

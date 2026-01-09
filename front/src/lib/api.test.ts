@@ -8,7 +8,7 @@ import {
 
 // Mock fetch globally
 const mockFetch = jest.fn<typeof fetch>();
-global.fetch = mockFetch;
+global.fetch = mockFetch as typeof fetch;
 
 describe('api', () => {
   beforeEach(() => {

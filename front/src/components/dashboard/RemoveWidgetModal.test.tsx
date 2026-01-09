@@ -10,7 +10,7 @@ describe('RemoveWidgetModal', () => {
   beforeEach(() => {
     mockOnOpenChange.mockClear();
     useWidgetStore.setState({
-      widgets: [{ id: 'w1', name: 'Test Widget', charts: [] }],
+      widgets: [{ id: 'w1', name: 'Test Widget', charts: [], createdAt: new Date() }],
     });
     useDashboardStore.setState({
       widgetPositions: [{ id: 'w1', x: 0, y: 0 }],

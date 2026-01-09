@@ -27,6 +27,9 @@ type FetchConversationFn = (id: string) => Promise<{
   messages: Array<{ role: string; content: string; charts: ChartData[] | null }>;
 }>;
 
+// No-op cleanup function for stream mocks
+const noopCleanup = (): void => { /* cleanup */ };
+
 // Mock the api module
 const mockStreamChatResponse = jest.fn<StreamChatFn>();
 const mockFetchConversation = jest.fn<FetchConversationFn>();
@@ -95,7 +98,7 @@ describe('useChatStore', () => {
     it('adds user and assistant messages and calls stream', async () => {
       mockStreamChatResponse.mockImplementation(async (_msg, _conv, _model, _opts, handlers: StreamHandlers) => {
         handlers.onComplete?.();
-        return () => {};
+        return noopCleanup;
       });
 
       await useChatStore.getState().sendMessage('Hello');
@@ -135,7 +138,7 @@ describe('useChatStore', () => {
           conversationalResponse: 'Here is the data',
         });
         handlers.onComplete?.();
-        return () => {};
+        return noopCleanup;
       });
 
       await useChatStore.getState().sendMessage('Show me data');
@@ -148,7 +151,7 @@ describe('useChatStore', () => {
       mockStreamChatResponse.mockImplementation(async (_msg, _conv, _model, _opts, handlers: StreamHandlers) => {
         handlers.onChart?.([{ type: 'bar', data: [] }]);
         handlers.onComplete?.();
-        return () => {};
+        return noopCleanup;
       });
 
       await useChatStore.getState().sendMessage('Show chart');
@@ -162,7 +165,7 @@ describe('useChatStore', () => {
       mockStreamChatResponse.mockImplementation(async (_msg, _conv, _model, _opts, handlers: StreamHandlers) => {
         handlers.onSQL?.('SELECT * FROM table');
         handlers.onComplete?.();
-        return () => {};
+        return noopCleanup;
       });
 
       await useChatStore.getState().sendMessage('Run query');
@@ -176,7 +179,7 @@ describe('useChatStore', () => {
         handlers.onContentDelta?.('Hello');
         handlers.onContentDelta?.(' World');
         handlers.onComplete?.();
-        return () => {};
+        return noopCleanup;
       });
 
       await useChatStore.getState().sendMessage('Test');
@@ -189,7 +192,7 @@ describe('useChatStore', () => {
       mockStreamChatResponse.mockImplementation(async (_msg, _conv, _model, _opts, handlers: StreamHandlers) => {
         handlers.onContent?.('Full response');
         handlers.onComplete?.();
-        return () => {};
+        return noopCleanup;
       });
 
       await useChatStore.getState().sendMessage('Test');
@@ -202,7 +205,7 @@ describe('useChatStore', () => {
       mockStreamChatResponse.mockImplementation(async (_msg, _conv, _model, _opts, handlers: StreamHandlers) => {
         handlers.onConversationId?.('conv-123');
         handlers.onComplete?.();
-        return () => {};
+        return noopCleanup;
       });
 
       await useChatStore.getState().sendMessage('Test');
@@ -216,7 +219,7 @@ describe('useChatStore', () => {
       mockStreamChatResponse.mockImplementation(async (_msg, _conv, _model, _opts, handlers: StreamHandlers) => {
         handlers.onCost?.(0.05);
         handlers.onComplete?.();
-        return () => {};
+        return noopCleanup;
       });
 
       await useChatStore.getState().sendMessage('Test');
@@ -228,7 +231,7 @@ describe('useChatStore', () => {
     it('handles error callback', async () => {
       mockStreamChatResponse.mockImplementation(async (_msg, _conv, _model, _opts, handlers: StreamHandlers) => {
         handlers.onError?.('Something went wrong');
-        return () => {};
+        return noopCleanup;
       });
 
       await useChatStore.getState().sendMessage('Test');
@@ -275,7 +278,7 @@ describe('useChatStore', () => {
 
       mockStreamChatResponse.mockImplementation(async (_msg, _conv, _model, _opts, handlers: StreamHandlers) => {
         handlers.onComplete?.();
-        return () => {};
+        return noopCleanup;
       });
 
       await useChatStore.getState().regenerateFrom('msg-2');

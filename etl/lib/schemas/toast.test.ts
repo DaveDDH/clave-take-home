@@ -80,7 +80,8 @@ describe('ToastDataSchema', () => {
   });
 
   it('validates payment with null card details', () => {
-    const data = structuredClone(validToastData);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data = structuredClone(validToastData) as any;
     data.orders[0].checks[0].payments[0].cardType = null;
     data.orders[0].checks[0].payments[0].last4Digits = null;
     const result = ToastDataSchema.safeParse(data);

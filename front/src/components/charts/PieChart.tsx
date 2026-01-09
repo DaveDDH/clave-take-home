@@ -41,26 +41,28 @@ interface PolarViewBox {
 }
 
 function PieCenterLabel({ viewBox, total }: { viewBox?: PolarViewBox; total: number }) {
-  if (!viewBox || viewBox.cx === undefined || viewBox.cy === undefined) {
+  const cx = viewBox?.cx;
+  const cy = viewBox?.cy;
+  if (cx === undefined || cy === undefined) {
     return null;
   }
   return (
     <text
-      x={viewBox.cx}
-      y={viewBox.cy}
+      x={cx}
+      y={cy}
       textAnchor="middle"
       dominantBaseline="middle"
     >
       <tspan
-        x={viewBox.cx}
-        y={viewBox.cy}
+        x={cx}
+        y={cy}
         className="fill-foreground text-3xl font-bold"
       >
         {total.toLocaleString()}
       </tspan>
       <tspan
-        x={viewBox.cx}
-        y={viewBox.cy + 24}
+        x={cx}
+        y={cy + 24}
         className="fill-muted-foreground"
       >
         Total
@@ -167,7 +169,7 @@ export function PieChart({ data, className }: Readonly<PieChartProps>) {
             activeShape={ActivePieShape}
           >
             <Label
-              content={({ viewBox }) => <PieCenterLabel viewBox={viewBox as PolarViewBox} total={total} />}
+              content={(props) => <PieCenterLabel viewBox={props.viewBox as PolarViewBox} total={total} />}
             />
           </Pie>
           <ChartLegend
