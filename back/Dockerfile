@@ -1,62 +1,45 @@
-# syntax = docker/dockerfile:1
+# Stage 1: Build the Application
+# We use node:22 as the base for building and installing dependencies.
+FROM node:22 AS build
 
-# Adjust NODE_VERSION as desired
-ARG NODE_VERSION=22.21.1
-FROM node:${NODE_VERSION}-slim AS base
+# Set the working directory inside the container
+WORKDIR /usr/src/app
 
-LABEL fly_launch_runtime="Node.js"
+# Copy package.json and package-lock.json first to leverage Docker caching.
+# If these files don't change, subsequent builds can skip 'npm install'.
+COPY package*.json ./
+COPY tsconfig.json ./
 
-# Node.js app lives here
-WORKDIR /app
+# Install dependencies including TypeScript
+RUN npm install
+RUN npm install --save-dev typescript @types/node
 
-# Set production environment
-ENV NODE_ENV="production"
+# Copy the rest of the application source code
+COPY . .
 
-# Install packages needed to build node modules
-RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y \
-    build-essential \
-    python3 \
-    pkg-config \
-    && rm -rf /var/lib/apt/lists/*
+# Build TypeScript
+RUN npm run build || npx tsc
 
+# Stage 2: Create the Final Production Image
+# We use node:22-slim as a minimal runtime image.
+FROM node:22-slim
 
-# Throw-away build stage to reduce size of final image
-FROM base AS build
+# Set the working directory
+WORKDIR /usr/src/app
 
-# Copy root package files first (for workspace dependencies)
-COPY package.json package-lock.json ./
-# Copy back folder package files
-COPY back/package.json back/package-lock.json ./back/
+# Copy only production dependencies
+COPY --from=build /usr/src/app/package*.json ./
+RUN npm install --only=production
 
-# Install all dependencies using workspace mode
-RUN npm ci --include=dev --workspace=back
+# Copy the built application files from the 'build' stage
+COPY --from=build /usr/src/app/dist ./dist
 
-# Copy application code
-COPY back/ ./back/
+# Expose the port your app runs on
+ENV PORT=8080
+EXPOSE $PORT
 
-# Build application
-WORKDIR /app/back
-RUN npm run build
+# Run the application using the non-root user (recommended for security)
+USER node
 
-# Move built app to root
-RUN cp -r dist/* /app/ && \
-    cp package.json /app/
-
-# Remove node_modules and go back to root
-WORKDIR /app
-RUN rm -rf back/ node_modules/
-
-# Install only production dependencies for the back package
-RUN npm ci --omit=dev
-
-
-# Final stage for app image
-FROM base
-
-# Copy built application from build stage
-COPY --from=build /app /app
-
-# Start the server by default, this can be overwritten at runtime
-EXPOSE 3000
-CMD [ "npm", "run", "start" ]
+# Define the command to start your application
+CMD [ "node", "dist/index.js" ]
