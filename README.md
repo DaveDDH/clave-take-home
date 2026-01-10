@@ -1,6 +1,27 @@
-# Clave Engineering Take-Home Assessment
+# Assessment: the production-grade solution
 
-A production-grade **Text-to-SQL analytics platform** for restaurant data, featuring AI-powered natural language queries, real-time streaming responses, and a drag-and-drop dashboard.
+## Executive Summary
+
+This repository delivers a production-grade implementation of the assessment.
+
+![SonarCloud Analysis](docs/sonar.png)
+
+**Key Highlights:**
+
+- **Zero AI vendor lock-in** — A model abstraction layer allows swapping between OpenAI, xAI, Groq, or any provider without rewriting application code. *Negotiate better rates or switch providers overnight.*
+- **Perfect code quality** — SonarQube analysis shows 0 issues, ensuring maintainable and secure code. *Reduces technical debt and onboarding time for new developers.*
+- **Horizontally scalable** — The backend is 100% stateless and Dockerized, enabling deployment across multiple instances with no session affinity required. *Handle traffic spikes by adding containers, not rewriting code.*
+- **Comprehensive testing** — Over 500 unit tests achieve 90%+ code coverage across the ETL pipeline, frontend, and backend. *Deploy with confidence; catch regressions before users do.*
+- **Research-backed Text-to-SQL** — Implements the C3 (Clear prompting, Calibration, Consistency) methodology for reliable query generation ([paper](docs/C3-%20Zero-shot%20Text-to-SQL%20with%20ChatGPT.pdf)). *Proven approach with 90% token savings over few-shot prompting.*
+- **Cost-conscious design** — A built-in cost accumulator tracks per-query expenses in real time, achieving approximately $1/client/month at 50 queries/day. *Predictable unit economics from day one.*
+- **AI observability** — Helicone integration provides detailed monitoring, debugging, and usage analytics for all LLM calls. *Diagnose issues in production without guesswork.*
+- **Unified TypeScript stack** — 100% TypeScript across ETL, frontend, and backend simplifies maintenance and streamlines hiring. *One language, one toolchain, faster iteration.*
+- **Clean separation of concerns** — ETL, backend, and frontend are independent projects that can be developed, tested, and scaled separately. *Teams can work in parallel without stepping on each other.*
+- **Medallion architecture** — Bronze (raw), Silver (normalized), and Gold (analytics-ready) data layers ensure clean data flow. *Simplifies debugging and enables incremental reprocessing.*
+- **Real-time streaming** — Server-Sent Events deliver progressive AI responses for a responsive user experience. *Users see results immediately, not after a loading spinner.*
+- **Robust error handling** — Includes model escalation, iterative SQL refinement, self-consistency voting, and graceful fallbacks when all else fails. *Maximizes uptime even when LLMs misbehave.*
+- **Intelligent data extraction** — Dynamic fuzzy matching with Levenshtein distance corrects typos and maps raw product names to a canonical catalog. *Handles messy real-world POS data automatically.*
+- **Cohesive Vercel ecosystem** — Next.js, shadcn/ui, and the Vercel AI SDK work together seamlessly, all deployed on Vercel's platform. *Fewer integration headaches, faster time to market.*
 
 **Deployed on:** https://clave-take-home-3v808zaa5-daveddhs-projects.vercel.app
 
@@ -25,73 +46,73 @@ cd ../front && npm run dev
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────┐
-│                           FRONTEND (Next.js)                              │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐          │
-│  │   Copilot View  │  │  Dashboard View │  │   Widget Store  │          │
-│  │  (Chat + Charts)│  │(Drag-and-drop)  │  │    (Zustand)    │          │
-│  └────────┬────────┘  └────────┬────────┘  └─────────────────┘          │
+│                           FRONTEND (Next.js)                             │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐           │
+│  │  Copilot View   │  │ Dashboard View  │  │   Widget Store  │           │
+│  │ (Chat + Charts) │  │ (Drag-and-drop) │  │    (Zustand)    │           │
+│  └────────┬────────┘  └─────────┬───────┘  └─────────────────┘           │
 └───────────┼─────────────────────┼────────────────────────────────────────┘
             │                     │
             │    SSE Streaming    │
             ▼                     ▼
-┌──────────────────────────────────────────────────────────────────────────┐
-│                          BACKEND (Express.js)                             │
-│  ┌─────────────────────────────────────────────────────────────────────┐ │
-│  │                        AI Pipeline                                   │ │
-│  │  ┌──────────┐   ┌──────────┐   ┌──────────┐   ┌──────────┐        │ │
-│  │  │ Classify │ → │  Schema  │ → │   SQL    │ → │  Chart   │        │ │
-│  │  │  Query   │   │  Linking │   │Generation│   │ Inference│        │ │
-│  │  └──────────┘   └──────────┘   └──────────┘   └──────────┘        │ │
-│  │                       ↓                                             │ │
-│  │  ┌──────────────────────────────────────────────────────────────┐  │ │
-│  │  │ Self-Consistency Voting │ Iterative Refinement │ Escalation │  │ │
-│  │  └──────────────────────────────────────────────────────────────┘  │ │
-│  └─────────────────────────────────────────────────────────────────────┘ │
-│  ┌─────────────────────────────────────────────────────────────────────┐ │
-│  │                    Model Abstraction Layer                          │ │
-│  │         ┌─────────┐    ┌─────────┐    ┌─────────┐                  │ │
-│  │         │   xAI   │    │ OpenAI  │    │  Groq   │                  │ │
-│  │         └─────────┘    └─────────┘    └─────────┘                  │ │
-│  └─────────────────────────────────────────────────────────────────────┘ │
-└──────────────────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────────────┐
+│                          BACKEND (Express.js)                              │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                        AI Pipeline                                  │   │
+│  │  ┌──────────┐   ┌──────────┐   ┌──────────┐   ┌──────────┐          │   │
+│  │  │ Classify │ → │  Schema  │ → │   SQL    │ → │  Chart   │          │   │
+│  │  │  Query   │   │  Linking │   │Generation│   │ Inference│          │   │
+│  │  └──────────┘   └──────────┘   └──────────┘   └──────────┘          │   │
+│  │                       ↓                                             |   │ 
+│  │  ┌──────────────────────────────────────────────────────────────┐   │   │
+│  │  │ Self-Consistency Voting │ Iterative Refinement │ Escalation  │   │   │
+│  │  └──────────────────────────────────────────────────────────────┘   │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                    Model Abstraction Layer                          │   │
+│  │         ┌─────────┐    ┌─────────┐    ┌─────────┐                   │   │
+│  │         │   xAI   │    │ OpenAI  │    │  Groq   │                   │   │
+│  │         └─────────┘    └─────────┘    └─────────┘                   │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+└────────────────────────────────────────────────────────────────────────────┘
             │
             ▼
 ┌──────────────────────────────────────────────────────────────────────────┐
-│                        DATABASE (PostgreSQL)                              │
-│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐                  │
-│  │    GOLD     │    │   SILVER    │    │   BRONZE    │                  │
-│  │   Views     │    │   Tables    │    │    (ETL)    │                  │
-│  │(Analytics)  │    │(Normalized) │    │  (Raw JSON) │                  │
-│  └─────────────┘    └─────────────┘    └─────────────┘                  │
+│                        DATABASE (PostgreSQL)                             │
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐                   │
+│  │    GOLD     │    │   SILVER    │    │   BRONZE    │                   │
+│  │    Views    │    │   Tables    │    │    (ETL)    │                   │
+│  │ (Analytics) │    │(Normalized) │    │ (Raw JSON)  │                   │
+│  └─────────────┘    └─────────────┘    └─────────────┘                   │
 └──────────────────────────────────────────────────────────────────────────┘
 ```
 
 ## Technology Stack
 
 ### Frontend
-| Technology | Purpose |
-|------------|---------|
-| Next.js 16 | App Router, SSR |
-| shadcn/ui | Component library |
-| Tailwind CSS | Styling |
-| Recharts | Visualizations |
-| Zustand | State management |
-| @dnd-kit | Drag-and-drop |
+| Technology   | Purpose           |
+| ------------ | ----------------- |
+| Next.js 16   | App Router, SSR   |
+| shadcn/ui    | Component library |
+| Tailwind CSS | Styling           |
+| Recharts     | Visualizations    |
+| Zustand      | State management  |
+| @dnd-kit     | Drag-and-drop     |
 
 ### Backend
-| Technology | Purpose |
-|------------|---------|
-| Express.js | HTTP server |
-| TypeScript | Type safety |
-| Drizzle ORM | Database queries |
-| Vercel AI SDK | LLM integration |
+| Technology    | Purpose          |
+| ------------- | ---------------- |
+| Express.js    | HTTP server      |
+| TypeScript    | Type safety      |
+| Drizzle ORM   | Database queries |
+| Vercel AI SDK | LLM integration  |
 
 ### ETL
-| Technology | Purpose |
-|------------|---------|
-| React + Ink | Interactive CLI |
-| Zod | Schema validation |
-| Levenshtein | Fuzzy matching |
+| Technology  | Purpose           |
+| ----------- | ----------------- |
+| React + Ink | Interactive CLI   |
+| Zod         | Schema validation |
+| Levenshtein | Fuzzy matching    |
 
 ## Project Structure
 
@@ -131,33 +152,33 @@ clave-take-home/
 ## Key Files Reference
 
 ### Backend (`/back/src/`)
-| File | Purpose |
-|------|---------|
-| `ai/models/index.ts` | Model abstraction layer |
-| `ai/actions/processUserMessage/self-consistency.ts` | Multi-candidate voting |
-| `ai/actions/processUserMessage/escalation.ts` | Progressive retry |
-| `ai/actions/processUserMessage/prompt.ts` | Calibration hints |
-| `ai/actions/processUserMessage/sql-refinement.ts` | Error-guided correction |
-| `utils/sse.ts` | SSE streaming |
-| `utils/cost.ts` | Token cost tracking |
+| File                                                | Purpose                 |
+| --------------------------------------------------- | ----------------------- |
+| `ai/models/index.ts`                                | Model abstraction layer |
+| `ai/actions/processUserMessage/self-consistency.ts` | Multi-candidate voting  |
+| `ai/actions/processUserMessage/escalation.ts`       | Progressive retry       |
+| `ai/actions/processUserMessage/prompt.ts`           | Calibration hints       |
+| `ai/actions/processUserMessage/sql-refinement.ts`   | Error-guided correction |
+| `utils/sse.ts`                                      | SSE streaming           |
+| `utils/cost.ts`                                     | Token cost tracking     |
 
 ### Frontend (`/front/src/`)
-| File | Purpose |
-|------|---------|
-| `app/copilot/page.tsx` | Chat interface |
-| `app/dashboard/page.tsx` | Widget canvas |
-| `components/charts/` | Chart components |
-| `stores/` | Zustand state |
-| `CLAUDE.md` | AI assistant guidelines |
+| File                     | Purpose                 |
+| ------------------------ | ----------------------- |
+| `app/copilot/page.tsx`   | Chat interface          |
+| `app/dashboard/page.tsx` | Widget canvas           |
+| `components/charts/`     | Chart components        |
+| `stores/`                | Zustand state           |
+| `CLAUDE.md`              | AI assistant guidelines |
 
 ### ETL (`/etl/`)
-| File | Purpose |
-|------|---------|
-| `cli.tsx` | Interactive CLI |
-| `lib/preprocessor.ts` | Data transformation |
-| `lib/levenshtein.ts` | Fuzzy matching |
-| `lib/product-groups.ts` | Product grouping |
-| `gold_views.sql` | Analytics views |
+| File                    | Purpose             |
+| ----------------------- | ------------------- |
+| `cli.tsx`               | Interactive CLI     |
+| `lib/preprocessor.ts`   | Data transformation |
+| `lib/levenshtein.ts`    | Fuzzy matching      |
+| `lib/product-groups.ts` | Product grouping    |
+| `gold_views.sql`        | Analytics views     |
 
 ### Detailed Analysis (`/temp/`)
 See `/temp/overview.md` for complete evaluation synthesis and all 24 analysis files documenting architectural decisions.
@@ -228,13 +249,13 @@ The system implements automatic retry with progressive escalation when LLM calls
 Failure → Increase reasoning (if low) → Bigger model → Even bigger model → Max reasoning → Fail gracefully
 ```
 
-| Step | Action |
-|------|--------|
-| 1 | If reasoning = low, increase to high (same model) |
-| 2 | Move to next bigger model |
-| 3 | Continue to biggest model |
-| 4 | If not at high reasoning, increase to high |
-| 5 | All options exhausted → friendly error message |
+| Step | Action                                            |
+| ---- | ------------------------------------------------- |
+| 1    | If reasoning = low, increase to high (same model) |
+| 2    | Move to next bigger model                         |
+| 3    | Continue to biggest model                         |
+| 4    | If not at high reasoning, increase to high        |
+| 5    | All options exhausted → friendly error message    |
 
 Model hierarchy (smallest → biggest): `gpt-oss-20b` → `grok-4.1-fast` → `gpt-5.2`
 
@@ -252,12 +273,12 @@ product_variations, product_aliases, categories, payments
 ```
 
 ### Gold Layer (Analytics)
-| View | Purpose | Pre-Aggregation |
-|------|---------|-----------------|
-| `gold_orders` | Order-level analysis | Row-level with pre-joins |
-| `gold_product_performance` | Product rankings | By product |
-| `gold_daily_sales` | Daily summaries | By date |
-| `gold_hourly_trends` | Time patterns | By hour |
+| View                       | Purpose              | Pre-Aggregation          |
+| -------------------------- | -------------------- | ------------------------ |
+| `gold_orders`              | Order-level analysis | Row-level with pre-joins |
+| `gold_product_performance` | Product rankings     | By product               |
+| `gold_daily_sales`         | Daily summaries      | By date                  |
+| `gold_hourly_trends`       | Time patterns        | By hour                  |
 
 **Gold View Benefits**:
 - LLM generates simpler SQL (fewer JOINs)
@@ -283,8 +304,6 @@ AI coding assistants follow documented standards:
 
 All three projects have comprehensive Jest test suites with 80%+ coverage requirements.
 
-![SonarCloud Analysis](docs/sonar.png)
-
 ```bash
 # Run all tests
 cd etl && npm test    # 96% coverage, 283 tests
@@ -293,35 +312,35 @@ cd front && npm test  # 95% coverage, 171 tests
 ```
 
 #### ETL Tests (`/etl`)
-| Module | Coverage | Description |
-|--------|----------|-------------|
-| `lib/levenshtein.ts` | 100% | Fuzzy string matching algorithm |
-| `lib/normalizers.ts` | 99% | Product name normalization |
-| `lib/product-groups.ts` | 95% | Product grouping logic |
-| `lib/schemas/` | 100% | Zod schema validation |
-| `lib/preprocessor/` | 95% | Data transformation |
-| `lib/cli-actions/` | 96% | CLI command handlers |
+| Module                  | Coverage | Description                     |
+| ----------------------- | -------- | ------------------------------- |
+| `lib/levenshtein.ts`    | 100%     | Fuzzy string matching algorithm |
+| `lib/normalizers.ts`    | 99%      | Product name normalization      |
+| `lib/product-groups.ts` | 95%      | Product grouping logic          |
+| `lib/schemas/`          | 100%     | Zod schema validation           |
+| `lib/preprocessor/`     | 95%      | Data transformation             |
+| `lib/cli-actions/`      | 96%      | CLI command handlers            |
 
 #### Backend Tests (`/back`)
-| Module | Coverage | Description |
-|--------|----------|-------------|
-| `utils/cost.ts` | 100% | Token cost calculation |
-| `utils/logger.ts` | 100% | Logging utilities |
-| `utils/sse.ts` | 95% | Server-Sent Events |
-| `db/schema.ts` | 100% | Database schema exports |
-| `db/metadata.ts` | 100% | Database metadata queries |
-| `ai/actions/.../prompt.ts` | 100% | C3 calibration prompts |
-| `constants/` | 100% | Environment configuration |
+| Module                     | Coverage | Description               |
+| -------------------------- | -------- | ------------------------- |
+| `utils/cost.ts`            | 100%     | Token cost calculation    |
+| `utils/logger.ts`          | 100%     | Logging utilities         |
+| `utils/sse.ts`             | 95%      | Server-Sent Events        |
+| `db/schema.ts`             | 100%     | Database schema exports   |
+| `db/metadata.ts`           | 100%     | Database metadata queries |
+| `ai/actions/.../prompt.ts` | 100%     | C3 calibration prompts    |
+| `constants/`               | 100%     | Environment configuration |
 
 #### Frontend Tests (`/front`)
-| Module | Coverage | Description |
-|--------|----------|-------------|
-| `stores/` | 96% | Zustand state management |
-| `lib/api.ts` | 99% | API client with SSE parsing |
-| `hooks/useTypewriter.ts` | 100% | Typewriter animation hook |
-| `components/layout/` | 100% | Layout components |
-| `components/chat/` | 90% | Chat UI components |
-| `components/dashboard/` | 97% | Dashboard components |
+| Module                   | Coverage | Description                 |
+| ------------------------ | -------- | --------------------------- |
+| `stores/`                | 96%      | Zustand state management    |
+| `lib/api.ts`             | 99%      | API client with SSE parsing |
+| `hooks/useTypewriter.ts` | 100%     | Typewriter animation hook   |
+| `components/layout/`     | 100%     | Layout components           |
+| `components/chat/`       | 90%      | Chat UI components          |
+| `components/dashboard/`  | 97%      | Dashboard components        |
 
 ## Scalability Design
 
@@ -351,15 +370,15 @@ Failure → Increase reasoning → Bigger model → Max config → Graceful erro
 
 This demo uses a normalized PostgreSQL schema populated with data from the JSON files you provided. For production scale (1000+ restaurants, real-time events), the architecture would evolve as follows:
 
-| Aspect | Demo (Current) | Production | Comparison |
-|--------|----------------|------------|------------|
-| **Data Model** | Normalized schema + Gold Views | Event Sourcing + CQRS | · Audit trail<br>· Replay from any point in time<br>· Separate read/write optimization |
-| **Tenancy** | Single-tenant | Multi-tenant with RLS | · Automatic data isolation per restaurant<br>· Scales to 1000s of tenants |
-| **Data Ingestion** | One-time batch load from JSON files | Live webhooks from POS systems | · Real-time updates<br>· No manual ETL runs needed |
-| **Storage** | Supabase Postgres | Hot (Redis)<br>Warm (TimescaleDB)<br>Cold (S3) | · 90% storage cost reduction<br>· Query speed matched to data freshness |
-| **Query Layer** | Gold Views (manual refresh) | Continuous aggregates (auto-refresh) | · Views update automatically<br>· No stale data |
-| **DB Scaling** | Vertical (bigger DB) | Horizontal (tenant-based partitioning) | · Linear cost scaling<br>· No single point of failure |
-| **Audit Trail** | None | Append-only event store | · Full history<br>· Compliance ready<br>· Debug any past state |
+| Aspect             | Demo (Current)                      | Production                                     | Comparison                                                                             |
+| ------------------ | ----------------------------------- | ---------------------------------------------- | -------------------------------------------------------------------------------------- |
+| **Data Model**     | Normalized schema + Gold Views      | Event Sourcing + CQRS                          | · Audit trail<br>· Replay from any point in time<br>· Separate read/write optimization |
+| **Tenancy**        | Single-tenant                       | Multi-tenant with RLS                          | · Automatic data isolation per restaurant<br>· Scales to 1000s of tenants              |
+| **Data Ingestion** | One-time batch load from JSON files | Live webhooks from POS systems                 | · Real-time updates<br>· No manual ETL runs needed                                     |
+| **Storage**        | Supabase Postgres                   | Hot (Redis)<br>Warm (TimescaleDB)<br>Cold (S3) | · 90% storage cost reduction<br>· Query speed matched to data freshness                |
+| **Query Layer**    | Gold Views (manual refresh)         | Continuous aggregates (auto-refresh)           | · Views update automatically<br>· No stale data                                        |
+| **DB Scaling**     | Vertical (bigger DB)                | Horizontal (tenant-based partitioning)         | · Linear cost scaling<br>· No single point of failure                                  |
+| **Audit Trail**    | None                                | Append-only event store                        | · Full history<br>· Compliance ready<br>· Debug any past state                         |
 
 This is the pattern used by Uber, DoorDash, and Stripe for multi-tenant analytics workloads.
 
