@@ -46,14 +46,12 @@ export function Sidebar() {
     const load = async () => {
       // Load from cache immediately before async fetch
       const cached = getCachedConversations();
-      console.log('[Sidebar] Cached conversations:', cached);
       if (cached.length > 0) {
         setConversations(cached);
       }
 
       try {
         const data = await fetchConversations();
-        console.log('[Sidebar] Fetched conversations:', data);
         setConversations(data);
         setCachedConversations(data);
       } catch (error) {

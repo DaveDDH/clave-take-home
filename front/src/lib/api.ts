@@ -101,7 +101,6 @@ function parseSSELine(line: string): SSEEvent | null {
 
 function dispatchSSEEvent(event: SSEEvent, handlers: StreamHandlers): boolean {
   const { type, data } = event;
-  console.log('[api] SSE event received:', type, data);
 
   switch (type) {
     case 'classification':
