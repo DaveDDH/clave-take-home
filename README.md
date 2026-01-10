@@ -2,9 +2,9 @@
 
 ## Executive Summary
 
-**Deployed on:** https://clave-take-home-3v808zaa5-daveddhs-projects.vercel.app
+**Deployed on:** https://clave-take-home-six.vercel.app/
 
-**Loom video:** https://www.loom.com/share/3ae8226bb72946deb21bec053fdd1407
+**Loom video:** https://www.loom.com/share/dbdd60c0739f48e7a898dd93ed3ec6e2
 
 This solution prioritizes real-world operational concerns (vendor flexibility, cost predictability, horizontal scalability, and robust error recovery) while implementing one of the state-of-the-art papers for text-to-sql use cases. Every architectural decision was made with production deployment in mind.
 
