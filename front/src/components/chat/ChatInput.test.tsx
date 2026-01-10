@@ -34,12 +34,12 @@ describe('ChatInput', () => {
 
   it('renders submit button', () => {
     render(<ChatInput onSend={mockOnSend} />);
-    expect(screen.getByRole('button', { name: '' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /send message/i })).toBeInTheDocument();
   });
 
   it('disables submit button when input is empty', () => {
     render(<ChatInput onSend={mockOnSend} />);
-    const submitButton = screen.getByRole('button', { name: '' });
+    const submitButton = screen.getByRole('button', { name: /send message/i });
     expect(submitButton).toBeDisabled();
   });
 
@@ -49,7 +49,7 @@ describe('ChatInput', () => {
 
     fireEvent.change(textarea, { target: { value: 'Hello' } });
 
-    const submitButton = screen.getByRole('button', { name: '' });
+    const submitButton = screen.getByRole('button', { name: /send message/i });
     expect(submitButton).not.toBeDisabled();
   });
 

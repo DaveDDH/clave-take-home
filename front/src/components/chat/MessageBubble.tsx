@@ -100,7 +100,6 @@ export function MessageBubble({
     try {
       const contentToCopy = blockContent || message.content;
       await navigator.clipboard.writeText(contentToCopy);
-      console.log("Message copied to clipboard");
     } catch (error) {
       console.error("Failed to copy message:", error);
     }
@@ -116,10 +115,11 @@ export function MessageBubble({
 
   const chatQuickAction = (
     IconComponent: React.FC<{ className: string }>,
-    onClick: () => void
+    onClick: () => void,
+    label: string
   ) => {
     return (
-      <Button onClick={onClick} variant="ghost" className="group">
+      <Button onClick={onClick} variant="ghost" className="group" aria-label={label}>
         <IconComponent className="text-gray-400 group-hover:text-foreground transition-colors" />
       </Button>
     );
@@ -140,9 +140,9 @@ export function MessageBubble({
         )}
         {!isUser && isLastInBlock && !isLoading && (
           <div className="flex items-center gap-1 pl-4">
-            {chatQuickAction(Copy, onCopyClick)}
-            {chatQuickAction(RotateCw, onRegenerateClick)}
-            {hasChartsInBlock && chatQuickAction(Save, onSaveClick)}
+            {chatQuickAction(Copy, onCopyClick, "Copy message")}
+            {chatQuickAction(RotateCw, onRegenerateClick, "Regenerate response")}
+            {hasChartsInBlock && chatQuickAction(Save, onSaveClick, "Save widget")}
             {message.cost !== undefined && (
               <span className="ml-auto text-xs text-muted-foreground">
                 ${message.cost.toFixed(4)}
@@ -187,9 +187,9 @@ export function MessageBubble({
       </div>
       {!isUser && isLastInBlock && !isLoading && (
         <div className="flex items-center gap-1 pl-4">
-          {chatQuickAction(Copy, onCopyClick)}
-          {chatQuickAction(RotateCw, onRegenerateClick)}
-          {hasChartsInBlock && chatQuickAction(Save, onSaveClick)}
+          {chatQuickAction(Copy, onCopyClick, "Copy message")}
+          {chatQuickAction(RotateCw, onRegenerateClick, "Regenerate response")}
+          {hasChartsInBlock && chatQuickAction(Save, onSaveClick, "Save widget")}
           {message.cost !== undefined && (
             <span className="ml-auto text-xs text-muted-foreground">
               ${message.cost.toFixed(4)}

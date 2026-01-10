@@ -1,0 +1,21 @@
+{
+  "name": "Clave - Natural Language Dashboard Generator",
+  "short_name": "Clave",
+  "description": "Transform your data into beautiful dashboards using natural language",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0a0a0a",
+  "icons": [
+    {
+      "src": "/clave-logo-icon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/clave-logo-icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

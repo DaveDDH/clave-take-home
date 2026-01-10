@@ -73,7 +73,7 @@ export function ChatInput({ onSend, disabled }: Readonly<ChatInputProps>) {
             placeholder="Ask something..."
             disabled={disabled}
             rows={1}
-            className="flex-1 resize-none border-0 bg-transparent dark:bg-transparent p-0 text-sm placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none rounded-none"
+            className="flex-1 resize-none border-0 bg-transparent dark:bg-transparent p-0 text-sm placeholder:text-gray-500 focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none rounded-none"
           />
           <div className="flex items-center gap-2">
             {mounted ? (
@@ -84,7 +84,8 @@ export function ChatInput({ onSend, disabled }: Readonly<ChatInputProps>) {
                 >
                   <SelectTrigger
                     size="sm"
-                    className="border-0 bg-transparent shadow-none text-muted-foreground hover:text-foreground"
+                    className="border-0 bg-transparent shadow-none text-black hover:text-black/80 [&_svg]:text-black [&_svg]:opacity-100"
+                    aria-label="Select reasoning level"
                   >
                     <span>{selectedReasoning.name}</span>
                   </SelectTrigger>
@@ -106,7 +107,8 @@ export function ChatInput({ onSend, disabled }: Readonly<ChatInputProps>) {
                 >
                   <SelectTrigger
                     size="sm"
-                    className="border-0 bg-transparent shadow-none text-muted-foreground hover:text-foreground"
+                    className="border-0 bg-transparent shadow-none text-black hover:text-black/80 [&_svg]:text-black [&_svg]:opacity-100"
+                    aria-label="Select model"
                   >
                     <span>{selectedModel.name}</span>
                   </SelectTrigger>
@@ -133,6 +135,7 @@ export function ChatInput({ onSend, disabled }: Readonly<ChatInputProps>) {
               size="icon"
               disabled={!canSubmit}
               className="size-9 rounded-xl"
+              aria-label="Send message"
             >
               <ArrowUp className="size-4" />
             </Button>

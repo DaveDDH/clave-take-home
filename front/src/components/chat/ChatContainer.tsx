@@ -10,15 +10,11 @@ export function ChatContainer() {
   const messages = useChatStore((state) => state.messages);
   const isLoading = useChatStore((state) => state.isLoading);
   const sendMessage = useChatStore((state) => state.sendMessage);
+  const initializeFromStorage = useChatStore((state) => state.initializeFromStorage);
 
-  // Log all messages to console every 10 seconds
   useEffect(() => {
-    const interval = setInterval(() => {
-      console.log("[Messages]", messages);
-    }, 10000);
-
-    return () => clearInterval(interval);
-  }, [messages]);
+    initializeFromStorage();
+  }, [initializeFromStorage]);
 
   return (
     <div className="flex h-full flex-col">

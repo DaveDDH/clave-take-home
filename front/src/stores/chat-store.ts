@@ -4,6 +4,29 @@ import { streamChatResponse, fetchConversation, ModelId, ReasoningLevel } from '
 
 const DEFAULT_MODEL: ModelId = 'gpt-5.2';
 const DEFAULT_REASONING: ReasoningLevel = 'high';
+const ACTIVE_CONVERSATION_KEY = 'clave_active_conversation';
+
+function getPersistedConversationId(): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    return localStorage.getItem(ACTIVE_CONVERSATION_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function persistConversationId(id: string | null): void {
+  if (typeof window === 'undefined') return;
+  try {
+    if (id) {
+      localStorage.setItem(ACTIVE_CONVERSATION_KEY, id);
+    } else {
+      localStorage.removeItem(ACTIVE_CONVERSATION_KEY);
+    }
+  } catch {
+    // Ignore storage errors
+  }
+}
 
 interface ChatState {
   conversationId: string | null;
@@ -12,6 +35,7 @@ interface ChatState {
   isLoading: boolean;
   selectedModel: ModelId;
   reasoningLevel: ReasoningLevel;
+  isHydrated: boolean;
   setSelectedModel: (model: ModelId) => void;
   setReasoningLevel: (level: ReasoningLevel) => void;
   sendMessage: (content: string) => Promise<void>;
@@ -20,6 +44,7 @@ interface ChatState {
   startNewConversation: () => void;
   clearMessages: () => void;
   markTypewriterComplete: (messageId: string) => void;
+  initializeFromStorage: () => Promise<void>;
 }
 
 type SetState = (
@@ -122,6 +147,7 @@ async function processStreamingMessage(
           }));
         },
         onConversationId: (id) => {
+          persistConversationId(id);
           set(() => ({ conversationId: id, pendingConversation: null }));
         },
         onCost: (totalCost) => {
@@ -178,6 +204,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   isLoading: false,
   selectedModel: DEFAULT_MODEL,
   reasoningLevel: DEFAULT_REASONING,
+  isHydrated: false,
 
   setSelectedModel: (model: ModelId) => set({ selectedModel: model }),
   setReasoningLevel: (level: ReasoningLevel) => set({ reasoningLevel: level }),
@@ -276,6 +303,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   loadConversation: async (id: string) => {
     try {
+      persistConversationId(id);
       set({ isLoading: true, messages: [], conversationId: id });
       const conversation = await fetchConversation(id);
 
@@ -291,15 +319,20 @@ export const useChatStore = create<ChatState>((set, get) => ({
       set({ messages: uiMessages, isLoading: false });
     } catch (error) {
       console.error('Failed to load conversation:', error);
+      persistConversationId(null);
       set({ isLoading: false, conversationId: null });
     }
   },
 
   startNewConversation: () => {
+    persistConversationId(null);
     set({ conversationId: null, pendingConversation: null, messages: [], isLoading: false });
   },
 
-  clearMessages: () => set({ messages: [], conversationId: null, pendingConversation: null }),
+  clearMessages: () => {
+    persistConversationId(null);
+    set({ messages: [], conversationId: null, pendingConversation: null });
+  },
 
   markTypewriterComplete: (messageId: string) => {
     set((state) => ({
@@ -307,5 +340,33 @@ export const useChatStore = create<ChatState>((set, get) => ({
         msg.id === messageId ? { ...msg, isStreaming: false } : msg
       ),
     }));
+  },
+
+  initializeFromStorage: async () => {
+    if (get().isHydrated) return;
+
+    const persistedId = getPersistedConversationId();
+    if (persistedId) {
+      try {
+        set({ isLoading: true, conversationId: persistedId });
+        const conversation = await fetchConversation(persistedId);
+
+        const uiMessages: Message[] = conversation.messages.map((msg) => ({
+          id: crypto.randomUUID(),
+          role: msg.role,
+          content: msg.content,
+          charts: msg.charts || undefined,
+          isStreaming: false,
+        }));
+
+        set({ messages: uiMessages, isLoading: false, isHydrated: true });
+      } catch (error) {
+        console.error('Failed to restore conversation from storage:', error);
+        persistConversationId(null);
+        set({ conversationId: null, isLoading: false, isHydrated: true });
+      }
+    } else {
+      set({ isHydrated: true });
+    }
   },
 }));

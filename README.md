@@ -7,6 +7,7 @@
 This solution prioritizes real-world operational concerns (vendor flexibility, cost predictability, horizontal scalability, and robust error recovery) while implementing one of the state-of-the-art papers for text-to-sql use cases. Every architectural decision was made with production deployment in mind.
 
 ![SonarCloud Analysis](docs/sonar.png)
+![Lighthouse Analysis](docs/lighthouse.png)
 
 **Key Highlights:**
 
