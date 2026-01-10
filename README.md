@@ -2,7 +2,9 @@
 
 ## Executive Summary
 
-This repository delivers a production-grade implementation of the assessment.
+**Deployed on:** https://clave-take-home-3v808zaa5-daveddhs-projects.vercel.app
+
+This solution prioritizes real-world operational concerns: vendor flexibility, cost predictability, horizontal scalability, and robust error recovery. Every architectural decision was made with production deployment in mind.
 
 ![SonarCloud Analysis](docs/sonar.png)
 
@@ -22,8 +24,6 @@ This repository delivers a production-grade implementation of the assessment.
 - **Robust error handling** — Model escalation, SQL refinement, self-consistency, graceful fallbacks. *Uptime when LLMs fail.*
 - **Intelligent data extraction** — Fuzzy matching with Levenshtein typo correction. *Handles messy POS data.*
 - **Cohesive Vercel ecosystem** — Next.js, shadcn/ui, AI SDK on Vercel. *Faster time to market.*
-
-**Deployed on:** https://clave-take-home-3v808zaa5-daveddhs-projects.vercel.app
 
 ## Quick Start
 
