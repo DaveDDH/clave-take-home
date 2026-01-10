@@ -13,7 +13,7 @@ This solution prioritizes real-world operational concerns (vendor flexibility, c
 - **Zero AI vendor lock-in** — Swap between OpenAI, xAI, Groq, or any other, without code changes. *Switch providers overnight.*
 - **Perfect code quality** — SonarQube shows 0 issues. *Less technical debt, faster onboarding.*
 - **Horizontally scalable** — 100% stateless, Dockerized backend. *Scale by adding containers.*
-- **Comprehensive testing** — 500+ tests, 90%+ coverage across all services. *Deploy with confidence.*
+- **Comprehensive testing** — 500+ tests, 95%+ coverage across all services. *Deploy with confidence.*
 - **Research-backed Text-to-SQL** — C3 methodology ([paper](docs/C3-%20Zero-shot%20Text-to-SQL%20with%20ChatGPT.pdf)). *90% token savings vs few-shot.*
 - **Cost-conscious design** — Real-time cost tracking, ~$1/client/month at 50 queries/day. *Predictable unit economics.*
 - **AI observability** — Helicone integration for monitoring and debugging. *No guesswork in production.*
@@ -396,7 +396,7 @@ AI coding assistants follow documented standards:
 
 ### Testing
 
-All three projects have comprehensive Jest test suites with 80%+ coverage requirements.
+All three projects have comprehensive Jest test suites with 95%+ coverage requirements.
 
 ```bash
 # Run all tests
@@ -524,7 +524,7 @@ The cheapest configuration successfully handles all provided example queries.
 | **Cost**           | $0.001-0.01/query with escalation      | $0.03-0.05/query with premium model always |
 | **Latency**        | 2-3 seconds average                    | 10-15 seconds with agent pipelines |
 | **Reliability**    | Self-healing with refinement + escalation | Fails on first error            |
-| **Maintainability**| 100% TypeScript, 90%+ test coverage    | Mixed stacks, minimal tests       |
+| **Maintainability**| 100% TypeScript, 95%+ test coverage    | Mixed stacks, minimal tests       |
 | **Scalability**    | Stateless, horizontally scalable       | Session-dependent, vertical only  |
 | **Security**       | Configuration-driven, no code execution | Code generation attack surface   |
 
