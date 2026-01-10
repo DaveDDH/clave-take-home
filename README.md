@@ -10,14 +10,14 @@ This solution prioritizes real-world operational concerns: vendor flexibility, c
 
 **Key Highlights:**
 
-- **Zero AI vendor lock-in** — Swap between OpenAI, xAI, Groq without code changes. *Switch providers overnight.*
+- **Zero AI vendor lock-in** — Swap between OpenAI, xAI, Groq, or any other, without code changes. *Switch providers overnight.*
 - **Perfect code quality** — SonarQube shows 0 issues. *Less technical debt, faster onboarding.*
 - **Horizontally scalable** — 100% stateless, Dockerized backend. *Scale by adding containers.*
 - **Comprehensive testing** — 500+ tests, 90%+ coverage across all services. *Deploy with confidence.*
 - **Research-backed Text-to-SQL** — C3 methodology ([paper](docs/C3-%20Zero-shot%20Text-to-SQL%20with%20ChatGPT.pdf)). *90% token savings vs few-shot.*
 - **Cost-conscious design** — Real-time cost tracking, ~$1/client/month at 50 queries/day. *Predictable unit economics.*
 - **AI observability** — Helicone integration for monitoring and debugging. *No guesswork in production.*
-- **Unified TypeScript stack** — 100% TS across ETL, frontend, and backend. *One language, faster iteration.*
+- **Unified TypeScript stack** — 100% TS across ETL, frontend, and backend, providing total type-safety. *One language, faster iteration.*
 - **Clean separation of concerns** — Independent ETL, backend, and frontend projects. *Teams work in parallel.*
 - **Medallion architecture** — Bronze/Silver/Gold data layers. *Clean data flow, easy debugging.*
 - **Real-time streaming** — SSE for progressive AI responses. *Instant feedback, no spinners.*
@@ -28,19 +28,42 @@ This solution prioritizes real-world operational concerns: vendor flexibility, c
 ## Quick Start
 
 ```bash
-# 1. Start PostgreSQL (Supabase)
-# 2. Load environment variables
+# 1. Run ETL
 cd etl && source .env
-
-# 3. Run ETL pipeline
 npm run dev
 
-# 4. Start backend
+# 2. Run Back
 cd ../back && npm run dev
 
-# 5. Start frontend
+# 3. Run Front
 cd ../front && npm run dev
 ```
+
+## Thought Process
+
+### 1. Data First
+
+I started by understanding the problem and reading the raw data. I quickly discovered the Square catalog didn't contain all products — some items in orders had no matching catalog entry. This led me to research typo correction algorithms, where I found Levenshtein distance. I built scripts to test product matching, iterated on the approach, and eventually combined dynamic fuzzy matching with catalog-based extraction.
+
+### 2. Schema Design & ETL
+
+With the data understood, I analyzed common fields across sources and designed a normalized database schema. I then built the ETL pipeline in distinct phases: validation, preprocessing, and loading. This separation made debugging straightforward and allowed incremental reprocessing.
+
+### 3. Gold Views
+
+Once clean data was in the database, I reviewed the expected queries to identify common join patterns. I created denormalized Gold views with proper indexes — this simplifies the SQL the LLM needs to generate and improves query performance.
+
+### 4. Text-to-SQL Research
+
+I researched state-of-the-art Text-to-SQL approaches, reviewed leaderboards, and read several papers. The C3 methodology stood out: good accuracy with low implementation complexity. I built the AI pipeline skeleton using the Vercel AI SDK and implemented the C3 approach (clear prompting, calibration hints, self-consistency voting).
+
+### 5. Chart System
+
+For visualizations, I decided on a predefined set of chart types with controlled styling, strict types, and defined schemas. I wrapped shadcn chart components and connected the type definitions to the SQL query output — ensuring type safety from database to UI.
+
+### 6. Iteration & Hardening
+
+I tested various queries to check performance, fine-tuned prompts, added few-shot examples, and refined the Gold views. Once accuracy was acceptable, I added retry mechanisms, model escalation, and error recovery. Finally, I polished the frontend, fixed all SonarQube issues, added comprehensive tests, and validated the entire project in a fresh environment.
 
 ## Architecture Overview
 
@@ -180,8 +203,6 @@ clave-take-home/
 | `lib/product-groups.ts` | Product grouping    |
 | `gold_views.sql`        | Analytics views     |
 
-### Detailed Analysis (`/temp/`)
-See `/temp/overview.md` for complete evaluation synthesis and all 24 analysis files documenting architectural decisions.
 
 ## AI Pipeline (C3 Methodology)
 
@@ -403,8 +424,8 @@ This is the pattern used by Uber, DoorDash, and Stripe for multi-tenant analytic
 **Cost Ratio**: 28x difference between configurations
 
 ### Monthly Estimate (50 queries/day/client)
-- Cheapest: **~$2.70/month/client**
-- Most expensive: **~$76.50/month/client**
+- Cheapest: **~$1.02/month/client**
+- Most expensive: **~$49.50/month/client**
 
 The cheapest configuration successfully handles all provided example queries.
 
