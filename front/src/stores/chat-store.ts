@@ -8,21 +8,29 @@ const ACTIVE_CONVERSATION_KEY = 'clave_active_conversation';
 
 function getPersistedConversationId(): string | null {
   try {
-    return localStorage.getItem(ACTIVE_CONVERSATION_KEY);
-  } catch {
+    const id = localStorage.getItem(ACTIVE_CONVERSATION_KEY);
+    console.log('[chat-store] getPersistedConversationId:', id);
+    return id;
+  } catch (e) {
+    console.error('[chat-store] getPersistedConversationId error:', e);
     return null;
   }
 }
 
 function persistConversationId(id: string | null): void {
+  console.log('[chat-store] persistConversationId:', id);
   try {
     if (id) {
       localStorage.setItem(ACTIVE_CONVERSATION_KEY, id);
+      // Verify the write
+      const verified = localStorage.getItem(ACTIVE_CONVERSATION_KEY);
+      console.log('[chat-store] persistConversationId verified:', verified);
     } else {
       localStorage.removeItem(ACTIVE_CONVERSATION_KEY);
+      console.log('[chat-store] persistConversationId cleared');
     }
-  } catch {
-    // Ignore storage errors
+  } catch (e) {
+    console.error('[chat-store] persistConversationId error:', e);
   }
 }
 
@@ -85,14 +93,16 @@ async function processStreamingMessage(
       { useConsistency: true, debug: false, reasoningLevel },
       {
         onClassification: (data) => {
-          const timestamp = Date.now();
+          // Only set partialTimestamp for data queries (non-'none' chartType)
+          // This prevents showing "Reasoning..." for conversational responses
+          const timestamp = data.chartType !== 'none' ? Date.now() : undefined;
           set((state) => ({
             messages: state.messages.map((msg) =>
               msg.id === assistantMessageId
                 ? {
                     ...msg,
                     content: data.conversationalResponse,
-                    partialTimestamp: timestamp
+                    ...(timestamp && { partialTimestamp: timestamp })
                   }
                 : msg
             ),
@@ -145,6 +155,7 @@ async function processStreamingMessage(
           }));
         },
         onConversationId: (id) => {
+          console.log('[chat-store] onConversationId received:', id);
           persistConversationId(id);
           set(() => ({ conversationId: id, pendingConversation: null }));
         },
@@ -212,6 +223,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     const trimmedContent = content.trim();
     const currentConversationId = get().conversationId;
+    console.log('[chat-store] sendMessage - currentConversationId:', currentConversationId);
     const model = get().selectedModel;
     const reasoningLevel = get().reasoningLevel;
 
@@ -323,11 +335,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   startNewConversation: () => {
+    console.log('[chat-store] startNewConversation called');
     persistConversationId(null);
     set({ conversationId: null, pendingConversation: null, messages: [], isLoading: false });
   },
 
   clearMessages: () => {
+    console.log('[chat-store] clearMessages called');
     persistConversationId(null);
     set({ messages: [], conversationId: null, pendingConversation: null });
   },
@@ -341,13 +355,20 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   initializeFromStorage: async () => {
-    if (get().isHydrated) return;
+    console.log('[chat-store] initializeFromStorage called, isHydrated:', get().isHydrated);
+    if (get().isHydrated) {
+      console.log('[chat-store] Already hydrated, skipping');
+      return;
+    }
 
     const persistedId = getPersistedConversationId();
+    console.log('[chat-store] initializeFromStorage - persistedId:', persistedId);
     if (persistedId) {
       try {
+        console.log('[chat-store] Loading conversation:', persistedId);
         set({ isLoading: true, conversationId: persistedId });
         const conversation = await fetchConversation(persistedId);
+        console.log('[chat-store] Loaded conversation with', conversation.messages.length, 'messages');
 
         const uiMessages: Message[] = conversation.messages.map((msg) => ({
           id: crypto.randomUUID(),
@@ -358,12 +379,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
         }));
 
         set({ messages: uiMessages, isLoading: false, isHydrated: true });
+        console.log('[chat-store] Hydration complete, conversationId:', persistedId);
       } catch (error) {
-        console.error('Failed to restore conversation from storage:', error);
+        console.error('[chat-store] Failed to restore conversation from storage:', error);
         persistConversationId(null);
         set({ conversationId: null, isLoading: false, isHydrated: true });
       }
     } else {
+      console.log('[chat-store] No persisted conversation, marking hydrated');
       set({ isHydrated: true });
     }
   },

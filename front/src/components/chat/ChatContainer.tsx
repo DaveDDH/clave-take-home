@@ -13,6 +13,7 @@ export function ChatContainer() {
   const initializeFromStorage = useChatStore((state) => state.initializeFromStorage);
 
   useEffect(() => {
+    console.log('[ChatContainer] useEffect - calling initializeFromStorage');
     initializeFromStorage();
   }, [initializeFromStorage]);
 

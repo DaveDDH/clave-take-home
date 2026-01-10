@@ -130,6 +130,8 @@ router.post("/chat/stream", async (req: Request, res: Response) => {
 
     // Wrap sendComplete to save assistant response after streaming completes
     const originalSendComplete = sseWriter.sendComplete.bind(sseWriter);
+    const originalClose = sseWriter.close.bind(sseWriter);
+
     sseWriter.sendComplete = () => {
       void (async () => {
         // Save messages based on what we captured (skip in debug mode)
@@ -152,8 +154,13 @@ router.post("/chat/stream", async (req: Request, res: Response) => {
         // Send conversation ID with completion
         sseWriter.sendEvent("conversationId", { id: conversationId });
         originalSendComplete();
+        // Close after all async operations complete
+        originalClose();
       })();
     };
+
+    // Override close to be a no-op - it will be called in sendComplete wrapper
+    sseWriter.close = () => {};
 
     const processOptions: ProcessOptions = {
       useConsistency: options?.useConsistency ?? true,

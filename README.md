@@ -28,6 +28,8 @@ This solution prioritizes real-world operational concerns (vendor flexibility, c
 - **Cohesive Vercel ecosystem** — Next.js, shadcn/ui, AI SDK on Vercel. *Faster time to market.*
 
 ## Quick Start
+First, set up your .env files (check the .env.example files inside etl/, back/ and front/).
+Then:
 
 ```bash
 # 1. Run ETL
