@@ -7,7 +7,6 @@ const DEFAULT_REASONING: ReasoningLevel = 'high';
 const ACTIVE_CONVERSATION_KEY = 'clave_active_conversation';
 
 function getPersistedConversationId(): string | null {
-  if (typeof globalThis.window === 'undefined') return null;
   try {
     return localStorage.getItem(ACTIVE_CONVERSATION_KEY);
   } catch {
@@ -16,7 +15,6 @@ function getPersistedConversationId(): string | null {
 }
 
 function persistConversationId(id: string | null): void {
-  if (typeof globalThis.window === 'undefined') return;
   try {
     if (id) {
       localStorage.setItem(ACTIVE_CONVERSATION_KEY, id);
