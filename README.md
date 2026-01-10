@@ -8,20 +8,20 @@ This repository delivers a production-grade implementation of the assessment.
 
 **Key Highlights:**
 
-- **Zero AI vendor lock-in** — A model abstraction layer allows swapping between OpenAI, xAI, Groq, or any provider without rewriting application code. *Negotiate better rates or switch providers overnight.*
-- **Perfect code quality** — SonarQube analysis shows 0 issues, ensuring maintainable and secure code. *Reduces technical debt and onboarding time for new developers.*
-- **Horizontally scalable** — The backend is 100% stateless and Dockerized, enabling deployment across multiple instances with no session affinity required. *Handle traffic spikes by adding containers, not rewriting code.*
-- **Comprehensive testing** — Over 500 unit tests achieve 90%+ code coverage across the ETL pipeline, frontend, and backend. *Deploy with confidence; catch regressions before users do.*
-- **Research-backed Text-to-SQL** — Implements the C3 (Clear prompting, Calibration, Consistency) methodology for reliable query generation ([paper](docs/C3-%20Zero-shot%20Text-to-SQL%20with%20ChatGPT.pdf)). *Proven approach with 90% token savings over few-shot prompting.*
-- **Cost-conscious design** — A built-in cost accumulator tracks per-query expenses in real time, achieving approximately $1/client/month at 50 queries/day. *Predictable unit economics from day one.*
-- **AI observability** — Helicone integration provides detailed monitoring, debugging, and usage analytics for all LLM calls. *Diagnose issues in production without guesswork.*
-- **Unified TypeScript stack** — 100% TypeScript across ETL, frontend, and backend simplifies maintenance and streamlines hiring. *One language, one toolchain, faster iteration.*
-- **Clean separation of concerns** — ETL, backend, and frontend are independent projects that can be developed, tested, and scaled separately. *Teams can work in parallel without stepping on each other.*
-- **Medallion architecture** — Bronze (raw), Silver (normalized), and Gold (analytics-ready) data layers ensure clean data flow. *Simplifies debugging and enables incremental reprocessing.*
-- **Real-time streaming** — Server-Sent Events deliver progressive AI responses for a responsive user experience. *Users see results immediately, not after a loading spinner.*
-- **Robust error handling** — Includes model escalation, iterative SQL refinement, self-consistency voting, and graceful fallbacks when all else fails. *Maximizes uptime even when LLMs misbehave.*
-- **Intelligent data extraction** — Dynamic fuzzy matching with Levenshtein distance corrects typos and maps raw product names to a canonical catalog. *Handles messy real-world POS data automatically.*
-- **Cohesive Vercel ecosystem** — Next.js, shadcn/ui, and the Vercel AI SDK work together seamlessly, all deployed on Vercel's platform. *Fewer integration headaches, faster time to market.*
+- **Zero AI vendor lock-in** — Swap between OpenAI, xAI, Groq without code changes. *Switch providers overnight.*
+- **Perfect code quality** — SonarQube shows 0 issues. *Less technical debt, faster onboarding.*
+- **Horizontally scalable** — 100% stateless, Dockerized backend. *Scale by adding containers.*
+- **Comprehensive testing** — 500+ tests, 90%+ coverage across all services. *Deploy with confidence.*
+- **Research-backed Text-to-SQL** — C3 methodology ([paper](docs/C3-%20Zero-shot%20Text-to-SQL%20with%20ChatGPT.pdf)). *90% token savings vs few-shot.*
+- **Cost-conscious design** — Real-time cost tracking, ~$1/client/month at 50 queries/day. *Predictable unit economics.*
+- **AI observability** — Helicone integration for monitoring and debugging. *No guesswork in production.*
+- **Unified TypeScript stack** — 100% TS across ETL, frontend, and backend. *One language, faster iteration.*
+- **Clean separation of concerns** — Independent ETL, backend, and frontend projects. *Teams work in parallel.*
+- **Medallion architecture** — Bronze/Silver/Gold data layers. *Clean data flow, easy debugging.*
+- **Real-time streaming** — SSE for progressive AI responses. *Instant feedback, no spinners.*
+- **Robust error handling** — Model escalation, SQL refinement, self-consistency, graceful fallbacks. *Uptime when LLMs fail.*
+- **Intelligent data extraction** — Fuzzy matching with Levenshtein typo correction. *Handles messy POS data.*
+- **Cohesive Vercel ecosystem** — Next.js, shadcn/ui, AI SDK on Vercel. *Faster time to market.*
 
 **Deployed on:** https://clave-take-home-3v808zaa5-daveddhs-projects.vercel.app
 
