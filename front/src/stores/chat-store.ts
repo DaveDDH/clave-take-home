@@ -89,7 +89,7 @@ async function processStreamingMessage(
         onClassification: (data) => {
           // Only set partialTimestamp for data queries (non-'none' chartType)
           // This prevents showing "Reasoning..." for conversational responses
-          const timestamp = data.chartType !== 'none' ? Date.now() : undefined;
+          const timestamp = data.chartType === 'none' ? undefined : Date.now();
           set((state) => ({
             messages: state.messages.map((msg) =>
               msg.id === assistantMessageId
